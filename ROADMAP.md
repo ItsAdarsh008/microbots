@@ -43,6 +43,27 @@ Live version with the timeline chart: https://claude.ai/code/artifact/83d6998b-5
 
 Start reading for the next phase while you finish the current build; that overlap is what keeps the total near 12 weeks.
 
+## Working together
+
+With two people, the project runs as two parallel lanes instead of one long sequence. The learning lane doesn't depend on the swarm lane's code, so it can start right after Phase 0, which brings the timeline from about 12 weeks down to roughly 7–8.
+
+| Lane | Covers | Phases | Owner |
+| --- | --- | --- | --- |
+| Shared | JAX foundations, launch | 0, 6 | Both |
+| A · Swarm and visuals | Flocking, Kilobot reproduction, 3D viewer, polish, Jev commands | 1, 2, 4, 5 | To be decided |
+| B · Learning | CNN warm-up, 2D then 3D self-healing NCA, environment-aware NCA | 3, 3.5 | To be decided |
+
+**The hand-off between lanes.** The two lanes meet where the NCA's output becomes bots. Agree on the format in week 1 so each lane can build and test against a stand-in for the other. Proposed format: the NCA outputs a 3D grid of filled and empty cells (a 32×32×32 array of 0s and 1s), and the swarm treats the filled cells as its target positions.
+
+**How we work:**
+
+- **One GitHub issue per checklist item**, with an owner on each, so it's always clear who's doing what.
+- **Branches and pull requests:** nothing merges into `main` without the other person reviewing it. Reviewing is also how each of us learns the other lane.
+- **A 30-minute call once a week:** show what works, flag what's blocking, and pick the next items.
+- **Posting:** each of us posts our own lane's progress and tags the other; the launch is posted together. Agree up front how we're credited and who leads outreach to which contacts.
+
+**What the saved time goes into:** the functional-loss part of Phase 3.5 (the swarm inventing its own shapes), a proper write-up that could become a short workshop paper, and the physics close-up stretch goal.
+
 ## Phase-by-phase plan
 
 Each phase ends with something you can show, so you have a working demo early and keep improving it. Each phase also closes with a checklist that combines the build, posting and outreach steps, so you can tick off everything before moving on.

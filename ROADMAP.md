@@ -2,7 +2,7 @@
 
 Oct 14, 2026 · @Adarsh
 
-This is the plan for a self-healing 3D microbot swarm built in JAX: every bot runs the same small program, with no central brain. Phase 0 is in progress. The code lives at [github.com/ItsAdarsh008/microbots](https://github.com/ItsAdarsh008/microbots).
+This is the plan for a self-healing 3D microbot swarm built in JAX: every bot runs the same small program, with no central brain. Phase 0's code and Textbook Chapter 0 are in the repo; next is working through the chapter and posting the clip. The code lives at [github.com/ItsAdarsh008/microbots](https://github.com/ItsAdarsh008/microbots).
 
 How to use this doc: read the Overview and timeline first, then work from the current phase. Tick checklist items as they're done, and leave a comment on any line you have a question about.
 
@@ -64,6 +64,16 @@ With two people, the project runs as two parallel lanes instead of one long sequ
 
 **What the saved time goes into:** the functional-loss part of Phase 3.5 (the swarm inventing its own shapes), a proper write-up that could become a short workshop paper, and the physics close-up stretch goal.
 
+## Code plus textbook
+
+To move faster, the code for each phase is written with AI help, and every phase also adds a textbook chapter that explains that code from scratch. The goal is speed without ending up with a project you can't explain.
+
+- **Code** goes into the repo one folder per phase (`phase0/`, `phase1/`, …), with a `checks.py` that tests the phase's done-when criteria.
+- **Textbook chapters** go into [`textbook/`](https://github.com/ItsAdarsh008/microbots/tree/main/textbook) in the same commit, so the book always matches the code. Each chapter covers the new concepts from scratch, walks through the key functions, and ends with "Try this" exercises and check-your-understanding questions.
+- **Understanding gates:** before each outreach checkpoint, answer that phase's questions without looking and make one of its changes without AI help. Those are the moments when someone will ask how the project works.
+
+Phase 0 is the first example: the code is in `phase0/` and the explanation is [Chapter 0: A random walk in NumPy and JAX](https://github.com/ItsAdarsh008/microbots/blob/main/textbook/00-random-walk.md).
+
 ## Phase-by-phase plan
 
 Each phase ends with something you can show, so you have a working demo early and keep improving it. Each phase also closes with a checklist that combines the build, posting and outreach steps, so you can tick off everything before moving on.
@@ -92,7 +102,7 @@ Outreach rules for every DM or email:
 
 #### Phase 0 walkthrough: build it yourself
 
-You'll build the random walk twice: once in NumPy to get the idea, then in JAX to learn the tools the rest of the project depends on. Each step ends with a check so you know it works before moving on. This section explains the ideas and the functions to look up, but leaves the code to you. It assumes only basic Python (variables, functions and loops), and every new idea is explained the first time it appears.
+You'll build the random walk twice: once in NumPy to get the idea, then in JAX to learn the tools the rest of the project depends on. Each step ends with a check so you know it works before moving on. The finished Phase 0 code is now in the repo's phase0 folder, and Textbook Chapter 0 explains it line by line. This walkthrough stays as the short version, and as a guide if you want to write it yourself. It assumes only basic Python (variables, functions and loops), and every new idea is explained the first time it appears.
 
 **Step 1 — Setup (about 30 min)**
 
@@ -261,6 +271,8 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 - [ ] LinkedIn kickoff post and Instagram story
 - [ ] Following 10–15 people in swarm robotics, NCA and JAX, with a few thoughtful replies left
 - [ ] At least 3 "today I learned" posts
+- [ ] Read Textbook Chapter 0 and do its six "Try this" exercises
+- [ ] Understanding gate: answer Chapter 0's nine questions without looking
 
 ### Phase 1 — A swarm with local rules · 8–10 h · weeks 1–2
 

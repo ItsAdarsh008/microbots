@@ -1,4 +1,5 @@
 # Add one ignore pattern per line; use # for comments, * and ? as wildcards,
 # a trailing / to match directories, and ! to unignore a previously ignored path.
-.venv/__pycache__/
+.venv/
+__pycache__/
 *.mp4

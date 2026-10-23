@@ -1,0 +1,181 @@
+{
+  "params": {
+    "body_r": 15.0,
+    "wall": 1.2,
+    "pole_flat": 13.0,
+    "spigot_r": 2.5,
+    "shaft_bore_r": 1.3,
+    "conn_r": 5.0,
+    "conn_r_in": 2.5,
+    "teeth": 24,
+    "tooth_h": 0.8,
+    "backlash_deg": 0.35,
+    "pole_recess": 0.1,
+    "epm_r": 2.5,
+    "epm_depth": 3.0,
+    "port_d": 14.0,
+    "turret_r": 7.0,
+    "turret_hw": 3.3,
+    "turret_t": 2.0,
+    "hub_r": 3.0,
+    "hub_w": 6.0,
+    "ear_t": 1.6,
+    "ear_gap": 0.2,
+    "pin_r": 1.0,
+    "hub_clear": 0.5,
+    "arm_len": 22.0,
+    "neck_t": 4.0,
+    "tube_r": 4.0,
+    "tube_bore_r": 3.0,
+    "collar_len": 4.0,
+    "collar_gap": 0.2
+  },
+  "derived": {
+    "pin_z_mm": 18.5,
+    "span_straight_mm": 81.0,
+    "roll_index_deg": 15.0
+  },
+  "connector_overlap_mm3": {
+    "0deg": 0.0,
+    "7.5deg": 11.2239,
+    "15deg": 0.0,
+    "45deg": 0.0,
+    "90deg": 0.0
+  },
+  "range_of_motion": {
+    "azimuth_deg": "continuous mechanically; +-180 with a cable service loop",
+    "pitch_deg": [
+      -100.0,
+      100.0
+    ],
+    "roll_deg": "continuous",
+    "tip_direction_coverage_per_arm": "cone of half-angle 100 deg about its pole = 59% of all directions"
+  },
+  "poses": {
+    "straight": {
+      "mass_g": 19.28,
+      "com_mm": [
+        0.0,
+        -0.0,
+        -0.22
+      ],
+      "com_offset_from_body_centre_mm": 0.22
+    },
+    "V120": {
+      "mass_g": 19.28,
+      "com_mm": [
+        0.0,
+        1.55,
+        -0.22
+      ],
+      "com_offset_from_body_centre_mm": 1.57
+    },
+    "V60": {
+      "mass_g": 19.28,
+      "com_mm": [
+        0.0,
+        2.69,
+        -0.22
+      ],
+      "com_offset_from_body_centre_mm": 2.7
+    },
+    "U_grip": {
+      "mass_g": 19.28,
+      "com_mm": [
+        0.0,
+        3.06,
+        -0.22
+      ],
+      "com_offset_from_body_centre_mm": 3.07
+    },
+    "twisted": {
+      "mass_g": 19.28,
+      "com_mm": [
+        0.26,
+        1.55,
+        -0.58
+      ],
+      "com_offset_from_body_centre_mm": 1.68
+    }
+  },
+  "interference": {
+    "bot_straight": [],
+    "bot_V120": [],
+    "bot_V60": [],
+    "bot_U_grip": [],
+    "bot_twisted": []
+  },
+  "mass_breakdown_g": {
+    "body": 4.12,
+    "turret_top": 0.24,
+    "pin_top": 0.24,
+    "arm_top": 0.52,
+    "tip_top": 0.29,
+    "turret_bottom": 0.24,
+    "pin_bottom": 0.24,
+    "arm_bottom": 0.52,
+    "tip_bottom": 0.29,
+    "LiPo 3.7 V ~40 mAh": 1.4,
+    "PCB: MCU + IMU + motor drivers + IR/BLE": 1.2,
+    "gearmotor \u00d84 (differential, top A)": 1.1,
+    "gearmotor \u00d84 (differential, top B)": 1.1,
+    "gearmotor \u00d84 (differential, bottom A)": 1.1,
+    "gearmotor \u00d84 (differential, bottom B)": 1.1,
+    "EPM port +X": 0.5,
+    "EPM port -X": 0.5,
+    "EPM port +Y": 0.5,
+    "EPM port -Y": 0.5,
+    "bevel differential gears x2": 0.6,
+    "roll gearmotor \u00d84 (in arm tube) [top]": 1.0,
+    "EPM in tip [top]": 0.5,
+    "roll gearmotor \u00d84 (in arm tube) [bottom]": 1.0,
+    "EPM in tip [bottom]": 0.5
+  },
+  "structures": {
+    "ring3_triangle": {
+      "bots": 3,
+      "closure_mm_deg_deg": [
+        0.0,
+        1e-06,
+        0.0
+      ],
+      "interference": []
+    },
+    "ring4_square": {
+      "bots": 4,
+      "closure_mm_deg_deg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "interference": []
+    },
+    "ring6_hexagon": {
+      "bots": 6,
+      "closure_mm_deg_deg": [
+        0.0,
+        1e-06,
+        0.0
+      ],
+      "interference": []
+    },
+    "zigzag5": {
+      "bots": 5,
+      "interference": []
+    },
+    "block_2x2x2": {
+      "bots": 8,
+      "contacts": 12,
+      "worst_mm_deg_deg": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "interference": []
+    },
+    "t_junction": {
+      "bots": 2,
+      "interference": []
+    }
+  }
+}

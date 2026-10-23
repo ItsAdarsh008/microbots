@@ -3,15 +3,16 @@ programmable matter, inspired by big hero 6. this repo holds all my work until t
 
 ## For collaborators
 
-**Current status:** Phase 0 (setup and foundations) code is done: a 2D random walk of up to thousands of bots, in NumPy and in JAX, with an animation script and checks. Its explanation is [Textbook Chapter 0](textbook/00-random-walk.md). Next: work through the chapter, post the clip, then start Phase 1 (flocking). Phases 0–2 are 2D; the swarm moves to 3D from Phase 3. See [ROADMAP.md](ROADMAP.md) for the full plan and per-phase checklists.
+**Current status:** Phases 0 and 1 are built. Phase 0 is a 2D random walk in NumPy and JAX ([Chapter 0](textbook/00-random-walk.md)); Phase 1 is a 1,000-bot flock that uses only local rules, with a fast cell-list neighbour search and a beacon that gathers the swarm ([Chapter 1](textbook/01-flocking.md)). Next: clear the Chapter 0 and 1 understanding gates, then Phase 2 (Kilobot-style shape formation). Phases 0–2 are 2D; the swarm moves to 3D from Phase 3. See [ROADMAP.md](ROADMAP.md) for the full plan and per-phase checklists.
 
-![1,000 bots wandering in a box](media/random_walk.gif)
+![1,000 bots forming flocks, then gathering in a target zone](media/flock.gif)
 
 **What's in the repo:**
 
 | Path | What it is |
 | --- | --- |
 | `phase0/` | Phase 0 code: NumPy and JAX random walks, `animate.py`, `checks.py` |
+| `phase1/` | Phase 1 code: local-rule flocking with brute-force and cell-list neighbour search, `animate.py`, `checks.py` |
 | `textbook/` | One chapter per phase explaining the code from scratch, with exercises |
 | `media/` | Rendered clips and GIFs |
 | `ROADMAP.md` | The full plan, timeline and checklists |
@@ -38,6 +39,13 @@ python phase0/animate.py --bots 1000    # opens the animation in a window
 python phase0/animate.py --bots 1000 --save media/random_walk.mp4   # MP4 needs ffmpeg
 ```
 
+**Running Phase 1:**
+
+```powershell
+python phase1/checks.py                 # should end with 10/10 checks passed
+python phase1/animate.py                # 1,000-bot flock, beacon switches on halfway
+```
+
 On macOS or Linux, use `python3 -m venv .venv` and `source .venv/bin/activate` instead. Step 1 of the Phase 0 walkthrough in the roadmap explains what each command does.
 
 ## How we work together
@@ -54,7 +62,7 @@ The project runs as two parallel lanes, which brings the timeline from about 12 
 - **Issues:** one GitHub issue per roadmap checklist item, each with an owner.
 - **Branches and pull requests:** nothing merges into `main` without the other person's review.
 - **Weekly sync:** a 30-minute call to demo progress, flag blockers and pick the next items.
-- **Posting:** each person posts their own lane's progress and tags the other; the launch is posted together.
+- **Posting:** nothing about the project goes public until it's about 80% done (Phases 3 and 3.5 working, around week 9). Until then, capture every clip into the shared capture folder and keep warming up your own X account with replies and general "today I learned" posts. Teasers start at 80%; the launch is posted together.
 
 ## Roadmap
 

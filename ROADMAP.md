@@ -2,7 +2,7 @@
 
 Oct 14, 2026 · @Adarsh
 
-This is the plan for a self-healing 3D microbot swarm built in JAX: every bot runs the same small program, with no central brain. Phase 0's code and Chapter 0 are in the repo, and so are Phase 1's flocking swarm and Chapter 1; next is clearing their understanding gates, then Phase 2. The code lives at [github.com/ItsAdarsh008/microbots](https://github.com/ItsAdarsh008/microbots).
+This is the plan for a self-healing 3D microbot swarm built in JAX: every bot runs the same small program, with no central brain. Phase 0's code and Chapter 0 are in the repo, along with Phase 1's flocking swarm (Chapter 1) and Phase 2's Kilobot-style self-assembly (Chapter 2); next is clearing their understanding gates, then Phase 3. The code lives at [github.com/ItsAdarsh008/microbots](https://github.com/ItsAdarsh008/microbots).
 
 How to use this doc: read the Overview and timeline first, then work from the current phase. Tick checklist items as they're done, and leave a comment on any line you have a question about.
 
@@ -307,7 +307,7 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 
 **Learn:** the three behaviours from Rubenstein et al. (2014): a hop-count gradient from seed bots, local position estimation by trilateration, and edge-following until a bot is inside the shape. Also finite state machines per bot.
 
-**Build:** the swarm self-assembles into a star, a wall and a letter from a bitmap. Add a shape switcher on keys 1–4.
+**Build:** the swarm self-assembles into a star, a wall and a letter from a bitmap. Pick the shape with --shape.
 
 **Done when:** you get a clean GIF of the swarm forming a shape. This is your first postable result.
 
@@ -320,17 +320,20 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 
 **Phase 2 checklist**
 
-- [ ] Hop-count gradient from seed bots
-- [ ] Position estimates by trilateration
-- [ ] Edge-following state machine
-- [ ] Swarm forms a star, a wall and a letter; keys 1–4 switch shapes
-- [ ] Clean shape-formation GIF
+- [x] Hop-count gradient from seed bots
+- [x] Position estimates by trilateration
+- [x] Edge-following state machine
+- [x] Swarm forms a star, a wall and a letter (the K is a nod to the paper)
+- [x] Clean shape-formation GIF
 - [ ] Side-by-side GIF captured: the paper's figure next to your version, authors credited
 - [ ] Warm-up continuing; nothing about the project posted yet
 - [ ] Best clip so far marked in the capture folder
 - [ ] Contact log started (name, date, what you sent, reply)
 - [ ] Checkpoint 1: messaged the Kilobot authors and 1–2 programmable-matter researchers
 - [ ] Checkpoint 1: emailed 2–3 UWaterloo professors about undergraduate research roles
+
+* [ ] Read [Textbook Chapter 2](https://github.com/ItsAdarsh008/microbots/blob/main/textbook/02-self-assembly.md) and do its seven "Try this" exercises
+* [ ] Understanding gate: answer Chapter 2's ten questions without looking (do this before checkpoint 1's outreach)
 
 ### Phase 3 — 3D neural cellular automaton, self-healing · 18–24 h · weeks 4–7
 

@@ -1,0 +1,599 @@
+<title>Microbot Sandbox</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: full-bleed 3D lab bench, a control rail on the left (bottom sheet on phones), live readout top-right. */
+:root {
+  --bg: #e9ecef;
+  --scene: #dfe3e8;
+  --grid: #b9c0c9;
+  --panel: #f7f8f9;
+  --ink: #16191d;
+  --muted: #5b636d;
+  --line: #d3d8de;
+  --chip: #eceff2;
+  --accent: #c7772a;      /* the turret amber from the CAD */
+  --accent-ink: #ffffff;
+  --ok: #2f9a5f;
+  --warn: #c98a14;
+  --bad: #cc3b2f;
+  --display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #101317; --scene: #14181d; --grid: #2a3139; --panel: #181c21; --ink: #e8ebee;
+    --muted: #98a2ad; --line: #2b3239; --chip: #222830; --accent: #e08f3f; --accent-ink: #15110c;
+    --ok: #4cc283; --warn: #e2a93a; --bad: #ef5a4c; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #101317; --scene: #14181d; --grid: #2a3139; --panel: #181c21; --ink: #e8ebee;
+  --muted: #98a2ad; --line: #2b3239; --chip: #222830; --accent: #e08f3f; --accent-ink: #15110c;
+  --ok: #4cc283; --warn: #e2a93a; --bad: #ef5a4c; color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); overflow: hidden; }
+#app { position: relative; height: 100%; display: grid; grid-template-columns: 312px 1fr; }
+#stage { position: relative; min-width: 0; background: var(--scene); touch-action: none; }
+#stage canvas { display: block; width: 100%; height: 100%; outline: none; }
+
+#rail {
+  background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto;
+  padding-block: 18px 28px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+  display: flex; flex-direction: column; gap: 20px; z-index: 2;
+}
+header h1 { font-family: var(--display); font-weight: 600; font-size: 22px; letter-spacing: 0.02em; margin: 0; }
+header p { margin: 4px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
+.spec { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
+section { display: flex; flex-direction: column; gap: 10px; }
+section > h2 {
+  font-family: var(--display); font-weight: 500; font-size: 11.5px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted); margin: 0; display: flex; justify-content: space-between; align-items: baseline;
+}
+section > h2 small { font-family: var(--mono); letter-spacing: 0; text-transform: none; font-size: 11px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+button {
+  font: 500 12.5px/1 var(--body); color: var(--ink); background: var(--chip); border: 1px solid var(--line);
+  border-radius: 6px; padding: 8px 10px; cursor: pointer; text-align: left; transition: background .12s, border-color .12s;
+}
+button:hover { border-color: var(--muted); }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.primary { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+button[disabled] { opacity: .45; cursor: not-allowed; }
+.chips button { padding: 6px 9px; font-family: var(--mono); font-size: 11.5px; }
+.scene-btn { display: flex; flex-direction: column; gap: 3px; padding: 8px 9px; }
+.scene-btn span { font-size: 11px; color: var(--muted); font-weight: 400; line-height: 1.25; }
+.scene-btn.on span { color: inherit; opacity: .85; }
+.joint { display: grid; grid-template-columns: 84px 1fr 44px; gap: 8px; align-items: center; font-size: 12px; }
+.joint output { font-family: var(--mono); font-size: 11.5px; text-align: right; font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; }
+.toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+.note { font-size: 11.5px; color: var(--muted); line-height: 1.45; margin: 0; }
+.empty { font-size: 12.5px; color: var(--muted); border: 1px dashed var(--line); border-radius: 6px; padding: 10px; }
+
+#hud {
+  position: absolute; top: max(12px, env(safe-area-inset-top, 0px)); right: max(12px, env(safe-area-inset-right, 0px));
+  background: color-mix(in srgb, var(--panel) 88%, transparent); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; font-family: var(--mono); font-size: 11.5px; display: grid; grid-template-columns: auto auto; gap: 3px 14px;
+  font-variant-numeric: tabular-nums; backdrop-filter: blur(6px); min-width: 0;
+}
+#hud dt { color: var(--muted); }
+#hud dd { margin: 0; text-align: right; }
+#hud .bar { grid-column: 1 / -1; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin-top: 4px; }
+#hud .bar i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .15s; }
+#legend {
+  position: absolute; left: 12px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); font-size: 11.5px; color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; max-width: calc(100% - 24px);
+}
+#legend b { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+#toast {
+  position: absolute; left: 50%; top: max(14px, env(safe-area-inset-top, 0px)); transform: translateX(-50%);
+  background: var(--bad); color: #fff; font-size: 12.5px; font-weight: 500; padding: 7px 12px; border-radius: 6px;
+  opacity: 0; transition: opacity .25s; pointer-events: none; white-space: nowrap;
+}
+#toast.show { opacity: 1; }
+#loading { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 13px; }
+#sheet-toggle { display: none; }
+
+@media (max-width: 760px) {
+  #app { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  #rail {
+    grid-row: 2; max-height: 46vh; border-right: 0; border-top: 1px solid var(--line);
+    padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-bottom: max(20px, env(safe-area-inset-bottom, 0px));
+  }
+  #rail.collapsed > :not(header) { display: none; }
+  #sheet-toggle { display: inline-block; margin-top: 8px; }
+  #hud { font-size: 10.5px; padding: 7px 9px; }
+  #legend { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { #toast, #hud .bar i { transition: none; } }
+</style>
+
+<div id="app">
+  <aside id="rail">
+    <header>
+      <h1>Microbot Sandbox</h1>
+      <p>The v1 microbot from the CAD, with real mass, magnetic tip-to-tip connectors and a break model. Drag bots around, bend their arms and see what holds.</p>
+      <div class="spec">Ø30 mm body · 81 mm tip to tip · 19.3 g · pitch ±100°</div>
+      <button id="sheet-toggle" type="button">Hide controls</button>
+    </header>
+
+    <section>
+      <h2>Scenes</h2>
+      <div class="grid2" id="scenes"></div>
+    </section>
+
+    <section>
+      <h2>Add</h2>
+      <div class="grid2">
+        <button id="drop" type="button">Drop a bot</button>
+        <button id="clear" type="button">Clear all</button>
+      </div>
+    </section>
+
+    <section id="sel">
+      <h2>Selected bot <small id="sel-name">none</small></h2>
+      <div class="empty" id="sel-empty">Click or tap a bot to select it. Its joints appear here.</div>
+      <div id="sel-controls" hidden>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <label class="joint" for="j-ta">Top swing<input id="j-ta" type="range" min="-180" max="180" step="1"><output id="o-ta"></output></label>
+          <label class="joint" for="j-tp">Top tilt<input id="j-tp" type="range" min="-100" max="100" step="1"><output id="o-tp"></output></label>
+          <label class="joint" for="j-ba">Bottom swing<input id="j-ba" type="range" min="-180" max="180" step="1"><output id="o-ba"></output></label>
+          <label class="joint" for="j-bp">Bottom tilt<input id="j-bp" type="range" min="-100" max="100" step="1"><output id="o-bp"></output></label>
+        </div>
+        <div class="chips" id="sel-poses" style="margin-top:10px"></div>
+        <div class="grid2" style="margin-top:10px">
+          <button id="pin" type="button">Pin in place</button>
+          <button id="release" type="button">Release links</button>
+          <button id="delete" type="button">Delete bot</button>
+          <button id="deselect" type="button">Deselect</button>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h2>All bots</h2>
+      <div class="chips" id="all-poses"></div>
+      <button id="wiggle" type="button">Wiggle all arms</button>
+    </section>
+
+    <section>
+      <h2>Physics</h2>
+      <label class="toggle" for="t-gravity">Gravity <input id="t-gravity" type="checkbox" checked></label>
+      <label class="toggle" for="t-magnets">Magnets snap tips together <input id="t-magnets" type="checkbox" checked></label>
+      <label class="toggle" for="t-break">Connectors can break <input id="t-break" type="checkbox" checked></label>
+      <label class="joint" for="hold">Magnet hold<input id="hold" type="range" min="0.5" max="10" step="0.5" value="3"><output id="o-hold">3.0 N</output></label>
+      <div class="chips" id="speed"></div>
+      <p class="note">A connector fails when it is pulled harder than the magnet's hold force, or bent hard enough to peel the face open about its 5 mm rim. Squeezing a face makes it stronger. Joints are self-locking, so they hold any load at rest and move at 120°/s.</p>
+    </section>
+  </aside>
+
+  <div id="stage">
+    <div id="loading">Loading the CAD meshes…</div>
+    <dl id="hud">
+      <dt>bots</dt><dd id="h-bots">0</dd>
+      <dt>links</dt><dd id="h-links">0</dd>
+      <dt>breaks</dt><dd id="h-breaks">0</dd>
+      <dt>worst link</dt><dd id="h-worst">0%</dd>
+      <div class="bar"><i id="h-bar"></i></div>
+    </dl>
+    <div id="legend">
+      <span><b style="background:var(--ok)"></b>link under 50% of its limit</span>
+      <span><b style="background:var(--warn)"></b>50–90%</span>
+      <span><b style="background:var(--bad)"></b>near breaking</span>
+      <span>Drag a bot to move it · drag empty space to orbit · scroll or pinch to zoom</span>
+    </div>
+    <div id="toast" role="status"></div>
+  </div>
+</div>
+
+<script type="application/json" id="stl-data">/*__STL__*/</script>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import * as CANNON from 'cannon-es';
+
+/*__SIM__*/
+
+const sim = createSim(CANNON);
+window.sim = sim;
+const $ = (id) => document.getElementById(id);
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// ---------- three.js scene ----------
+const stage = $('stage');
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+stage.prepend(renderer.domElement);
+renderer.domElement.tabIndex = 0;
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 2000);
+camera.position.set(34, 26, 40);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 6, 0);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.495;
+controls.minDistance = 6; controls.maxDistance = 300;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a0, 1.1));
+const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+sun.position.set(30, 60, 20);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -60, right: 60, top: 60, bottom: -60, near: 1, far: 200 });
+sun.shadow.bias = -0.0004;
+scene.add(sun);
+
+const floorMat = new THREE.MeshStandardMaterial({ roughness: 0.95, metalness: 0 });
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(600, 600), floorMat);
+floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true;
+scene.add(floor);
+let grid;
+function applyTheme() {
+  const bg = new THREE.Color(css('--scene'));
+  scene.background = bg;
+  scene.fog = new THREE.Fog(bg, 150, 420);
+  floorMat.color = new THREE.Color(css('--scene')).offsetHSL(0, 0, -0.02);
+  if (grid) scene.remove(grid);
+  grid = new THREE.GridHelper(200, 40, new THREE.Color(css('--grid')), new THREE.Color(css('--grid')));
+  grid.position.y = 0.01; grid.material.transparent = true; grid.material.opacity = 0.55;
+  scene.add(grid);
+}
+applyTheme();
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+// ---------- CAD meshes (mm -> cm) ----------
+const MAT = {
+  body: new THREE.MeshStandardMaterial({ color: 0x1c1f24, roughness: 0.42, metalness: 0.25 }),
+  turret: new THREE.MeshStandardMaterial({ color: 0xc7772a, roughness: 0.5, metalness: 0.1 }),
+  arm: new THREE.MeshStandardMaterial({ color: 0x2c3038, roughness: 0.5, metalness: 0.2 }),
+  tip: new THREE.MeshStandardMaterial({ color: 0xc8ccd2, roughness: 0.28, metalness: 0.85 }),
+};
+const GEO = {};
+async function loadGeometry() {
+  const loader = new STLLoader();
+  const names = ['body', 'turret', 'arm', 'tip'];
+  try {
+    // the CAD STLs are embedded in the page by build_page.py; fall back to fetching them
+    const embedded = JSON.parse(document.getElementById('stl-data')?.textContent || '{}');
+    await Promise.all(names.map(async (n) => {
+      let buf;
+      if (embedded[n]) buf = Uint8Array.from(atob(embedded[n]), (ch) => ch.charCodeAt(0)).buffer;
+      else {
+        const res = await fetch(`../stl/part_${n}.stl`);
+        if (!res.ok) throw new Error(n);
+        buf = await res.arrayBuffer();
+      }
+      const g = loader.parse(buf);
+      g.scale(0.1, 0.1, 0.1); g.computeVertexNormals();
+      GEO[n] = g;
+    }));
+  } catch (e) {
+    // simple stand-ins so the sandbox still works without the mesh files
+    GEO.body = new THREE.SphereGeometry(1.5, 32, 20);
+    GEO.turret = new THREE.BoxGeometry(1.4, 0.66, 0.2).translate(0, 0, 1.4);
+    GEO.arm = new THREE.CylinderGeometry(0.4, 0.4, 2.1, 16).rotateX(Math.PI / 2).translate(0, 0, 2.9);
+    GEO.tip = new THREE.CylinderGeometry(0.5, 0.5, 0.44, 24).rotateX(Math.PI / 2).translate(0, 0, -0.22);
+  }
+}
+
+const toM4 = (fr) => new THREE.Matrix4().compose(
+  new THREE.Vector3(fr.p.x, fr.p.y, fr.p.z), new THREE.Quaternion(fr.q.x, fr.q.y, fr.q.z, fr.q.w), new THREE.Vector3(1, 1, 1));
+const FLIPX = new THREE.Matrix4().makeRotationX(Math.PI);
+
+function mesh(geo, mat, m4) {
+  const o = new THREE.Mesh(geo, mat);
+  o.castShadow = true; o.receiveShadow = true;
+  if (m4) { o.matrixAutoUpdate = false; o.matrix.copy(m4); }
+  return o;
+}
+
+const views = new Map(); // bot -> {group, turret:{top,bottom}, arm:{top,bottom}, bodyMesh}
+function viewFor(bot) {
+  let v = views.get(bot);
+  if (v) return v;
+  const group = new THREE.Group();
+  const bodyMat = MAT.body.clone();
+  const bodyMesh = mesh(GEO.body, bodyMat);
+  group.add(bodyMesh);
+  v = { group, bodyMat, turret: {}, arm: {}, pose: '' };
+  for (const side of ['top', 'bottom']) {
+    const tg = new THREE.Group(); tg.matrixAutoUpdate = false;
+    tg.add(mesh(GEO.turret, MAT.turret, side === 'bottom' ? FLIPX : null));
+    const ag = new THREE.Group(); ag.matrixAutoUpdate = false;
+    ag.add(mesh(GEO.arm, MAT.arm, side === 'bottom' ? FLIPX : null));
+    ag.add(mesh(GEO.tip, MAT.tip, toM4(sim.tipInArm[side])));
+    group.add(tg, ag);
+    v.turret[side] = tg; v.arm[side] = ag;
+  }
+  group.traverse((o) => { o.userData.bot = bot; });
+  scene.add(group);
+  views.set(bot, v);
+  return v;
+}
+
+function syncViews() {
+  const alive = new Set(sim.bots);
+  for (const [bot, v] of views) if (!alive.has(bot)) { scene.remove(v.group); views.delete(bot); }
+  for (const bot of sim.bots) {
+    const v = viewFor(bot);
+    const b = bot.body;
+    v.group.position.set(b.position.x, b.position.y, b.position.z);
+    v.group.quaternion.set(b.quaternion.x, b.quaternion.y, b.quaternion.z, b.quaternion.w);
+    const key = `${bot.pose.ta},${bot.pose.tp},${bot.pose.ba},${bot.pose.bp}`;
+    if (key !== v.pose) {
+      v.pose = key;
+      const f = sim.partFrames(bot.pose);
+      for (const side of ['top', 'bottom']) {
+        v.turret[side].matrix.copy(toM4(f[side].turret));
+        v.arm[side].matrix.copy(toM4(f[side].arm));
+      }
+    }
+    const sel = bot === selected;
+    v.bodyMat.emissive.set(sel ? css('--accent') : (bot.pinned ? '#3a4a66' : '#000000'));
+    v.bodyMat.emissiveIntensity = sel ? 0.16 : 0.6;
+  }
+}
+
+// link markers, coloured by load
+const ringGeo = new THREE.TorusGeometry(0.62, 0.09, 8, 28);
+const markers = [];
+const cOK = () => new THREE.Color(css('--ok')), cWARN = () => new THREE.Color(css('--warn')), cBAD = () => new THREE.Color(css('--bad'));
+function syncMarkers() {
+  while (markers.length < sim.links.length) {
+    const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xffffff, depthTest: true }));
+    scene.add(m); markers.push(m);
+  }
+  const ok = cOK(), warn = cWARN(), bad = cBAD();
+  markers.forEach((m, i) => {
+    const L = sim.links[i];
+    m.visible = !!L;
+    if (!L) return;
+    const w = sim.connWorld(L.a);
+    m.position.set(w.p.x, w.p.y, w.p.z);
+    m.quaternion.set(w.q.x, w.q.y, w.q.z, w.q.w);
+    const t = Math.min(1, L.load);
+    m.material.color.copy(t < 0.5 ? ok.clone().lerp(warn, t / 0.5) : warn.clone().lerp(bad, (t - 0.5) / 0.5));
+  });
+}
+// break flashes
+const flashes = [];
+let seenEvents = 0;
+function syncFlashes(dt) {
+  while (seenEvents < sim.events.length) {
+    const e = sim.events[seenEvents++];
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.6, 16, 12),
+      new THREE.MeshBasicMaterial({ color: cBAD(), transparent: true, opacity: 0.8, depthWrite: false }));
+    m.position.set(e.at.x, e.at.y, e.at.z);
+    scene.add(m); flashes.push({ m, t: 0 });
+    toast('A connector peeled open');
+  }
+  for (const f of [...flashes]) {
+    f.t += dt;
+    f.m.scale.setScalar(1 + f.t * 6);
+    f.m.material.opacity = Math.max(0, 0.8 - f.t * 1.6);
+    if (f.t > 0.5) { scene.remove(f.m); flashes.splice(flashes.indexOf(f), 1); }
+  }
+}
+let toastTimer;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+// ---------- picking and dragging ----------
+const ray = new THREE.Raycaster();
+const ndc = new THREE.Vector2();
+let selected = null;
+let dragging = null; // {plane}
+function pick(ev) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const objs = [...views.values()].map((v) => v.group);
+  const hit = ray.intersectObjects(objs, true)[0];
+  return hit;
+}
+// capture phase on the stage, so a press on a bot never reaches the orbit controls
+stage.addEventListener('pointerdown', (ev) => {
+  if (ev.button !== 0 || ev.target !== renderer.domElement) return;
+  const hit = pick(ev);
+  if (!hit) return;
+  ev.stopPropagation();
+  const bot = hit.object.userData.bot;
+  select(bot);
+  controls.enabled = false;
+  const normal = camera.getWorldDirection(new THREE.Vector3()).negate();
+  dragging = { plane: new THREE.Plane().setFromNormalAndCoplanarPoint(normal, hit.point) };
+  sim.startDrag(bot, new CANNON.Vec3(hit.point.x, hit.point.y, hit.point.z));
+  renderer.domElement.setPointerCapture(ev.pointerId);
+}, { capture: true });
+renderer.domElement.addEventListener('pointermove', (ev) => {
+  if (!dragging) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const p = new THREE.Vector3();
+  if (ray.ray.intersectPlane(dragging.plane, p)) {
+    p.y = Math.max(p.y, 0.3);
+    sim.moveDrag(new CANNON.Vec3(p.x, p.y, p.z));
+  }
+});
+const endDrag = () => { if (!dragging) return; dragging = null; sim.endDrag(); controls.enabled = true; };
+renderer.domElement.addEventListener('pointerup', endDrag);
+renderer.domElement.addEventListener('pointercancel', endDrag);
+
+// ---------- UI ----------
+const SCENES = [
+  ['one', 'One bot', 'V pose, on its side'],
+  ['ring3', 'Triangle', '3 bots, the rigid cell'],
+  ['ring4', 'Square', '4 bots, tip to tip'],
+  ['ring6', 'Hexagon', '6 bots, tip to tip'],
+  ['hanging', 'Hanging chain', 'pure tension'],
+  ['cantilever', 'Cantilever test', '1 bot holds, 2 break'],
+  ['arch', 'Arch', 'compression, ends pinned'],
+  ['block', '2×2×2 block', 'all 6 connectors used'],
+  ['pile', 'Drop 12', 'random fall, magnets on'],
+];
+let currentScene = null;
+for (const [key, name, hint] of SCENES) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'scene-btn'; b.dataset.scene = key;
+  b.innerHTML = `${name}<span>${hint}</span>`;
+  b.onclick = () => loadScene(key);
+  $('scenes').append(b);
+}
+function loadScene(key) {
+  select(null);
+  sim.loadScene(key);
+  currentScene = key;
+  document.querySelectorAll('.scene-btn').forEach((b) => b.classList.toggle('on', b.dataset.scene === key));
+  frameCamera(key);
+}
+function frameCamera(key) {
+  const views = {
+    hanging: [[40, 30, 55], [0, 26, 0]], cantilever: [[26, 22, 42], [-4, 9, 0]],
+    pile: [[36, 30, 44], [0, 6, 0]], block: [[24, 18, 30], [0, 6, 0]],
+    arch: [[38, 22, 34], [0, 7, 0]], ring6: [[0, 40, 32], [0, 0, 0]],
+    ring4: [[0, 34, 26], [0, 0, 0]], ring3: [[0, 28, 22], [0, 0, 0]], one: [[14, 11, 18], [0, 2, 0]],
+  };
+  const [p, t] = views[key] || [[34, 26, 40], [0, 6, 0]];
+  camera.position.set(...p); controls.target.set(...t); controls.update();
+}
+
+const POSE_LABELS = { straight: 'straight', V120: 'V 120°', V90: 'V 90°', V60: 'V 60°', U: 'U grip', S: 'S curve', twist: 'twist' };
+function poseChips(container, apply) {
+  for (const [k, label] of Object.entries(POSE_LABELS)) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.textContent = label;
+    b.onclick = () => apply(sim.POSES[k]);
+    container.append(b);
+  }
+}
+poseChips($('sel-poses'), (p) => { if (selected) { sim.setPose(selected, p); refreshSel(); } });
+poseChips($('all-poses'), (p) => { for (const b of sim.bots) sim.setPose(b, p); refreshSel(); });
+
+const JOINTS = ['ta', 'tp', 'ba', 'bp'];
+for (const k of JOINTS) {
+  $(`j-${k}`).addEventListener('input', (e) => {
+    if (!selected) return;
+    sim.setPose(selected, { [k]: Number(e.target.value) });
+    $(`o-${k}`).textContent = `${Math.round(selected.target[k])}°`;
+  });
+}
+function select(bot) {
+  selected = bot;
+  $('sel-empty').hidden = !!bot;
+  $('sel-controls').hidden = !bot;
+  $('sel-name').textContent = bot ? `#${bot.id}` : 'none';
+  refreshSel();
+}
+function refreshSel() {
+  if (!selected) return;
+  for (const k of JOINTS) {
+    $(`j-${k}`).value = Math.round(selected.target[k]);
+    $(`o-${k}`).textContent = `${Math.round(selected.target[k])}°`;
+  }
+  $('pin').textContent = selected.pinned ? 'Unpin' : 'Pin in place';
+  $('pin').classList.toggle('on', selected.pinned);
+}
+$('pin').onclick = () => { if (selected) { sim.setPinned(selected, !selected.pinned); refreshSel(); } };
+$('release').onclick = () => { if (selected) sim.releaseBot(selected); };
+$('delete').onclick = () => { if (selected) { sim.removeBot(selected); select(null); } };
+$('deselect').onclick = () => select(null);
+$('drop').onclick = () => { const b = sim.dropBot(Object.keys(sim.POSES)[Math.floor(Math.random() * 7)]); select(b); };
+$('clear').onclick = () => { sim.clear(); select(null); currentScene = null; document.querySelectorAll('.scene-btn').forEach((b) => b.classList.remove('on')); };
+
+let wiggle = false, wiggleT = 0;
+$('wiggle').onclick = () => { wiggle = !wiggle; $('wiggle').classList.toggle('on', wiggle); $('wiggle').textContent = wiggle ? 'Stop wiggling' : 'Wiggle all arms'; };
+function doWiggle(dt) {
+  if (!wiggle) return;
+  wiggleT -= dt;
+  if (wiggleT > 0) return;
+  wiggleT = 1.4;
+  const r = (a) => (Math.random() * 2 - 1) * a;
+  for (const b of sim.bots) sim.setPose(b, { ta: r(90), tp: r(80), ba: r(90), bp: r(80) });
+  refreshSel();
+}
+
+$('t-gravity').onchange = (e) => { sim.world.gravity.set(0, e.target.checked ? -981 : 0, 0); };
+$('t-magnets').onchange = (e) => { sim.settings.magnets = e.target.checked; };
+$('t-break').onchange = (e) => { sim.settings.breakable = e.target.checked; };
+$('hold').oninput = (e) => { sim.settings.holdN = Number(e.target.value); $('o-hold').textContent = `${Number(e.target.value).toFixed(1)} N`; };
+
+let speed = 1;
+for (const [s, label] of [[0, 'pause'], [0.25, '¼ speed'], [1, 'real time']]) {
+  const b = document.createElement('button');
+  b.type = 'button'; b.textContent = label; b.dataset.speed = s;
+  b.onclick = () => { speed = s; document.querySelectorAll('#speed button').forEach((x) => x.classList.toggle('on', Number(x.dataset.speed) === s)); };
+  $('speed').append(b);
+}
+document.querySelector('#speed button[data-speed="1"]').classList.add('on');
+
+$('sheet-toggle').onclick = () => {
+  const c = $('rail').classList.toggle('collapsed');
+  $('sheet-toggle').textContent = c ? 'Show controls' : 'Hide controls';
+  setTimeout(resize, 0);
+};
+
+function hud() {
+  const s = sim.stats();
+  $('h-bots').textContent = s.bots;
+  $('h-links').textContent = s.links;
+  $('h-breaks').textContent = s.breaks;
+  const pct = Math.round(Math.min(1.5, s.worst) * 100);
+  $('h-worst').textContent = `${pct}%`;
+  const bar = $('h-bar');
+  bar.style.width = `${Math.min(100, pct)}%`;
+  bar.style.background = pct < 50 ? 'var(--ok)' : pct < 90 ? 'var(--warn)' : 'var(--bad)';
+}
+
+// ---------- loop ----------
+let last = performance.now(), acc = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  doWiggle(dt * speed);
+  acc += dt * speed * 240;          // physics runs at 240 Hz
+  let n = Math.floor(acc);
+  acc -= n;
+  n = Math.min(n, 12);
+  if (n > 0) sim.step(n);
+  syncViews(); syncMarkers(); syncFlashes(dt); hud();
+  controls.update();
+  renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+
+await loadGeometry();
+$('loading').remove();
+resize();
+loadScene('ring3');
+requestAnimationFrame(frame);
+</script>

@@ -14,6 +14,7 @@ programmable matter, inspired by big hero 6. this repo holds all my work until t
 | `phase0/` | Phase 0 code: NumPy and JAX random walks, `animate.py`, `checks.py` |
 | `phase1/` | Phase 1 code: local-rule flocking with brute-force and cell-list neighbour search, `animate.py`, `checks.py` |
 | `phase2/` | Phase 2 code: Kilobot-style self-assembly (gradient, trilateration, edge-following), `animate.py`, `checks.py` |
+| `assets/microbot_v1/` | The base microbot: parametric CadQuery model, design note and an in-browser physics sandbox |
 | `textbook/` | One chapter per phase explaining the code from scratch, with exercises |
 | `media/` | Rendered clips and GIFs |
 | `ROADMAP.md` | The full plan, timeline and checklists |

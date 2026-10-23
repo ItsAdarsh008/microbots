@@ -2,9 +2,11 @@
 
 Oct 14, 2026 · @Adarsh
 
-This is the plan for a self-healing 3D microbot swarm built in JAX: every bot runs the same small program, with no central brain. Phase 0's code and Textbook Chapter 0 are in the repo; next is working through the chapter and posting the clip. The code lives at [github.com/ItsAdarsh008/microbots](https://github.com/ItsAdarsh008/microbots).
+This is the plan for a self-healing 3D microbot swarm built in JAX: every bot runs the same small program, with no central brain. Phase 0's code and Chapter 0 are in the repo, and so are Phase 1's flocking swarm and Chapter 1; next is clearing their understanding gates, then Phase 2. The code lives at [github.com/ItsAdarsh008/microbots](https://github.com/ItsAdarsh008/microbots).
 
 How to use this doc: read the Overview and timeline first, then work from the current phase. Tick checklist items as they're done, and leave a comment on any line you have a question about.
+
+**Reminder:** nothing about the project gets posted until it's about 80% done, but keep warming up your X account every day in the meantime: substantive replies to people in the field and general "today I learned" posts. See *Going public* near the end.
 
 ## Overview
 
@@ -52,6 +54,7 @@ With two people, the project runs as two parallel lanes instead of one long sequ
 | Shared | JAX foundations, launch | 0, 6 | Both |
 | A · Swarm and visuals | Flocking, Kilobot reproduction, 3D viewer, polish, Jev commands | 1, 2, 4, 5 | To be decided |
 | B · Learning | CNN warm-up, 2D then 3D self-healing NCA, environment-aware NCA | 3, 3.5 | To be decided |
+|  |  |  |  |
 
 **The hand-off between lanes.** The two lanes meet where the NCA's output becomes bots. Agree on the format in week 1 so each lane can build and test against a stand-in for the other. Proposed format: the NCA outputs a 3D grid of filled and empty cells (a 32×32×32 array of 0s and 1s), and the swarm treats the filled cells as its target positions.
 
@@ -60,7 +63,7 @@ With two people, the project runs as two parallel lanes instead of one long sequ
 - **One GitHub issue per checklist item**, with an owner on each, so it's always clear who's doing what.
 - **Branches and pull requests:** nothing merges into `main` without the other person reviewing it. Reviewing is also how each of us learns the other lane.
 - **A 30-minute call once a week:** show what works, flag what's blocking, and pick the next items.
-- **Posting:** each of us posts our own lane's progress and tags the other; the launch is posted together. Agree up front how we're credited and who leads outreach to which contacts.
+- **Posting:** nothing about the project goes public before the 80% mark (see Going public). After that, each of us posts our own lane's progress and tags the other; the launch is posted together. Agree up front how we're credited and who leads outreach to which contacts.
 
 **What the saved time goes into:** the functional-loss part of Phase 3.5 (the swarm inventing its own shapes), a proper write-up that could become a short workshop paper, and the physics close-up stretch goal.
 
@@ -78,7 +81,7 @@ Phase 0 is the first example: the code is in `phase0/` and the explanation is [C
 
 Each phase ends with something you can show, so you have a working demo early and keep improving it. Each phase also closes with a checklist that combines the build, posting and outreach steps, so you can tick off everything before moving on.
 
-Each phase also has a **Post** line (what to share publicly) and a **Reach out** line (who to contact once that phase gives you something to show). Each step up in outreach waits until you have a clip that proves the previous phase.
+Each phase also has a **Capture** line (the clip to record and save) and a **Reach out** line (who to contact privately once that phase gives you something to show). Nothing about the project is posted publicly until the 80% mark; see *Going public* near the end. Each step up in outreach waits until you have a clip that proves the previous phase.
 
 Outreach rules for every DM or email:
 
@@ -96,7 +99,7 @@ Outreach rules for every DM or email:
 
 **Done when:** you can explain why JAX needs explicit random keys and pure functions.
 
-**Post:** a kickoff post ("Building Big Hero 6-style microbots in JAX, follow along") with the random-walk clip. Saying it publicly commits you to finishing.
+**Capture (don't post yet):** save the random-walk clip to the capture folder. Nothing about the project goes public until the 80% mark; start warming up your account instead (see *Going public*).
 
 **Reach out:** no DMs yet. Follow 10–15 people working on swarm robotics, neural cellular automata and JAX, and leave thoughtful comments on their posts so your name is familiar later.
 
@@ -106,8 +109,8 @@ You'll build the random walk twice: once in NumPy to get the idea, then in JAX t
 
 **Step 1 — Setup (about 30 min)**
 
-1. Install the Python Install Manager for Windows from python.org/downloads or the Microsoft Store (not the source tarball, which has to be compiled). Then run `py install 3.13` in a terminal.
-2. Make a project folder, open PowerShell in it (in Git Bash, activate with `source .venv/Scripts/activate` instead), and create a virtual environment: `py -V:3.13 -m venv .venv`, then activate it with `.venv\Scripts\activate`. Your prompt should now start with `(.venv)`. If PowerShell blocks the script, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
+1. Install the Python Install Manager for Windows from python.org/downloads or the Microsoft Store (not the source tarball, which has to be compiled). Then run \`py install 3.13\` in a terminal.
+2. Make a project folder, open PowerShell in it (in Git Bash, activate with source .venv/Scripts/activate instead), and create a virtual environment: `py -V:3.13 -m venv .venv`, then activate it with `.venv\Scripts\activate`. Your prompt should now start with `(.venv)`. If PowerShell blocks the script, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
 3. Install the libraries: `pip install jax numpy matplotlib pillow`.
 4. Run `git init`, add a `.gitignore` containing `.venv/`, and push to a public GitHub repo now. Your commit history becomes part of the proof of work.
 
@@ -232,12 +235,12 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 
 - **Simulate first, draw after.** Run all 300 steps and save the frames, then animate them. Matplotlib can't read JAX arrays directly, so convert them first with `traj = np.asarray(traj)`.
 - **How the animation works.** Matplotlib draws one picture, called a figure. `FuncAnimation` calls a function you write, `update(frame)`, once per frame. Your function moves the dots to that frame's positions, and Matplotlib turns the pictures into a video. The pieces you'll need:
-    - `dots = ax.scatter(traj[0, :, 0], traj[0, :, 1], s=4)` draws frame 0. `traj[0, :, 0]` means "frame 0, every bot, column 0 (x)"; `s=4` sets the dot size.
-    - Inside `update(frame)`, `dots.set_offsets(traj[frame])` moves every dot to that frame's positions.
-    - `anim = FuncAnimation(fig, update, frames=300, interval=33)` runs it, showing each frame for 33 milliseconds, which is about 30 frames per second.
+  - `dots = ax.scatter(traj[0, :, 0], traj[0, :, 1], s=4)` draws frame 0. `traj[0, :, 0]` means "frame 0, every bot, column 0 (x)"; `s=4` sets the dot size.
+  - Inside `update(frame)`, `dots.set_offsets(traj[frame])` moves every dot to that frame's positions.
+  - `anim = FuncAnimation(fig, update, frames=300, interval=33)` runs it, showing each frame for 33 milliseconds, which is about 30 frames per second.
 - **For a clean look:** `plt.style.use("dark_background")`, hide the axes with `ax.axis("off")`, use small dots, set the limits to the box with `ax.set_xlim(0, L)` and `ax.set_ylim(0, L)`, and keep it square with `ax.set_aspect("equal")`.
 - **Saving:** `anim.save("random_walk.gif", writer="pillow", fps=30)` writes a GIF. An MP4 looks better on X but needs ffmpeg, a free video tool you install separately. You can also screen-record the live window with OBS.
-- **For the kickoff post,** aim for 8–12 seconds and try N = 1,000 to show scale.
+- **For the capture folder,** aim for 8–12 seconds and try N = 1,000 to show scale.
 
 **Check:** the clip plays smoothly and no dot ever leaves the box.
 
@@ -261,18 +264,19 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 **Phase 0 checklist**
 
 - [ ] Python, virtual environment and libraries installed; `jax.devices()` prints a CPU
-- [ ] Public GitHub repo created and first commit pushed
-- [ ] NumPy random walk working (shape and bounds checks pass)
-- [ ] JAX version using keys, `jit` and `vmap` (all three checks pass)
-- [ ] Random-walk clip recorded (8–12 s)
+- [x] Public GitHub repo created and first commit pushed
+- [x] NumPy random walk working (shape and bounds checks pass)
+- [x] JAX version using keys, `jit` and `vmap` (all three checks pass)
+- [x] Random-walk clip recorded (8–12 s)
 - [ ] Can answer the four done-when questions in your own words
 - [ ] X profile set up: bio written, 100–150 accounts followed, notifications on for 10
-- [ ] Kickoff post on X with the clip, pinned (weekday, 8–10 AM Eastern)
-- [ ] LinkedIn kickoff post and Instagram story
+- [ ] Random-walk clip saved to the capture folder (not posted)
+- [ ] Warm-up started: a few substantive replies a day to people in swarm robotics, ML and JAX
 - [ ] Following 10–15 people in swarm robotics, NCA and JAX, with a few thoughtful replies left
 - [ ] At least 3 "today I learned" posts
-- [ ] Read Textbook Chapter 0 and do its six "Try this" exercises
-- [ ] Understanding gate: answer Chapter 0's nine questions without looking
+
+* [ ] Read Textbook Chapter 0 and do its six "Try this" exercises
+* [ ] Understanding gate: answer Chapter 0's nine questions without looking
 
 ### Phase 1 — A swarm with local rules · 8–10 h · weeks 1–2
 
@@ -282,19 +286,22 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 
 **Done when:** the swarm runs at 30+ FPS at 1,000 bots on your laptop, and the rules contain no global information.
 
-**Post:** the 1,000-bot flocking clip, plus a short thread on what you learned about neighbour search and why it took FPS from X to Y.
+**Capture:** the 1,000-bot flocking clip, plus the FPS numbers before and after neighbour search. They become part of the build thread at launch.
 
 **Reach out:** join communities rather than messaging individuals. Good places are the JAX GitHub Discussions, r/robotics, and a UWaterloo robotics or ML club. Ask one technical question in public.
 
 **Phase 1 checklist**
 
-- [ ] Neighbour search using a grid or cell list
-- [ ] Separation, alignment and cohesion working
-- [ ] 1,000 bots at 30+ FPS, with no global information in the rules
-- [ ] Flocking clip posted on X with a "no leader" hook
-- [ ] Mini-thread on neighbour search with real FPS numbers
+- [x] Neighbour search using a grid or cell list
+- [x] Separation, alignment and cohesion working
+- [x] 1,000 bots at 30+ FPS, with no global information in the rules
+- [ ] Flocking clip captured for launch (not posted), with a "no leader" hook
+- [ ] FPS numbers before and after neighbour search noted for the launch thread
 - [ ] Quote-posted at least one relevant demo or paper with your own angle
 - [ ] Joined JAX GitHub Discussions, r/robotics and a UWaterloo club, and asked one technical question in public
+
+* [ ] Read [Textbook Chapter 1](https://github.com/ItsAdarsh008/microbots/blob/main/textbook/01-flocking.md) and do its seven "Try this" exercises
+* [ ] Understanding gate: answer Chapter 1's ten questions without looking
 
 ### Phase 2 — Kilobot-style shape formation · 12–15 h · weeks 2–4
 
@@ -304,7 +311,7 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 
 **Done when:** you get a clean GIF of the swarm forming a shape. This is your first postable result.
 
-**Post:** the first shape-formation GIF next to the matching figure from the Kilobot paper, crediting the authors.
+**Capture:** the first shape-formation GIF next to the matching figure from the Kilobot paper. Share it privately with the checkpoint 1 contacts below, not publicly.
 
 **Reach out (credibility checkpoint 1):** you now have a faithful reimplementation of a well-known paper.
 
@@ -318,9 +325,9 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 - [ ] Edge-following state machine
 - [ ] Swarm forms a star, a wall and a letter; keys 1–4 switch shapes
 - [ ] Clean shape-formation GIF
-- [ ] X thread: the paper's figure next to your version, authors credited
-- [ ] LinkedIn milestone post and first Instagram reel
-- [ ] Pinned post updated to the best clip so far
+- [ ] Side-by-side GIF captured: the paper's figure next to your version, authors credited
+- [ ] Warm-up continuing; nothing about the project posted yet
+- [ ] Best clip so far marked in the capture folder
 - [ ] Contact log started (name, date, what you sent, reply)
 - [ ] Checkpoint 1: messaged the Kilobot authors and 1–2 programmable-matter researchers
 - [ ] Checkpoint 1: emailed 2–3 UWaterloo professors about undergraduate research roles
@@ -339,7 +346,7 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 
 **Reference for 3D:** [Sudhakaran et al., Growing 3D Artefacts and Functional Machines with Neural Cellular Automata (2021)](https://arxiv.org/abs/2103.08737) grows 3D structures with NCAs and shows them regenerating after damage. Read it after the Distill article.
 
-**Post:** the 3D self-healing clip, with the camera slowly orbiting. This is your strongest single post, so make it the hook: delete a chunk and watch it regrow. Follow it with a short write-up of what made training work.
+**Capture:** the 3D self-healing clip, with the camera slowly orbiting. Save the best take: it's the strongest teaser material you'll have.
 
 **Reach out (credibility checkpoint 2):** you now have an original result, not just a reproduction.
 
@@ -354,9 +361,9 @@ Your Step 2 loop runs the step function 300 times in Python. `jax.lax.scan` does
 - [ ] 2D NCA grows the target shape (Distill replication)
 - [ ] 3D voxel NCA, trained on Colab, grows a 3D target and regrows within a few seconds after 30% damage
 - [ ] 3D cells rendered as bots in a 3D viewer, with click-to-damage
-- [ ] Self-healing clip posted on X at a time you can stay online for 2 hours, then pinned
-- [ ] Follow-up thread on what made training work, with the repo linked in the replies
-- [ ] LinkedIn milestone post and Instagram reel
+- [ ] Self-healing clip captured with an orbiting camera (best take saved)
+- [ ] Notes on what made training work saved for the launch write-up
+- [ ] Warm-up continuing; nothing about the project posted yet
 - [ ] Checkpoint 2: shared with the Growing NCA authors and emergent-intelligence researchers
 - [ ] Checkpoint 2: followed up with everyone who replied at checkpoint 1
 - [ ] Checkpoint 2: applied to ML or research co-op postings and UWaterloo research positions
@@ -378,7 +385,7 @@ The swarm stops copying templates and grows structures that fit terrain it has n
 
 **Reference:** [Sudhakaran et al., Goal-Guided Neural Cellular Automata (2022)](https://arxiv.org/abs/2205.06806) shows NCAs steered by an external goal signal, which is close to what this phase adds.
 
-**Post:** a clip where you widen the gap and the bridge re-grows to fit, then add an obstacle and it routes around. Caption: "No templates. It has never seen this layout."
+**Capture, then start teasing:** a clip where you widen the gap and the bridge regrows to fit, then add an obstacle and it routes around. Finishing this phase is the 80% mark, so the teaser sequence in *Going public* starts here.
 
 **Reach out:** this extends the Growing NCA work, so follow up with any NCA researchers who replied at checkpoint 2, plus the Goal-Guided NCA authors. Ask whether the functional-loss result is worth a short workshop paper; their answer tells you how original it is.
 
@@ -388,10 +395,10 @@ The swarm stops copying templates and grows structures that fit terrain it has n
 - [ ] NCA trained with terrain input channels and working on held-out layouts
 - [ ] Functional-loss version connects anchors with no target picture
 - [ ] Live demo: widening the gap or adding an obstacle makes it adapt
-- [ ] "No templates" clip posted on X
-- [ ] Side-by-side post: template NCA against environment-aware NCA
-- [ ] Ran at least 3 obstacle courses suggested by followers
-- [ ] Quote-posted the Goal-Guided NCA paper with your result
+- [ ] "No templates" clip captured
+- [ ] Side-by-side clip captured: template NCA against environment-aware NCA
+- [ ] 80% mark reached: first teaser posted (see Going public)
+- [ ] Bio updated to say what you're building, and the best teaser pinned
 - [ ] Followed up with NCA researchers and the Goal-Guided NCA authors about a workshop paper
 
 ### Phase 4 — Jev decision layer · 5–7 h · weeks 9–10
@@ -402,7 +409,7 @@ The swarm stops copying templates and grows structures that fit terrain it has n
 
 **Done when:** a vague command such as "get us across the gap" maps to the bridge shape, and nonsense gets rejected.
 
-**Post:** "A swarm you talk to: a typed decision model picks the formation, and only acts above 0.8 confidence." Include the accuracy numbers and tag TypeSafe.
+**Tease:** a short clip of a typed command reshaping the swarm, with the confidence score on screen. Show the result, not the whole system.
 
 **Reach out (credibility checkpoint 3):** you are now one of the few people with a public, non-text demo built on Jev.
 
@@ -415,7 +422,7 @@ The swarm stops copying templates and grows structures that fit terrain it has n
 - [ ] API calls run asynchronously and the sim never freezes
 - [ ] Commands map to shapes, gated at 0.8 confidence, and nonsense is rejected
 - [ ] Accuracy measured on 20 test commands, Jev against keyword matching
-- [ ] Clip posted with the confidence score on screen, TypeSafe tagged
+- [ ] Teaser posted: a typed command reshaping the swarm, confidence on screen, TypeSafe tagged
 - [ ] Post on decision models versus LLMs for control
 - [ ] LinkedIn milestone post
 - [ ] Checkpoint 3: sent TypeSafe the clip, your numbers and an offer of a case study or bug report
@@ -429,7 +436,7 @@ The swarm stops copying templates and grows structures that fit terrain it has n
 
 **Done when:** a 10-second clip looks good with no explanation.
 
-**Post:** the polished reel on Instagram and a teaser on LinkedIn or X ("full write-up next week").
+**Tease:** the polished reel on X and Instagram, with the launch date.
 
 **Reach out:** no new cold contacts. Send a short preview to the 3–5 people who replied most warmly and ask for one piece of feedback before launch.
 
@@ -463,72 +470,31 @@ Covered in its own section below.
 - [ ] Checkpoint 4: applied widely and pitched a UWaterloo lab
 - [ ] "What I learned building in public" thread a few days later
 
-## Growing an X following alongside the build
+## Going public: warm up quietly, tease at 80%, then launch
 
-Post short, visual progress almost every day and spend 20–30 minutes a day replying to people in the field. On X, a swarm clip and good replies to bigger accounts do more than any thread you write alone.
+Nothing about the project is posted publicly until it's about 80% done: the 3D self-healing swarm (Phase 3) and the environment-aware bridge (Phase 3.5) both working, around week 9. That way the first thing anyone sees is already impressive, and every teaser is something you can deliver.
 
-Rules that apply in every phase:
+> **Warm-up reminder.** A silent account launches to nobody. Until the 80% mark, spend 15–20 minutes a day warming up your account without showing the project: reply with substance to researchers and builders in swarm robotics, ML and JAX; post general things you're learning ("TIL how JAX handles randomness", "a CNN from scratch in 100 lines"); quote-post interesting papers and demos with your own take; and keep the bio general for now, e.g. "First-year @UWaterloo CS/BBA · building with JAX".
 
-- **Video first.** Upload clips natively to X (not YouTube links), 5–15 seconds, with motion in the first second. A swarm moving is the hook.
-- **One idea per post.** Lead with the result ("1,000 bots, no leader, forming a bridge"), then one line on how.
-- **Cadence:** about 5 short posts a week plus 1 longer thread a week. Consistency beats quality spikes.
-- **Reply strategy:** most early followers come from your replies, not your posts. Add real substance to posts by researchers and builders in ML, robotics and JAX.
-- **Be around after posting.** Reply to every comment in the first 1–2 hours; it extends the post's reach.
-- **Reuse everything:** each X clip doubles as an Instagram reel.
-- **No shortcuts.** Skip bought followers and engagement pods; they hurt reach and credibility with exactly the people you want to reach.
+**Stage 1 · Stealth (Phases 0–3):** capture, don't post. Every phase's clip goes into a shared capture folder with notes on the numbers and what broke. The outreach checkpoints still happen, privately: a DM with a GIF doesn't spoil a public launch, and those contacts often become the people who share it.
 
-Realistic expectations: most build-in-public accounts grow slowly for weeks, then jump when one clip hits. The self-healing clip is your best bet for that jump, so the earlier phases are about having an audience and a profile ready when it lands.
+**Stage 2 · Tease (from the end of Phase 3.5, around week 9):**
 
-### Phase 0 — Set up the account
+- Teaser 1: a 5–10 second clip of the swarm regrowing after damage, with one line of text ("no central brain. more soon.").
+- Teaser 2, about a week later: the bridge adapting to a gap it has never seen.
+- Update the bio to say what you're building, pin the best teaser, and announce the launch date with Phase 5's polished reel.
+- Reply to every comment in the first hour or two after each teaser.
 
-- Bio: one line saying who you are and what you're building, for example "First-year @UWaterloo CS/BBA · building self-healing microbot swarms in public."
-- Pin a kickoff post that states the goal and the 12-week timeline, so new visitors know why to follow.
-- Follow 100–150 accounts in swarm robotics, NCA, JAX, ML research and build-in-public. Turn on notifications for 10 of them so you can reply early.
-- Post daily "today I learned" notes while learning JAX. Small and honest is fine.
+**Stage 3 · Launch (Phase 6):** one launch thread with the video, repo and write-up. A few days later, post a "how we built it" thread using the captured clips from every phase, from wandering dots to the adaptive swarm.
 
-### Phase 1 — First clips
+**Rules for every post, once posting starts:**
 
-- Post the first flocking clip with a hook about having no leader.
-- Write your first mini-thread on one concrete lesson, such as how spatial hashing took the sim from N FPS to M FPS. Real numbers get shared.
-- Quote-post relevant research or demos with your own angle instead of just liking them.
+- Upload clips natively to X (not YouTube links), 5–15 seconds, with motion in the first second.
+- One idea per post, leading with the result.
+- Reuse each clip as an Instagram reel and a LinkedIn post.
+- No bought followers or engagement pods.
 
-### Phase 2 — First real thread
-
-- Post the first big thread: the 2014 Kilobot paper's result, then your simulated version, side by side, in 5–7 posts.
-- Tag the authors only to credit them, never to ask for a reshare. Credit is what gets reshares anyway.
-- Post on a weekday morning Eastern time, when North American tech X is most active.
-- Update your pinned post to the best clip so far.
-
-### Phase 3 — Go for the breakout
-
-- Post the CNN-from-scratch mini-thread first; ML learners share "from scratch" content a lot.
-- Treat the self-healing clip as your main event: a short clip (delete a chunk, watch it regrow), a one-line hook, and a follow-up thread ready to post as a reply.
-- Post it when you can stay online for 2 hours to reply. Pin it.
-- If it takes off, reply with a link to the repo or write-up so the attention has somewhere to go.
-
-### Phase 3.5 — Show it adapting
-
-- Post a side-by-side: the template NCA failing on a new layout next to the environment-aware one succeeding.
-- Let followers suggest obstacle courses in the replies, run them, and reply with the clip. It's free content and gets people invested.
-- Quote-post the Goal-Guided NCA paper with your result, crediting it.
-
-### Phase 4 — Ride the Jev launch
-
-- Jev is new, so people are searching for real examples. Post a clip of a typed command reshaping the swarm, with the confidence score visible on screen.
-- Tag TypeSafe and show the accuracy numbers. Companies often reshare good outside demos of a new model.
-- Write a short post on decision models versus LLMs for control, using your failure cases. Opinion with evidence tends to get the most engagement.
-
-### Phase 5 — Bring followers into the build
-
-- Run polls ("Which shape next?") and then build the winner. People follow builds they feel part of.
-- Post before-and-after visuals of the polish work.
-- Tease the launch with a date.
-
-### Phase 6 — Launch day
-
-- One launch thread: video, what it does, how it works, the repo, the write-up.
-- Message the 5–10 people who engaged most along the way, share the launch, and let them decide whether to reshare.
-- A few days later, post a "what I learned building this in public" thread with your follower and contact numbers. Meta-posts about the journey often outperform the project itself.
+**Decide together:** whether the GitHub repo stays public before launch. Anyone who finds it can see the progress early; making it private until the first teaser keeps the reveal intact.
 
 ## Skills to learn
 

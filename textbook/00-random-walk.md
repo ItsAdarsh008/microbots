@@ -347,7 +347,7 @@ The independence check requires *most* bots' first steps to differ, not just two
 
 The speed check calls `.block_until_ready()`. JAX hands control back to Python *before* the work is finished, so without this the timer would stop too early. A warm-up call before timing makes sure compile time isn't counted.
 
-On the cloud machine this was built on, the compiled step for 10,000 bots was about 6× faster than the uncompiled one. Your laptop's number will differ.
+On one test machine, the compiled step for 10,000 bots was about 6× faster than the uncompiled one. Your machine's number will differ.
 
 ---
 

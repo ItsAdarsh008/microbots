@@ -290,14 +290,14 @@ JAX needs fixed shapes (Chapter 0, part 2.8), but cells hold different numbers o
 
 ### 3.5 The speed-up
 
-From `checks.py` on the cloud machine this was built on:
+From `checks.py` on one test machine:
 
 | Bots | Brute force | Cell list | Speed-up |
 | --- | --- | --- | --- |
 | 1,000 | 41 steps/s | 195 steps/s | about 5× |
 | 5,000 | 2 steps/s | 26 steps/s | about 13× |
 
-The gap widens as the swarm grows, exactly as O(N²) versus O(N) predicts. Your laptop's numbers will differ, but the pattern will be the same.
+The gap widens as the swarm grows, exactly as O(N²) versus O(N) predicts. Your machine's numbers will differ, but the pattern will be the same.
 
 ---
 

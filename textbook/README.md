@@ -1,6 +1,6 @@
 # The Microbots Textbook
 
-The code in this repo is written quickly with AI help. This textbook is how it gets understood. Every phase of the [roadmap](../ROADMAP.md) adds code **and** a chapter here that explains that code from scratch, so the book always matches what's in the repo.
+This textbook explains the code in this repo from scratch, one chapter per phase of the [roadmap](../ROADMAP.md). Each chapter is written alongside its code, so the book always matches what's in the repo.
 
 ## How to use it
 
@@ -14,9 +14,9 @@ The code in this repo is written quickly with AI help. This textbook is how it g
 Before each outreach checkpoint in the roadmap, you should be able to:
 
 - answer that phase's "Check your understanding" questions without looking, and
-- make one of the chapter's changes on your own, without AI help.
+- make one of the chapter's changes on your own, without help.
 
-Those are the moments when someone will ask how your project works. The gate makes sure you can answer.
+Those are the moments when someone will ask how the project works. The gate makes sure you can answer.
 
 ## Chapters
 

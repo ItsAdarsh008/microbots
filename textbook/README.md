@@ -24,3 +24,4 @@ Those are the moments when someone will ask how your project works. The gate mak
 | --- | --- | --- | --- |
 | 0 | [A random walk in NumPy and JAX](00-random-walk.md) | 0 | `phase0/` |
 | 1 | [Flocking with local rules](01-flocking.md) | 1 | `phase1/` |
+| 2 | [Self-assembly into a shape](02-self-assembly.md) | 2 | `phase2/` |

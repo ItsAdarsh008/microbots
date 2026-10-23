@@ -3,9 +3,9 @@ programmable matter, inspired by big hero 6. this repo holds all my work until t
 
 ## For collaborators
 
-**Current status:** Phases 0 and 1 are built. Phase 0 is a 2D random walk in NumPy and JAX ([Chapter 0](textbook/00-random-walk.md)); Phase 1 is a 1,000-bot flock that uses only local rules, with a fast cell-list neighbour search and a beacon that gathers the swarm ([Chapter 1](textbook/01-flocking.md)). Next: clear the Chapter 0 and 1 understanding gates, then Phase 2 (Kilobot-style shape formation). Phases 0–2 are 2D; the swarm moves to 3D from Phase 3. See [ROADMAP.md](ROADMAP.md) for the full plan and per-phase checklists.
+**Current status:** Phases 0–2 are built. Phase 0 is a 2D random walk in NumPy and JAX ([Chapter 0](textbook/00-random-walk.md)); Phase 1 is a 1,000-bot flock that uses only local rules ([Chapter 1](textbook/01-flocking.md)); Phase 2 recreates the 2014 Kilobot self-assembly algorithm, with 150 robots building a star, a wall or the letter K ([Chapter 2](textbook/02-self-assembly.md)). Next: clear the Chapter 0–2 understanding gates, then Phase 3 (the self-healing neural cellular automaton, moving to 3D). Phases 0–2 are 2D; the swarm moves to 3D from Phase 3. See [ROADMAP.md](ROADMAP.md) for the full plan and per-phase checklists.
 
-![1,000 bots forming flocks, then gathering in a target zone](media/flock.gif)
+![150 robots assembling themselves into the letter K](media/assemble_k.gif)
 
 **What's in the repo:**
 
@@ -13,6 +13,7 @@ programmable matter, inspired by big hero 6. this repo holds all my work until t
 | --- | --- |
 | `phase0/` | Phase 0 code: NumPy and JAX random walks, `animate.py`, `checks.py` |
 | `phase1/` | Phase 1 code: local-rule flocking with brute-force and cell-list neighbour search, `animate.py`, `checks.py` |
+| `phase2/` | Phase 2 code: Kilobot-style self-assembly (gradient, trilateration, edge-following), `animate.py`, `checks.py` |
 | `textbook/` | One chapter per phase explaining the code from scratch, with exercises |
 | `media/` | Rendered clips and GIFs |
 | `ROADMAP.md` | The full plan, timeline and checklists |
@@ -44,6 +45,13 @@ python phase0/animate.py --bots 1000 --save media/random_walk.mp4   # MP4 needs 
 ```powershell
 python phase1/checks.py                 # should end with 10/10 checks passed
 python phase1/animate.py                # 1,000-bot flock, beacon switches on halfway
+```
+
+**Running Phase 2:**
+
+```powershell
+python phase2/checks.py                 # should end with 12/12 checks passed (2-3 minutes)
+python phase2/animate.py --shape k      # also: --shape star, --shape wall
 ```
 
 On macOS or Linux, use `python3 -m venv .venv` and `source .venv/bin/activate` instead. Step 1 of the Phase 0 walkthrough in the roadmap explains what each command does.

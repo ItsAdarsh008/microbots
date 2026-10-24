@@ -88,3 +88,13 @@ bar (repair fraction 0.5 on easy damage); the 10,000-iteration learned runs and 
   the multi-shape trainer has no loss-spike guard.
 - **Gated cell at small eps (H16/H10): unstable.** `eps5_gated3_rms_r2` hit 40 blow-ups and stopped at 544 of 3,000 iterations; at 13 neighbours
   (`eps13_gated3_rms_r2`) it completed (score 0.312). The plain MLP completes at 5 and 7 neighbours.
+
+## 12. Update 17:15: the pool-age cap works only when short (H23: supported, preliminary)
+Damage-trained runs with `pool_max_age` (an entry goes back to a fresh seed after that many uses), partway through training:
+cap 4: density loss falls 0.27 (iter 600) to 0.17 (iter 1,800), no blow-ups; cap 8 and cap 16: density loss rises to 1.0 to 1.7 by
+iteration 4,200 and 26 to 40 blow-ups, like the uncapped run. So pool collapse happens within fewer than 8 reuses, and the cap
+must be about 4 or less. `pa4_all_damage` is at iteration ~1,800 of 10,000, so this is a trend, not a result; caps 2 and 3, a second
+seed and four other cells are queued. Gated cells are still unstable elsewhere: `pa8_gated_all_damage` stopped at 677 iterations
+and `ag10k_gated3_rms` ended at loss ~100 (colour channels diverged), so a gated block is not yet a safe default.
+`attn_rms_mem8_r2` (local attention, RMSNorm, 8 memory channels, wipes only) completed at score 0.200, about as good as the best
+growers; it is the first attention cell to train cleanly.

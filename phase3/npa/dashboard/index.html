@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#fbfbfa">
+<title>NPA lab</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="workspace">
+  <section class="stage" aria-label="Repair clip or training loss">
+    <img id="gif" alt="" hidden>
+    <div class="stage-empty" id="empty"><p class="t" id="etitle">pick a run</p><p class="n" id="enote">runs with ▶ have a repair clip</p></div>
+    <div class="loss" id="lossv" hidden><canvas id="cv"></canvas></div>
+    <div class="switch" role="group" aria-label="Stage"><button type="button" id="v-clip" aria-pressed="true">Clip</button><button type="button" id="v-loss" aria-pressed="false">Loss</button></div>
+    <div class="card" id="card" hidden><span class="l" id="cl"></span><span class="t" id="ct"></span><span class="o" id="co"></span></div>
+  </section>
+  <aside class="notes">
+    <div class="nav">
+      <h1>NPA lab</h1>
+      <span class="meta" id="meta"></span>
+      <div class="layout" role="group" aria-label="View"><button type="button" id="l-tree" aria-pressed="true">Tree</button><button type="button" id="l-list" aria-pressed="false">List</button></div>
+    </div>
+    <div class="reader" id="reader" tabindex="0">
+      <input class="search" id="q" type="search" placeholder="filter runs" aria-label="Filter runs">
+      <div class="legend" aria-hidden="true"><span class="lg lg-main">good</span><span class="lg lg-fin">finished</span><span class="lg lg-dead">dropped</span><span class="lg lg-run">running</span><span class="lg lg-q">queued</span></div>
+      <div id="out"></div>
+    </div>
+    <footer id="foot"></footer>
+  </aside>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

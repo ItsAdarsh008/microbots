@@ -149,3 +149,9 @@ Loss after recovery against the do-nothing floor, by severity (small/medium/larg
   medium damage (e.g. clump 0.23 vs 0.15 at the small level), better only at the largest (clump 0.25 vs 0.53). The body noise and strides alone keep it from holding the original shape.
   One run, 6,000 iterations; the equivariant physical run and the `warm_loss` runs are queued. The headline for the robot goal is that shape-agnostic repair is shown with ideal bodies and
   unseen shapes, and not yet with the physical body.
+
+## 19. Update 19:45: with the assumed body model, the cell and the compass do not matter (H14, H31)
+Shape-agnostic, geometry-damage training, body model (strides, noisy 8-bit sensing, 30% packet loss, about 7 neighbours), 6,000 iterations, one run each: plain MLP in a shared frame
+score 0.262 (undamaged control 0.234); plain MLP with a random heading per bot 0.251 (0.217); rotation-equivariant cell with random headings 0.282 (0.253). The spread between them (0.03)
+is about the seed spread, so the data do not show a cost of having no compass, or any benefit of the equivariant cell, in this setting. All three have an undamaged control of 0.22 to 0.25, so the
+body model's step and noise limits, not the cell, set the fidelity floor; the four ablations (`ag_phys_abl_*`) are the test of which part of the body model does it.

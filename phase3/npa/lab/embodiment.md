@@ -1,5 +1,8 @@
 # From dots to microbots: embodiment decisions
 
+> **What this is, plainly.** `embody.py` is a statistical stand-in (step limits, noise, packet loss, no-overlap) with assumed parameters, NOT a physics simulation of the CAD. Only the body radius and port spacing come from `report.json`; the stride and sensing numbers come from a hand kinematic analysis and guesses. The gait has not been simulated or built. "Physical body" in run names (`physB_*`, `ag_geo_phys_*`, `*__phys`) means this stand-in.
+
+
 Everything we learn here has to carry over to the real bot in `assets/microbot_v1/`. A dot in the simulation can
 teleport, sense a hundred neighbours exactly and overlap; a bot cannot. These are the decisions, the numbers behind
 them and which ones are assumptions that still need checking. Change a decision here first, then in code.

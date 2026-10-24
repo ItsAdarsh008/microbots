@@ -65,7 +65,7 @@ def short_cfg(cfg):
     if c:
         bits.append(", ".join(f"{k} {v}" for k, v in c.items() if k != "embody") or "")
         if "embody" in c:
-            bits.append("physical body")
+            bits.append("body model (assumed, not simulated)")
     mode = t.get("mode", "bptt")
     if mode != "bptt":
         bits.append(mode)

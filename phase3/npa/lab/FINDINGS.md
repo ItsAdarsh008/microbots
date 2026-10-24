@@ -74,3 +74,17 @@ is no better than doing nothing (restoration -0.14; wipe 0.27, cut 0.10, drag 0.
 fractions), mainly because 38% of particles have not imprinted yet when the damage arrives, and shuffled memory points at the
 wrong neighbours. The learned 3,000-iteration shape-agnostic cells reach restoration 0.09 to 0.13. So neither route meets the
 bar (repair fraction 0.5 on easy damage); the 10,000-iteration learned runs and the `forget` variants are queued.
+
+## 11. Update 16:50 (single runs; seed spread +-0.025 in score)
+- **Physical embodiment trains (H19, H15 partly supported).** `physB_scales2_all_damage_eps7` (strides 15 to 43 mm with 20% length and 5 deg
+  heading noise, 8-bit noisy sensing, 30% packet loss, overlap projection, about 7 neighbours) completed: hard-damage repair 0.94, drift +0.012,
+  but control loss 0.52 against about 0.2 for ideal dots, so the lizard it grows is much worse. The other three `physB_*` runs are not in yet.
+  One run; we do not yet know whether the embodiment, the 2-eps ring or chance explains the growth gap.
+- **Fine-tuning trades growth for repair (H21: partly).** `base_10k__ft_all_damage` (3,000 iterations from `base_10k`): hard-damage repair
+  0.55 to 0.84, but control loss 0.169 to 0.253 and drift -0.07 to +0.05. Total score 0.261 against 0.221 for `base_10k`: not better overall.
+- **Multi-shape (2a): not shown yet.** `ms4_base` (one network, four shapes, 10,000 iterations in total) scores 0.35 to 0.45 per shape against
+  0.22 to 0.30 for single-shape specialists with 10,000 iterations each. The budget is not matched (2,500 iterations per shape), so this
+  does not test the 25% criterion; a 40,000-iteration run is queued. `ms4_gated3_*` diverged (losses 50 to 450) and are invalid:
+  the multi-shape trainer has no loss-spike guard.
+- **Gated cell at small eps (H16/H10): unstable.** `eps5_gated3_rms_r2` hit 40 blow-ups and stopped at 544 of 3,000 iterations; at 13 neighbours
+  (`eps13_gated3_rms_r2`) it completed (score 0.312). The plain MLP completes at 5 and 7 neighbours.

@@ -105,3 +105,11 @@ architecture is not what limits them. Per severity (`ag10k_equiv`, loss after da
 noise 0.20/0.33/0.47 to 0.14/0.17/0.20; drag 0.15/0.23/0.29 to 0.11/0.18/0.27; cut 0.11/0.21/0.33 to 0.10/0.17/0.25; wipe and shuffle unchanged. So geometry is partly repaired
 on shapes the model never saw (held-out emoji and procedural shapes with holes), and colour information is not. The earlier "pass bar" for task 2b leaned on wipe and shuffle and was
 the wrong yardstick. Eight geometry-focused runs, including physical-body and no-compass versions, are at the front of the queue.
+
+## 14. Update 18:00: damage training that keeps growth (H23, H21: supported by one run)
+`pa4_all_damage` (damage on every kind, pool entries reset to a fresh seed after 4 uses, 10,000 iterations, completed, 0 blow-ups):
+control loss 0.171 (the wipes-only `base_10k` is 0.169, the earlier damage-trained runs 0.19 to 0.26), hard-damage repair 0.81 (`base_10k` about 0.55),
+hard-damage excess +0.015 (`base_10k` +0.100), drift +0.075. So it grows as well as the baseline and repairs far better; the cost is a drift of +0.075 by step 1,000
+(the baseline drifts -0.07). Caps 8 and 16 stopped again at about 4,900 of 10,000 iterations (43 and 40 blow-ups), as did `pa4_mem8_all_damage` (830 iterations),
+so the cap helps the plain MLP but not memory or gated cells (H26 stays open). One seed; `pa4_all_damage_s1`, caps 2 and 3, and the physical-body deployment
+(`pa4_all_damage__phys`, body noise and strides only, ideal sensing radius) are queued.

@@ -66,3 +66,11 @@ other cells are queued.
 All `phys_*` runs diverged because my scale put 1,024 bots at 78% packing and the seed disc at 178%, which is impossible.
 Corrected (1160 mm per unit, 47% packing, seed radius 0.55, no gradient through the overlap push) and rerun as `physB_*`.
 Those first numbers should be disregarded.
+
+## 10. An engineered shape-agnostic rule is not a ceiling (H22)
+`cells_rest.py` imprints each particle's neighbour offsets and colour after 16 own updates, then moves back to its remembered
+geometry and recolours itself. It passes 37 unit checks (noise and small drags return, wipes refill), but on the held-out suite it
+is no better than doing nothing (restoration -0.14; wipe 0.27, cut 0.10, drag 0.08, clump 0.31, shuffle -1.0, noise 0.10 as repair
+fractions), mainly because 38% of particles have not imprinted yet when the damage arrives, and shuffled memory points at the
+wrong neighbours. The learned 3,000-iteration shape-agnostic cells reach restoration 0.09 to 0.13. So neither route meets the
+bar (repair fraction 0.5 on easy damage); the 10,000-iteration learned runs and the `forget` variants are queued.

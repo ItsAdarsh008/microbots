@@ -23,9 +23,11 @@ import weights
 
 HERE = Path(__file__).resolve().parent
 WEB = HERE / "web"
-NAMES = {"all_damage_10k": "Ours: trained to repair every kind of damage (1,024 particles)",
+NAMES = {"pa8_scales2_all_damage": "Ours: best so far, senses at two radii and trained on all damage (1,024 particles)",
+         "all_damage_10k": "Ours: trained to repair every kind of damage (1,024 particles)",
          "base_10k": "Ours: trained like the paper, wipes only (1,024 particles)"}
-NOTES = {"all_damage_10k": "Trained here on state wipes, cuts, tears and clumping. NOTE: it was meant to train for 10,000 iterations but "
+NOTES = {"pa8_scales2_all_damage": "Trained here for 10,000 iterations on state wipes, cuts, tears and clumping, with pool entries refreshed every 8 uses. One seed so far; in our tests damage costs it almost nothing over the undamaged lizard.",
+         "all_damage_10k": "Trained here on state wipes, cuts, tears and clumping. NOTE: it was meant to train for 10,000 iterations but "
                            "stopped at about 3,000 after repeated blow-ups, so treat it as a 3,000-iteration model. In our tests it repairs cuts "
                            "and clumps at every size and tears up to 2 sensing radii; a piece torn off 4 radii away is only about half recovered.",
          "base_10k": "Trained here the way the paper does (state wipes only), the full 10,000 iterations. Wiped colour heals; cuts and tears mostly do not."}
@@ -77,9 +79,10 @@ def main():
             params, eps, eps0 = weights.load_npz(d / "params.npz")
             info = _json.loads((d / "result.json").read_text())
             cfg, sm = info["config"], info["summary"]
-            if cfg["cell"] or cfg.get("train", {}).get("mode", "bptt") != "bptt":
-                raise SystemExit(f"{run}: the web engine only runs the plain 66-128-18 network; this run uses {cfg['cell']}")
+            if set(cfg["cell"]) - {"scales"} or cfg.get("train", {}).get("mode", "bptt") != "bptt":
+                raise SystemExit(f"{run}: the web engine only runs the plain network (optionally sensing at several radii); this run uses {cfg['cell']}")
             models.append({"name": f"ours_{run}", "params": params, "eps": eps, "eps0": eps0, "particles": cfg["particles"],
+                           "scales": cfg["cell"].get("scales"),
                            "label": NAMES.get(run, f"Ours: {run}"), "note": NOTES.get(run, f"Trained here ({run}).")})
         n = weights.to_js_many(WEB / "weights" / "ours.js", models)
         print("wrote web/weights/ours.js", n, "bytes:", [m["name"] for m in models])

@@ -113,8 +113,8 @@
     }
 
     /** Sort particles into a grid of eps-wide cells so each one only checks 9 cells. */
-    _buildGrid() {
-      const { n, x, eps } = this;
+    _buildGrid(eps) {
+      const { n, x } = this;
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (let i = 0; i < n; i++) {
         const px = x[2 * i], py = x[2 * i + 1];
@@ -156,15 +156,15 @@
      * so a test can replay the same randomness as the JAX version; by default each particle
      * updates with probability 0.5.
      */
-    step(update) {
-      const { n, x, s, eps, model, rho, vol, z, h, y } = this;
-      const { w1, b1, w2 } = model;
+    _sense(eps, off, PS, k) {
+      const { n, x, s, model, rho, vol } = this;
+      const mask = this.mask, Z = this.Z;
       const eps2 = eps * eps;
       const polyNorm = 4 / (Math.PI * Math.pow(eps, 8));
       const spikyNorm = 10 / (Math.PI * Math.pow(eps, 5));
-      const scale = eps / model.eps0;
+      const scale = eps / (model.eps0 * k);     // radius ratio with the sensing multiple divided out, as npa.perceive(eps*k, eps0*k) does
       const dScale = Math.pow(scale, 1 + D) / this.total;
-      this._buildGrid();
+      this._buildGrid(eps);
       const { gw, gh, cellStart, order, cell } = this;
       if (!this.pairStart || this.pairStart.length < n + 1) this.pairStart = new Int32Array(n + 1);
       this._reservePairs(n * 80);
@@ -201,11 +201,7 @@
       this.pairStart[n] = m;
       const { pj, pw, pg, pr, pairStart } = this;
 
-      // only a random half of the particles update each step, so only they need to sense and think
-      const mask = this.mask;
-      for (let i = 0; i < n; i++) mask[i] = update ? update[i] : (this.rng() < UPDATE_PROB ? 1 : 0);
-
-      // pass 2: sense the neighbourhood and run the MLP
+      // pass 2: sense the neighbourhood at this radius
       const blur = new Float64Array(C), ax = new Float64Array(C), ay = new Float64Array(C);
       for (let i = 0; i < n; i++) {
         if (!mask[i]) continue;
@@ -228,26 +224,47 @@
         let i00 = 1, i01 = 0, i10 = 0, i11 = 1;
         if (det >= DET_MIN) { i00 = myy / det; i01 = -mxy / det; i10 = -myx / det; i11 = mxx / det; }
 
-        const si = i * C;
+        const si = i * C, zb = i * PS + off;
         for (let c = 0; c < C; c++) {
-          z[c] = s[si + c];
-          z[C + c] = blur[c];
+          Z[zb + c] = s[si + c];
+          Z[zb + C + c] = blur[c];
           const g0x = ax[c] - s[si + c] * gvx, g0y = ay[c] - s[si + c] * gvy;
           const gx = (g0x * i00 + g0y * i10) * scale, gy = (g0x * i01 + g0y * i11) * scale;
           const len = Math.sqrt(gx * gx + gy * gy + 1e-24), f = Math.log1p(len) / len;
-          z[2 * C + 2 * c] = gx * f;
-          z[2 * C + 2 * c + 1] = gy * f;
+          Z[zb + 2 * C + 2 * c] = gx * f;
+          Z[zb + 2 * C + 2 * c + 1] = gy * f;
         }
         {
           const ex = drx * dScale, ey = dry * dScale, len = Math.sqrt(ex * ex + ey * ey + 1e-24);
           const f = Math.log1p(len) / len;
-          z[P - 2] = ex * f; z[P - 1] = ey * f;
+          Z[zb + P - 2] = ex * f; Z[zb + P - 1] = ey * f;
         }
+      }
+    }
 
+    /**
+     * Advance one step. `update` (optional, Uint8Array of 0/1) fixes which particles update,
+     * so a test can replay the same randomness as the JAX version; by default each particle
+     * updates with probability 0.5. A model with scales [1, 2] senses at eps and at 2 eps
+     * (the second 66 numbers), exactly like cells.Cell(scales=(1.0, 2.0)).
+     */
+    step(update) {
+      const { n, x, s, eps, model, h, y } = this;
+      const { w1, b1, w2 } = model;
+      const scales = model.scales || [1], S = scales.length, PS = P * S;
+      if (!this.Z || this.Z.length < n * PS) this.Z = new Float32Array(n * PS);
+      // only a random half of the particles update each step, so only they need to sense and think
+      const mask = this.mask;
+      for (let i = 0; i < n; i++) mask[i] = update ? update[i] : (this.rng() < UPDATE_PROB ? 1 : 0);
+      for (let k = 0; k < S; k++) this._sense(eps * scales[k], k * P, PS, scales[k]);
+      const Z = this.Z;
+      for (let i = 0; i < n; i++) {
+        if (!mask[i]) continue;
+        const si = i * C;
         // MLP: relu(z @ w1 + b1) @ w2
         for (let k = 0; k < H; k++) h[k] = b1[k];
-        for (let q = 0; q < P; q++) {
-          const zq = z[q];
+        for (let q = 0; q < PS; q++) {
+          const zq = Z[i * PS + q];
           if (zq === 0) continue;
           const row = q * H;
           for (let k = 0; k < H; k++) h[k] += zq * w1[row + k];

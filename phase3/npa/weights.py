@@ -54,7 +54,7 @@ def load_npz(path):
     return {k: d[k] for k in ("w1", "b1", "w2")}, eps, float(d["eps0"]) if "eps0" in d else eps
 
 
-def to_js(path, name, params, eps, eps0, label="", note="", particles=None):
+def to_js(path, name, params, eps, eps0, label="", note="", particles=None, scales=None):
     """Write a <script>-loadable file that registers the model as window.NPA_MODELS[name].
 
     Plain script (not fetch + JSON) so the demo also works when opened from disk.
@@ -65,10 +65,12 @@ def to_js(path, name, params, eps, eps0, label="", note="", particles=None):
     model = {
         "name": name, "label": label or name, "note": note, "particles": particles, "eps": eps, "eps0": eps0, "alpha": npa.ALPHA,
         "stateDims": npa.STATE_DIMS, "hiddenDims": npa.HIDDEN_DIMS,
-        "w1": flat(params["w1"]),   # (66, 128), row-major
+        "w1": flat(params["w1"]),   # (66 * len(scales), 128), row-major
         "b1": flat(params["b1"]),   # (128,)
         "w2": flat(params["w2"]),   # (128, 18), row-major
     }
+    if scales:
+        model["scales"] = [float(v) for v in scales]    # sensing radii as multiples of eps (a model trained with cells.Cell(scales=...))
     text = ("window.NPA_MODELS = window.NPA_MODELS || {};\n"
             f"window.NPA_MODELS[{json.dumps(name)}] = {json.dumps(model, separators=(',', ':'))};\n")
     Path(path).write_text(text)
@@ -82,7 +84,7 @@ def to_js_many(path, models):
     for m in models:
         tmp = Path(path).with_suffix(".tmp.js")
         to_js(tmp, m["name"], m["params"], m["eps"], m["eps0"], label=m.get("label", ""), note=m.get("note", ""),
-              particles=m.get("particles"))
+              particles=m.get("particles"), scales=m.get("scales"))
         parts.append(tmp.read_text().split("\n", 1)[1])
         tmp.unlink()
     text = "".join(parts)

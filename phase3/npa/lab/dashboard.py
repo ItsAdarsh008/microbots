@@ -187,12 +187,14 @@ def make_gifs(runs, limit):
     for _, name in sorted(todo):
         cfgp = RUNS / name / "result.json"
         cfg = json.loads(cfgp.read_text())["config"]
-        if cfg.get("cell") or cfg.get("train", {}).get("mode", "bptt") != "bptt" or not (RUNS / name / "params.npz").exists():
-            continue
+        cell = cfg.get("cell") or {}
+        if set(cell) - {"scales"} or cfg.get("train", {}).get("mode", "bptt") != "bptt" or not (RUNS / name / "params.npz").exists():
+            continue          # the browser engine runs the plain network, optionally sensing at several radii
         params, eps, eps0 = weights.load_npz(RUNS / name / "params.npz")
+        scales = cell.get("scales")
         with tempfile.TemporaryDirectory() as tmp:
             js = Path(tmp) / "w.js"
-            weights.to_js(js, name, params, eps, eps0, particles=cfg["particles"])
+            weights.to_js(js, name, params, eps, eps0, particles=cfg["particles"], scales=scales)
             repair.SNAP_EVERY = 8
             res = repair.run_scenarios(str(js), ["erase_head", "cut_tail", "drag_limb"], cfg["particles"], 0)
             repair.make_gif(DASH / "gifs" / f"{name}.gif", ["erase_head", "cut_tail", "drag_limb"], res, size=200)

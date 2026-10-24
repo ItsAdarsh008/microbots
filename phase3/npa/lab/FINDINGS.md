@@ -124,3 +124,18 @@ does not change anything at eps 0.2), and the loss fell steadily. One seed each;
 What this changes: the plain MLP needs a cap of 4 or less (cap 8 collapsed it), but with 2-eps sensing or memory a cap of 8 is enough, so the extra sensing range or memory
 makes the damage-trained rule stable (H26 was wrong that memory cells cannot train; it was the combination of gated block and cap 4 that stopped at 830 iterations).
 It is a lizard result. The same recipe is queued on four shapes in one network (`ms4_*_pa8`, 40,000 iterations), which is the transfer test that matters.
+
+## 16. Update 18:50: three cells, one recipe; geometry-only agnostic training is too active (H29 supported, H27 revised, H30)
+- `pa4_attn_mem8_all_damage` (local attention + RMSNorm + 8 memory channels, cap 4): score 0.098, control 0.093, hard-damage repair 0.97, drift 0.00. With `pa8_scales2_all_damage` (0.085)
+  and `pa8_mem8_all_damage` (0.086), three different cells reach 0.085 to 0.098 with damage training and a pool-age cap, so the recipe is not specific to one cell (still one seed each).
+  Plain MLP: cap 3 gives 0.180 (repair 0.85), cap 4 0.184 (0.81), cap 2 0.269 (0.49, growth suffers); caps 8 and 16 stopped at about 4,900 iterations.
+- Shape-agnostic, geometry-focused training (`ag_geo_equiv`, `ag_all6_heavy_mlp`) scores 0.207 and 0.188 against a do-nothing floor of 0.199: worse than the earlier `ag10k_*` (0.12 to 0.14). Per
+  severity they repair more (after damage 0.65 to 1.09, after recovery 0.17 to 0.22 for `ag_geo_equiv`) but they also change the undamaged swarm (control 0.154 against 0.005): the swarm settles
+  into an attractor that does not depend on the damage and is not the original configuration. The training did what it was asked (repair damage) at the cost of fidelity. `warm_loss`
+  (penalise drift during the undamaged warm-up) is the existing lever; five runs with it are queued.
+
+## 17. Update 19:15: the browser engine now runs two-radius models
+`web/npa.js` senses at eps and 2 eps when a model has `scales: [1, 2]`. Parity against `cells.Cell(scales=(1.0, 2.0))` in JAX over 5 steps with identical update masks:
+7e-8 in position and 2e-6 in state after one step, 4e-6 and 1e-4 after five (my first version was wrong by 0.29 in state: it used the doubled radius in the gradient scale, caught by this
+check). The plain-network parity (1e-5) is unchanged. `pa8_scales2_all_damage` now has a repair clip on the dashboard and is in the public demo. Frames at step 192 and 440 (head wiped,
+tail cut to 970 particles, foot torn off) show a lizard with all legs and the curled tail, qualitatively consistent with its score of 0.085 (one seed).

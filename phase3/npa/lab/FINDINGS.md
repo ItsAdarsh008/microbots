@@ -98,3 +98,10 @@ seed and four other cells are queued. Gated cells are still unstable elsewhere: 
 and `ag10k_gated3_rms` ended at loss ~100 (colour channels diverged), so a gated block is not yet a safe default.
 `attn_rms_mem8_r2` (local attention, RMSNorm, 8 memory channels, wipes only) completed at score 0.200, about as good as the best
 growers; it is the first attention cell to train cleanly.
+
+## 13. Update 17:50: we should train on arbitrary shapes, and the lizard data says why (H27)
+104 of 121 finished runs used the lizard; 13 used arbitrary shapes. The shape-agnostic runs: all cells end between 0.12 and 0.15 (do-nothing 0.199), more iterations did nothing, so the
+architecture is not what limits them. Per severity (`ag10k_equiv`, loss after damage to loss after recovery): clump 0.15/0.25/0.53 to 0.07/0.08/0.09;
+noise 0.20/0.33/0.47 to 0.14/0.17/0.20; drag 0.15/0.23/0.29 to 0.11/0.18/0.27; cut 0.11/0.21/0.33 to 0.10/0.17/0.25; wipe and shuffle unchanged. So geometry is partly repaired
+on shapes the model never saw (held-out emoji and procedural shapes with holes), and colour information is not. The earlier "pass bar" for task 2b leaned on wipe and shuffle and was
+the wrong yardstick. Eight geometry-focused runs, including physical-body and no-compass versions, are at the front of the queue.

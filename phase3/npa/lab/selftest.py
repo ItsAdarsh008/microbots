@@ -49,6 +49,15 @@ for cfg in ({"block": "plain", "depth": 3}, {"block": "residual", "depth": 3, "n
     check(f"cell {cfg} runs and is finite", all(bool(jnp.isfinite(o).all()) for o in out[:3]),
           f"{c.param_count(pp):,} parameters")
 
+# 2b. parameter shapes are what they should be, and nothing depends on N happening to equal the width
+for cfg in ({"block": "residual", "depth": 4, "width": 96, "zero_head": True}, {"block": "gated", "depth": 3, "width": 96, "mem": 3},
+            {"block": "plain", "depth": 4, "width": 96}):
+    c = cells.Cell(**cfg)
+    pp = c.init(jax.random.PRNGKey(4))
+    ok = pp["b1"].shape == (96,) and pp["w1"].shape == (c.in_dims, 96) and pp["w2"].shape == (96, c.out_dims)
+    out = c.step(pp, x, s, jnp.zeros((N, c.mem_dims)), on, EPS, EPS)
+    check(f"cell {cfg} has the right parameter shapes", ok and all(bool(jnp.isfinite(o).all()) for o in out[:3]))
+
 # 3. deleting particles: a deleted particle is invisible, and deleting nothing changes nothing
 alive = jnp.ones(N).at[:20].set(0.0)
 z_full = npa.perceive(x, s, EPS, EPS)

@@ -30,6 +30,9 @@ import damage  # noqa: E402
 import npa  # noqa: E402
 import target as tgt  # noqa: E402
 
+# NOTE: the seed disc has radius max(2 * eps, 0.4). For eps >= 0.2 (every run before the physical-regime
+# experiments) this is exactly the old 2 * eps; for small eps a 2 * eps disc packs 1,024 particles ~20x too densely
+# (initial density loss 44 at eps 0.066) and training diverges (H18).
 PROTOCOL = {
     "version": 1,
     "grow": 200,          # steps to grow from the seed before any damage
@@ -78,7 +81,7 @@ def run(cell, params, eps, eps0, n, protocol=PROTOCOL, block=None, target=None):
 
     # layout: index = level * n_seeds + seed, so reshape(n_levels, n_seeds) recovers the grid
     seed_keys = jnp.tile(jnp.stack([jax.random.PRNGKey(s) for s in seeds]), (n_levels, 1))
-    x0, s0 = jax.vmap(lambda k: npa.seed(k, n, radius=2 * eps))(seed_keys)
+    x0, s0 = jax.vmap(lambda k: npa.seed(k, n, radius=max(2 * eps, 0.4)))(seed_keys)
     mem0 = jnp.zeros((batch, n, cell.mem_dims))
     alive0 = jnp.ones((batch, n))
 

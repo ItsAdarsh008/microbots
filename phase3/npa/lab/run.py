@@ -5,6 +5,7 @@
 
 A config is JSON:
     name        run name; outputs go to runs/<name>/
+    shape       target shape from lab/shapes.py (default lizard)
     seed        training seed (the evaluator uses its own held-out seeds)
     particles   swarm size N; eps follows the paper's rule 0.2 * sqrt(1024 / N) unless "eps" is given
     cell        options for cells.Cell (block, width, depth, norm, mem, ...)
@@ -19,10 +20,14 @@ cell, deleted particles and private memory. Appends one row to results.jsonl.
 
 import json
 import math
+import os
 import subprocess
 import sys
 import time
 from pathlib import Path
+
+# Several jobs share one GPU, so do not let each grab 75% of its memory up front (must precede importing jax).
+os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 
 import jax
 import jax.numpy as jnp
@@ -36,12 +41,15 @@ import cells  # noqa: E402
 import damage  # noqa: E402
 import evaluate  # noqa: E402
 import npa  # noqa: E402
+import shapes  # noqa: E402
 import target as tgt  # noqa: E402
 
 POOL_SIZE = 512
 SEED_EVERY = 16
 LR_DROP, LR_MILESTONES = 0.3, (0.2, 0.4, 0.6, 0.8)
 ADAM = (0.9, 0.999, 1e-8)
+MAX_RECOVERIES = 8          # blow-ups survived per run before giving up
+SPIKE_FACTOR = 6.0          # a loss this many times its recent median counts as a blow-up too
 TRAIN_DEFAULTS = {"mode": "bptt", "iters": 3000, "batch": 8, "steps": [32, 96], "lr": 5e-4, "grid": 128, "grad": "per_tensor",
                   "noise_pos": 0.0, "noise_state": 0.0, "max_minutes": None,
                   "damage": [{"kind": "wipe", "level": [0.2, 0.2], "p": 1.0}]}
@@ -117,7 +125,7 @@ def train(cfg, log=print):
     cell = cells.build(**cfg["cell"])
     batch, t_max = tc["batch"], tc["steps"][1]
     block = 512 if n > 2048 else None
-    target = tgt.load_target()
+    target = tgt.load_target(shapes.path(cfg.get("shape", "lizard")))
     loss_fn = tgt.make_loss(target, grid=tc["grid"])
     grad_mode = "per_tensor" if tc["grad"] == "per_tensor" else float(tc["grad"])
     train_step = make_train_step(cell, loss_fn, batch, n, eps, eps, block, t_max, grad_mode,
@@ -125,13 +133,18 @@ def train(cfg, log=print):
     damager = make_damager(tc["damage"], batch, eps)
 
     params = cell.init(jax.random.PRNGKey(cfg.get("seed", 0)))
+    if cfg.get("init_params_b64"):      # evaluate or fine-tune given weights (a "deploy" run sets iters to 0)
+        import base64
+        import io
+        saved = np.load(io.BytesIO(base64.b64decode(cfg["init_params_b64"])))
+        params = {k: jnp.asarray(saved[k]) for k in params}
     opt = {"m": jax.tree_util.tree_map(jnp.zeros_like, params), "v": jax.tree_util.tree_map(jnp.zeros_like, params),
            "t": jnp.zeros((), jnp.int32)}
     rng = np.random.default_rng(cfg.get("seed", 0))
     key = jax.random.PRNGKey(cfg.get("seed", 0) + 1)
 
     def fresh(count):
-        x, s = jax.vmap(lambda k: npa.seed(k, n, radius=2 * eps))(jax.random.split(jax.random.fold_in(key, rng.integers(1 << 30)), count))
+        x, s = jax.vmap(lambda k: npa.seed(k, n, radius=max(2 * eps, 0.4)))(jax.random.split(jax.random.fold_in(key, rng.integers(1 << 30)), count))
         return np.array(x), np.array(s)      # writable copies: the pool is updated in place
 
     pool_x, pool_s = fresh(POOL_SIZE)
@@ -139,6 +152,7 @@ def train(cfg, log=print):
     pool_a = np.ones((POOL_SIZE, n), np.float32)
     milestones = {int(f * tc["iters"]) for f in LR_MILESTONES}
     lr, curve, t0 = tc["lr"], [], time.time()
+    recoveries = 0
 
     for it in range(tc["iters"]):
         if it in milestones:
@@ -152,11 +166,21 @@ def train(cfg, log=print):
         x, s, m, a = damager(kd, *map(jnp.asarray, (x, s, m, a)))
         steps = int(rng.integers(*tc["steps"]))
         ts = time.time()
+        good = (params, opt)
         params, opt, x, s, m, loss, parts = train_step(params, opt, kt, x, s, m, a, steps, lr)
         loss = float(loss)
-        if not math.isfinite(loss):
-            log(f"loss became {loss} at iteration {it}; stopping")
-            break
+        recent = [c["loss"] for c in curve[-100:]]
+        spike = len(recent) >= 50 and loss > SPIKE_FACTOR * float(np.median(recent)) and loss > 2.0
+        if spike or not math.isfinite(loss) or not all(bool(jnp.isfinite(v).all()) for v in params.values()):
+            # a blow-up: go back to the last good weights, halve the learning rate and carry on
+            recoveries += 1
+            if recoveries > MAX_RECOVERIES:
+                log(f"loss became {loss} at iteration {it}; giving up after {MAX_RECOVERIES} recoveries")
+                break
+            params, opt = good
+            lr *= 0.5
+            log(f"loss became {loss} at iteration {it}; back to the last good weights, lr now {lr:.2e} (recovery {recoveries})")
+            continue
         pool_x[idx], pool_s[idx], pool_m[idx], pool_a[idx] = map(np.asarray, (x, s, m, a))
         curve.append({"iter": it, "loss": loss, "density": float(parts["density"]), "colour": float(parts["colour"])})
         if it % 100 == 0 or it == tc["iters"] - 1:
@@ -183,18 +207,25 @@ def main():
 
     log(f"== {name}: {json.dumps(cfg)}")
     cell, params, eps, curve, seconds = train(cfg, log)
+    blowups = sum("back to the last good weights" in l for l in open(out_dir / "train.log"))
     np.savez(out_dir / "params.npz", eps=eps, **{k: np.asarray(v) for k, v in params.items()})
     log(f"trained in {seconds / 60:.1f} min; scoring")
     t0 = time.time()
-    result = evaluate.run(cell, params, eps, eps, cfg["particles"])
+    ev_module = {"agnostic": "evaluate_agnostic", "multishape": "evaluate_multi"}.get(cfg["train"].get("mode", "bptt"))
+    if ev_module:     # tasks that are not "grow the one target" bring their own immutable evaluator
+        import importlib
+        result = importlib.import_module(ev_module).run(cell, params, eps, eps, cfg["particles"], cfg)
+    else:
+        result = evaluate.run(cell, params, eps, eps, cfg["particles"],
+                              target=tgt.load_target(shapes.path(cfg.get("shape", "lizard"))))
     sm = result["summary"]
     log(f"scored in {time.time() - t0:.0f}s: score {sm['score']:.4f}  excess {sm['excess']:.4f}  "
         f"control {sm['control_loss']:.4f}  drift {sm['drift']:.4f}")
     log("per-kind score: " + "  ".join(f"{k} {v:.3f}" for k, v in sm["per_kind_score"].items()))
-    row = {"name": name, "time": time.strftime("%Y-%m-%d %H:%M:%S"), "config": cfg,
-           "params": cell.param_count(params), "iters_done": len(curve), "train_minutes": seconds / 60,
+    row = {"name": name, "shape": cfg.get("shape", "lizard"), "time": time.strftime("%Y-%m-%d %H:%M:%S"), "config": cfg,
+           "params": cell.param_count(params), "iters_done": len(curve), "blowups": blowups, "train_minutes": seconds / 60,
            "final_train_loss": float(np.mean([c["loss"] for c in curve[-50:]])) if curve else None,
-           "summary": sm, "evaluator": evaluate.fingerprint(),
+           "summary": sm, "evaluator": {**evaluate.fingerprint(), **({ev_module: __import__("hashlib").sha256((HERE / f"{ev_module}.py").read_bytes()).hexdigest()[:16]} if ev_module else {})},
            "params_sha": __import__("hashlib").sha256(b"".join(np.asarray(params[k]).tobytes() for k in sorted(params))).hexdigest()[:16]}
     (out_dir / "result.json").write_text(json.dumps({**row, "eval": result, "curve": curve[::10]}))
     with open(HERE / "results.jsonl", "a") as f:

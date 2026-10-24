@@ -26,6 +26,7 @@ DEFAULTS = {
     "ff": None,             # inner size of a residual/gated block (default: width)
     "norm": "none",         # none | rms: RMSNorm in front of each block and the head
     "mem": 0,               # private memory channels per particle (not sensed by neighbours)
+    "scales": (1.0,),       # sensing radii as multiples of eps; (1, 2) also senses at 2 eps (still local, a bit wider)
     "gain": 0.1,            # scale of the first and last layer's random init (the paper uses 0.1)
     "zero_head": False,     # start with the output layer at zero, so nothing moves at first
 }
@@ -50,7 +51,8 @@ class Cell:
         if c["block"] not in ("plain", "residual", "gated") or c["norm"] not in ("none", "rms"):
             raise ValueError(f"bad cell config {c}")
         self.mem_dims = int(c["mem"])
-        self.in_dims = npa.PERCEPTION_DIMS + self.mem_dims
+        self.scales = tuple(float(v) for v in c["scales"])
+        self.in_dims = npa.PERCEPTION_DIMS * len(self.scales) + self.mem_dims
         self.out_dims = npa.OUTPUT_DIMS + 2 * self.mem_dims    # + a gate and a candidate per memory channel
 
     # ---- parameters -----------------------------------------------------------
@@ -68,11 +70,11 @@ class Cell:
         else:
             for l in range(max(c["depth"] - 1, 1)):
                 if c["block"] == "residual":
-                    p[f"a{l}"], p[f"ab{l}"] = _xavier(next(keys), w, ff, math.sqrt(2.0)), jnp.zeros((ff,))
-                    p[f"b{l}"] = _xavier(next(keys), ff, w, 1.0) * 0.5
+                    p[f"blk{l}_a"], p[f"blk{l}_ab"] = _xavier(next(keys), w, ff, math.sqrt(2.0)), jnp.zeros((ff,))
+                    p[f"blk{l}_b"] = _xavier(next(keys), ff, w, 1.0) * 0.5
                 else:
-                    p[f"g{l}"], p[f"u{l}"] = _xavier(next(keys), w, ff, 1.0), _xavier(next(keys), w, ff, 1.0)
-                    p[f"d{l}"] = _xavier(next(keys), ff, w, 1.0) * 0.5
+                    p[f"blk{l}_g"], p[f"blk{l}_u"] = _xavier(next(keys), w, ff, 1.0), _xavier(next(keys), w, ff, 1.0)
+                    p[f"blk{l}_d"] = _xavier(next(keys), ff, w, 1.0) * 0.5
         head = _xavier(next(keys), w, self.out_dims, c["gain"])
         p["w2"] = jnp.zeros_like(head) if c["zero_head"] else head
         return p
@@ -94,9 +96,9 @@ class Cell:
             for l in range(max(c["depth"] - 1, 1)):
                 n = norm(h)
                 if c["block"] == "residual":
-                    h = h + jax.nn.relu(n @ p[f"a{l}"] + p[f"ab{l}"]) @ p[f"b{l}"]
+                    h = h + jax.nn.relu(n @ p[f"blk{l}_a"] + p[f"blk{l}_ab"]) @ p[f"blk{l}_b"]
                 else:
-                    h = h + (jax.nn.silu(n @ p[f"g{l}"]) * (n @ p[f"u{l}"])) @ p[f"d{l}"]
+                    h = h + (jax.nn.silu(n @ p[f"blk{l}_g"]) * (n @ p[f"blk{l}_u"])) @ p[f"blk{l}_d"]
             h = norm(h)
         return h @ p["w2"]
 
@@ -106,7 +108,7 @@ class Cell:
         update: (N, 1) 0/1, which particles update. mass: (N,) 1 for live particles, 0 for deleted ones.
         total: the particle count the density gradient is normalised by (the original swarm size).
         """
-        z = npa.perceive(x, s, eps, eps0, block, total, mass)
+        z = jnp.concatenate([npa.perceive(x, s, eps * k, eps0 * k, block, total, mass) for k in self.scales], axis=-1)
         y = self.apply(p, z, mem)
         dx, ds = y[:, :npa.SPATIAL_DIMS], y[:, npa.SPATIAL_DIMS:npa.OUTPUT_DIMS]
         length = jnp.sqrt(jnp.sum(dx * dx, axis=-1, keepdims=True) + 1e-24)
@@ -122,9 +124,17 @@ class Cell:
 
 def build(**cfg):
     """Make a cell from a config. cfg["kind"] picks the family: "mlp" (this file) or any module
-    named cells_<kind>.py in lab/, which must define a Cell class with the same interface."""
+    named cells_<kind>.py in lab/, which must define a Cell class with the same interface.
+    cfg["embody"] = {...} wraps the cell in a physical-robot layer (lab/embody.py): limited speed, noisy
+    quantised sensing, packet loss, no overlap, or hops on a docking lattice. See embodiment.md."""
+    embody_spec = cfg.pop("embody", None)
     kind = cfg.pop("kind", "mlp")
     if kind == "mlp":
-        return Cell(**cfg)
-    import importlib
-    return importlib.import_module(f"cells_{kind}").Cell(**cfg)
+        cell = Cell(**cfg)
+    else:
+        import importlib
+        cell = importlib.import_module(f"cells_{kind}").Cell(**cfg)
+    if embody_spec:
+        import embody
+        cell = embody.Embodied(cell, **embody_spec)
+    return cell

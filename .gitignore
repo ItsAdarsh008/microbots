@@ -11,3 +11,8 @@ assets/*/stl/
 assets/*/renders/*.png
 !assets/*/renders/overview.png
 assets/*/sandbox/index.html
+
+# Phase 3 particle NCA: the paper authors' weights are not ours to redistribute (their repo has no licence).
+# Build them locally with phase3/npa/export_web.py --fetch-paper.
+*.pth
+phase3/npa/web/weights/lizard_paper.js

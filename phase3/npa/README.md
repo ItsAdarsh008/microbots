@@ -81,3 +81,15 @@ The authors' repository ([TheDevilWillBeBee/NPA](https://github.com/TheDevilWill
 - **`train.py`** compares the splatted images at 128 × 128 by default to save CPU time (the paper's config uses 256). `target.py` uses 256 for every number reported here.
 - **The target** is today's Noto Emoji lizard, sampled to 4,111 points. The authors' loader points at an emoji URL that no longer exists, and Noto may have redrawn the emoji since the paper.
 - **Unknown details.** Where the paper gives no value (the log-compression constant, the gradient-correction threshold) the code uses a plain choice and says so in a comment.
+
+
+## Update: our own models, and the experiment lab
+
+- **The demo now ships models we trained** (`web/weights/ours.js`, built by `python export_web.py --ours all_damage_10k base_10k`).
+  They are ours to publish, unlike the paper authors' weights. In the JavaScript engine (not just JAX), `all_damage_10k` returns to
+  its own undamaged level after a state wipe, a tail cut, a foot cut and a foot torn off (IoU 0.776 to 0.790 against a control of 0.785).
+  The paper-style `base_10k` grows a nicer lizard (control IoU 0.880) but only partly repairs larger damage (0.78 to 0.86). Neither is
+  strictly better; closing that gap is hypothesis H21 in `lab/hypotheses.md`. Pictures: `results/repair_js_*.png`, GIFs in `media/`.
+- **`lab/`** is the experiment lab (swappable cells, damage suite, immutable evaluator, a GPU queue). `lab/FINDINGS.md` summarises
+  results so far, `lab/hypotheses.md` the failures that motivated each experiment, and `lab/embodiment.md` how the real bot
+  would move and sense. Most results are single 3,000-iteration runs; read the caveats there before quoting any number.

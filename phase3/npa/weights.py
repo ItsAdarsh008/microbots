@@ -50,7 +50,8 @@ def save_npz(path, params, eps, eps0):
 def load_npz(path):
     """Returns (params, eps, eps0)."""
     d = np.load(path)
-    return {k: d[k] for k in ("w1", "b1", "w2")}, float(d["eps"]), float(d["eps0"])
+    eps = float(d["eps"])
+    return {k: d[k] for k in ("w1", "b1", "w2")}, eps, float(d["eps0"]) if "eps0" in d else eps
 
 
 def to_js(path, name, params, eps, eps0, label="", note="", particles=None):
@@ -70,5 +71,20 @@ def to_js(path, name, params, eps, eps0, label="", note="", particles=None):
     }
     text = ("window.NPA_MODELS = window.NPA_MODELS || {};\n"
             f"window.NPA_MODELS[{json.dumps(name)}] = {json.dumps(model, separators=(',', ':'))};\n")
+    Path(path).write_text(text)
+    return len(text)
+
+
+def to_js_many(path, models):
+    """Write several models into one <script> file. models: list of dicts with the keyword arguments of to_js
+    (name, params, eps, eps0, label, note, particles)."""
+    parts = ["window.NPA_MODELS = window.NPA_MODELS || {};\n"]
+    for m in models:
+        tmp = Path(path).with_suffix(".tmp.js")
+        to_js(tmp, m["name"], m["params"], m["eps"], m["eps0"], label=m.get("label", ""), note=m.get("note", ""),
+              particles=m.get("particles"))
+        parts.append(tmp.read_text().split("\n", 1)[1])
+        tmp.unlink()
+    text = "".join(parts)
     Path(path).write_text(text)
     return len(text)

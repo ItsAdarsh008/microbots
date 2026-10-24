@@ -23,6 +23,11 @@ import weights
 
 HERE = Path(__file__).resolve().parent
 WEB = HERE / "web"
+NAMES = {"all_damage_10k": "Ours: trained to repair every kind of damage (1,024 particles)",
+         "base_10k": "Ours: trained like the paper, wipes only (1,024 particles)"}
+NOTES = {"all_damage_10k": "Trained here for 10,000 iterations on state wipes, cuts, tears and clumping. In our tests it repairs cuts and "
+                           "clumps at every size and tears up to 2 sensing radii; a piece torn off 4 radii away is only about half recovered.",
+         "base_10k": "Trained here the way the paper does (state wipes only). Wiped colour heals; cuts and tears mostly do not."}
 PAPER_URL = "https://raw.githubusercontent.com/TheDevilWillBeBee/NPA/main/data/pretrained/lizard.pth"
 
 
@@ -44,7 +49,7 @@ def write_target():
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--ours", help="an .npz written by train.py")
+    ap.add_argument("--ours", nargs="+", help="names of runs in runs/ (plain-network runs with a params.npz)")
     ap.add_argument("--paper", help="the authors' lizard.pth")
     ap.add_argument("--fetch-paper", action="store_true", help="download the authors' lizard.pth, then convert it")
     args = ap.parse_args()
@@ -61,15 +66,22 @@ def main():
         params, eps0, _ = weights.load_pth(paper)
         n = weights.to_js(WEB / "weights" / "lizard_paper.js", "lizard_paper", params, eps0, eps0,
                           label="Paper's pretrained lizard (4,096 particles)", particles=4096,
-                          note="Weights released by the paper's authors, run through our reimplementation.")
+                          note="Weights released by the paper's authors, run through our reimplementation. Wiped colour and small lost feet heal; a cut tail tip and a piece torn far from the body do not.")
         print("wrote web/weights/lizard_paper.js", n, "bytes")
     if args.ours:
-        params, eps, eps0 = weights.load_npz(args.ours)
-        n = weights.to_js(WEB / "weights" / "lizard_ours.js", "lizard_ours", params, eps, eps0,
-                          label="Our model (trained here)", particles=None,
-                          note="Trained with this repo's train.py.")
-        print("wrote web/weights/lizard_ours.js", n, "bytes")
-
+        import json as _json
+        models = []
+        for run in args.ours:
+            d = HERE / "runs" / run
+            params, eps, eps0 = weights.load_npz(d / "params.npz")
+            info = _json.loads((d / "result.json").read_text())
+            cfg, sm = info["config"], info["summary"]
+            if cfg["cell"] or cfg.get("train", {}).get("mode", "bptt") != "bptt":
+                raise SystemExit(f"{run}: the web engine only runs the plain 66-128-18 network; this run uses {cfg['cell']}")
+            models.append({"name": f"ours_{run}", "params": params, "eps": eps, "eps0": eps0, "particles": cfg["particles"],
+                           "label": NAMES.get(run, f"Ours: {run}"), "note": NOTES.get(run, f"Trained here ({run}).")})
+        n = weights.to_js_many(WEB / "weights" / "ours.js", models)
+        print("wrote web/weights/ours.js", n, "bytes:", [m["name"] for m in models])
 
 if __name__ == "__main__":
     main()

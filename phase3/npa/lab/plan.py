@@ -154,20 +154,21 @@ def experiments():
         (27, hd("heading_random_equiv_mem4", {"kind": "equiv", "heading": "random", "mem": 4})),
     ]
     # H15/H16: train INSIDE the physical embodiment (strides, noisy 8-bit sensing, packet loss) at eps 0.05, about 7 neighbours
-    PHYS = {"mode": "phys", "sense_noise": 0.0022, "quant_bits": 8, "dropout": 0.3, "max_step": 0.055, "min_step": 0.02,
-            "step_len_noise": 0.2, "step_dir_noise": 0.087, "bearing_noise": 0.087}
+    PHYS = {"mode": "phys", "sense_noise": 0.0017, "quant_bits": 8, "dropout": 0.3, "body_r": 0.0129, "port_d": 0.0121,
+            "max_step": 0.043, "min_step": 0.0155, "step_len_noise": 0.2, "step_dir_noise": 0.087, "bearing_noise": 0.087,
+            "stop_proj_grad": True}
     all7 = [{"kind": "wipe", "level": [0.05, 0.05], "p": 1.0}] + ALL_DAMAGE[1:]
 
     def phys(name, cell):
         cfg = variant(name, {**cell, "embody": PHYS}, {"damage": all7})
-        cfg["eps"] = 0.05
+        cfg["eps"], cfg["seed_radius"] = 0.05, 0.55
         return cfg
 
     out += [
-        (26, phys("phys_mlp_all_damage_eps7", {})),
-        (26, phys("phys_scales2_all_damage_eps7", {"scales": [1.0, 2.0]})),
-        (26, phys("phys_gated_all_damage_eps7", gat)),
-        (26, phys("phys_equiv_random_eps7", {"kind": "equiv", "heading": "random"})),
+        (26, phys("physB_mlp_all_damage_eps7", {})),
+        (26, phys("physB_scales2_all_damage_eps7", {"scales": [1.0, 2.0]})),
+        (26, phys("physB_gated_all_damage_eps7", gat)),
+        (26, phys("physB_equiv_random_eps7", {"kind": "equiv", "heading": "random"})),
     ]
     # H18 fix: rerun the physical-regime configs now that the seed radius is max(2 eps, 0.4)
     for old in ("eps13_base", "eps13_gated3_rms", "eps13_all_damage", "eps13_gated3_rms_all_damage", "eps13_edge", "eps13_attn"):
@@ -175,6 +176,16 @@ def experiments():
             if cfg["name"] == old:
                 v2 = {**cfg, "name": old + "_v2"}
                 out.append((prio, v2))
+    # H20: shape-agnostic healing with a real budget, and with the cells that fit it (equivariant / random heading)
+    out += [
+        (24, agn("ag10k_mlp", {}, {"iters": 10000})),
+        (24, agn("ag10k_gated3_rms", gat, {"iters": 10000})),
+        (24, agn("ag10k_attn_mem8", {"kind": "attn", "mem": 8}, {"iters": 10000})),
+        (24, agn("ag10k_equiv", {"kind": "equiv"}, {"iters": 10000})),
+        (24, agn("ag10k_equiv_random", {"kind": "equiv", "heading": "random"}, {"iters": 10000})),
+        (24, agn("ag10k_mlph_random", {"kind": "mlph", "heading": "random"}, {"iters": 10000})),
+        (24, agn("ag10k_scales2", {"scales": [1.0, 2.0]}, {"iters": 10000})),
+    ]
     # H16: how few neighbours can it live with? eps 0.05 is about 7 neighbours, 0.04 about 5 (line of sight limits real bots to 4-6)
     gated_n = {"block": "gated", "depth": 3, "norm": "rms", "zero_head": True}
     for tag, e in (("eps7", 0.05), ("eps5", 0.04)):

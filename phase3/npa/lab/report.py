@@ -65,8 +65,9 @@ def fmt(r, base=None):
     k = f"{easy:+6.3f} {hard:+6.3f} {rh:5.2f} " + " ".join(f"{ke[x]:+5.2f}" for x in KINDS)
     delta = f"{r['score'] - base:+6.3f}" if base is not None else "      "
     mins = f"{r['minutes']:4.0f}" if r["minutes"] else "   -"
+    flag = "  BROKEN" if (r["iters"] or 0) < 0.5 * (r["cfg"].get("train", {}).get("iters") or 1) else ""
     return (f"{r['name'][:30]:30s} {r['score']:6.3f} {delta} {r['control']:6.3f} {r['drift']:+6.3f}  {k}  "
-            f"{(r['params'] or 0):7,d} {mins}m")
+            f"{(r['params'] or 0):7,d} {mins}m{flag}")
 
 
 def main():

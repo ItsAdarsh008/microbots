@@ -112,6 +112,7 @@ DEFAULTS = {
     "step_len_noise": 0.0,           # relative sigma of the executed stride length (recommended 0.2)
     "step_dir_noise": 0.0,           # sigma (rad) of the executed stride direction (recommended 0.087 = 5 deg)
     "bearing_noise": 0.0,            # sigma (rad) of the bearing error of a sensed neighbour (approximated, see docstring)
+    "stop_proj_grad": False,         # True: forward uses the overlap push, backward ignores it (stops exploding gradients)
     "hop_success": 1.0,              # lattice: probability a proposed hop succeeds (recommended 0.9)
     "latency": 0,
     "dock_rounds": 4,
@@ -324,7 +325,10 @@ class Embodied:
             d = pend
         else:
             mem_out = bmem_o
-        x_new = project_overlaps(x + d, live_m, 2.0 * c["body_r"], c["proj_iters"], c["relax"])
+        x_pre = x + d
+        x_new = project_overlaps(x_pre, live_m, 2.0 * c["body_r"], c["proj_iters"], c["relax"])
+        if c["stop_proj_grad"]:
+            x_new = x_pre + jax.lax.stop_gradient(x_new - x_pre)
         return jnp.where(lv, x_new, x), s_new, mem_out, move
 
     # ---- stride (phys) ------------------------------------------------------------------------------------------

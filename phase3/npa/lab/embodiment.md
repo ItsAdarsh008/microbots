@@ -19,8 +19,11 @@ them and which ones are assumptions that still need checking. Change a decision 
 
 ## Decisions
 
-**D1. Scale.** 1 world unit = 900 mm. Body diameter 30 mm = 0.033 u (radius 0.0167). The lizard (N = 1024) then has bots
-about one body diameter apart. The method is scale-free; this fixes numbers for the sim.
+**D1. Scale (corrected).** 1 world unit = **1160 mm**. Body diameter 30 mm = 0.0259 u (radius 0.0129). The first choice,
+900 mm per unit, made 1,024 bots fill 78% of the lizard (hex packing maximum 91%) and the seed disc 178% packed, which is
+impossible, so overlap projection exploded (`runs/phys_*`, H19). At 1160 mm per unit the lizard is 47% packed; a physical
+run needs a seed disc of radius 0.55 (`seed_radius`). Derived: sensing eps 0.05 u = 58 mm = 2 body diameters; stride
+18 to 50 mm = 0.0155 to 0.043 u; range noise 2 mm = 0.0017 u; port-to-port pitch 28 mm = 0.0241 u.
 
 **D2. Sensing radius and neighbours.** The paper's lizard sensed about 120 neighbours (eps 0.2 u = 180 mm = 6 body
 diameters). A bot cannot talk to 120 neighbours, and line of sight limits it to about 4 to 6. We test eps = 0.066 u (59 mm,

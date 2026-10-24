@@ -144,7 +144,7 @@ def train(cfg, log=print):
     key = jax.random.PRNGKey(cfg.get("seed", 0) + 1)
 
     def fresh(count):
-        x, s = jax.vmap(lambda k: npa.seed(k, n, radius=max(2 * eps, 0.4)))(jax.random.split(jax.random.fold_in(key, rng.integers(1 << 30)), count))
+        x, s = jax.vmap(lambda k: npa.seed(k, n, radius=cfg.get("seed_radius") or max(2 * eps, 0.4)))(jax.random.split(jax.random.fold_in(key, rng.integers(1 << 30)), count))
         return np.array(x), np.array(s)      # writable copies: the pool is updated in place
 
     pool_x, pool_s = fresh(POOL_SIZE)
@@ -217,6 +217,7 @@ def main():
         result = importlib.import_module(ev_module).run(cell, params, eps, eps, cfg["particles"], cfg)
     else:
         result = evaluate.run(cell, params, eps, eps, cfg["particles"],
+                              protocol={**evaluate.PROTOCOL, "seed_radius": cfg.get("seed_radius")},
                               target=tgt.load_target(shapes.path(cfg.get("shape", "lizard"))))
     sm = result["summary"]
     log(f"scored in {time.time() - t0:.0f}s: score {sm['score']:.4f}  excess {sm['excess']:.4f}  "

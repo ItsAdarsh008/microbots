@@ -81,7 +81,7 @@ def run(cell, params, eps, eps0, n, protocol=PROTOCOL, block=None, target=None):
 
     # layout: index = level * n_seeds + seed, so reshape(n_levels, n_seeds) recovers the grid
     seed_keys = jnp.tile(jnp.stack([jax.random.PRNGKey(s) for s in seeds]), (n_levels, 1))
-    x0, s0 = jax.vmap(lambda k: npa.seed(k, n, radius=max(2 * eps, 0.4)))(seed_keys)
+    x0, s0 = jax.vmap(lambda k: npa.seed(k, n, radius=protocol.get("seed_radius") or max(2 * eps, 0.4)))(seed_keys)
     mem0 = jnp.zeros((batch, n, cell.mem_dims))
     alive0 = jnp.ones((batch, n))
 

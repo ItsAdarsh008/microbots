@@ -21,10 +21,10 @@ MASTER = HERE / "queue" / "master"
 PHYS_EPS = 0.066
 
 # the recommended physical parameters (embodiment.md D3-D5, locomotion_findings.md), all in world units, 1 unit = 900 mm
-PHYS = {"mode": "phys", "sense_noise": 0.0022, "quant_bits": 8, "dropout": 0.3,        # 2 mm range noise, 8-bit states, line-of-sight losses
-        "max_step": 0.055, "min_step": 0.02,                                        # strides of 18 to 50 mm
-        "step_len_noise": 0.2, "step_dir_noise": 0.087, "bearing_noise": 0.087}     # +-20% length, +-5 deg heading and bearing
-LATTICE = {"mode": "lattice", "sense_noise": 0.0022, "quant_bits": 8, "dropout": 0.3, "hop_success": 0.9}
+PHYS = {"mode": "phys", "sense_noise": 0.0017, "quant_bits": 8, "dropout": 0.3, "body_r": 0.0129, "port_d": 0.0121,
+        "max_step": 0.043, "min_step": 0.0155, "step_len_noise": 0.2, "step_dir_noise": 0.087, "bearing_noise": 0.087,
+        "stop_proj_grad": True}
+LATTICE = {"mode": "lattice", "sense_noise": 0.0017, "quant_bits": 8, "dropout": 0.3, "hop_success": 0.9, "port_d": 0.0121}
 EMBODIMENTS = {"phys": PHYS, "lattice": LATTICE}
 
 

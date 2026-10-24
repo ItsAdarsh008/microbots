@@ -157,6 +157,8 @@ def train(cfg, log=print):
     pool_x, pool_s = fresh(pool_k)
     pool_m = np.zeros((run.POOL_SIZE, n, cell.mem_dims), np.float32)
     pool_a = np.ones((run.POOL_SIZE, n), np.float32)
+    pool_age = np.zeros(run.POOL_SIZE, np.int32)
+    max_age = tc.get("pool_max_age")      # an entry rolled out this many times goes back to a fresh seed (None: never)
     milestones = {int(f * tc["iters"]) for f in run.LR_MILESTONES}
     lr, curve, t0 = tc["lr"], [], time.time()
     recoveries, last_blowup, lr_cap = 0, -10_000, lr
@@ -168,6 +170,11 @@ def train(cfg, log=print):
         if recoveries and it - last_blowup > 300:
             recoveries = 0
         idx = rng.permutation(run.POOL_SIZE)[:batch]
+        if max_age:
+            old = idx[pool_age[idx] >= max_age]
+            if len(old):
+                pool_x[old], pool_s[old] = fresh(pool_k[old])
+                pool_m[old], pool_a[old], pool_age[old] = 0.0, 1.0, 0
         x, s, m, a, k = pool_x[idx].copy(), pool_s[idx].copy(), pool_m[idx].copy(), pool_a[idx].copy(), pool_k[idx].copy()
         if it % run.SEED_EVERY == 0:
             k[:1] = shape_rng.integers(num_shapes, size=1)
@@ -196,6 +203,8 @@ def train(cfg, log=print):
         pool_x[idx], pool_s[idx], pool_m[idx], pool_a[idx] = map(np.asarray, (x, s, m, a))
         pool_k[idx] = k       # unchanged for pool samples; the injected seed has its new shape
         lr = min(lr * 1.02, lr_cap)
+        pool_age[idx] += 1
+        pool_age[idx[:1]] = np.where(it % run.SEED_EVERY == 0, 0, pool_age[idx[:1]])   # the injected seed starts young
         elem = np.asarray(parts["elem"])
         curve.append({"iter": it, "loss": loss, "density": float(parts["density"]), "colour": float(parts["colour"])})
         if it % 100 == 0 or it == tc["iters"] - 1:

@@ -113,3 +113,14 @@ hard-damage excess +0.015 (`base_10k` +0.100), drift +0.075. So it grows as well
 (the baseline drifts -0.07). Caps 8 and 16 stopped again at about 4,900 of 10,000 iterations (43 and 40 blow-ups), as did `pa4_mem8_all_damage` (830 iterations),
 so the cap helps the plain MLP but not memory or gated cells (H26 stays open). One seed; `pa4_all_damage_s1`, caps 2 and 3, and the physical-body deployment
 (`pa4_all_damage__phys`, body noise and strides only, ideal sensing radius) are queued.
+
+## 15. Update 18:25: the best lizard models so far, and what they are (H23, H26 revised)
+`pa8_scales2_all_damage` (plain MLP that also senses at 2 eps, 19k parameters, damage on every kind, pool entries reset after 8 uses, 10,000 iterations, no
+blow-ups): score 0.085, control loss 0.084, grown-lizard IoU 0.955, hard-damage repair 0.99, drift 0.000. `pa8_mem8_all_damage` (gated cell with RMSNorm and 8 private
+memory channels, same recipe, 36 blow-ups recovered): score 0.086, control 0.080, repair 0.92, drift 0. For comparison: `base_10k` 0.221, `pa4_all_damage` 0.184,
+`mem8_clip1` 0.174. Per-kind scores of the first are 0.082 to 0.089 on every damage kind, i.e. damage costs almost nothing over the undamaged lizard. Checks: training
+completed all iterations, the evaluator files are the same as `pa4_all_damage`'s (only `lab/evaluate.py`'s seed-radius edit separates them from `base_10k`, which
+does not change anything at eps 0.2), and the loss fell steadily. One seed each; seeds 1 and 2 are queued, so treat the size of the gain as unconfirmed.
+What this changes: the plain MLP needs a cap of 4 or less (cap 8 collapsed it), but with 2-eps sensing or memory a cap of 8 is enough, so the extra sensing range or memory
+makes the damage-trained rule stable (H26 was wrong that memory cells cannot train; it was the combination of gated block and cap 4 that stopped at 830 iterations).
+It is a lizard result. The same recipe is queued on four shapes in one network (`ms4_*_pa8`, 40,000 iterations), which is the transfer test that matters.

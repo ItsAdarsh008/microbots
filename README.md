@@ -3,7 +3,7 @@ programmable matter, inspired by big hero 6. this repo holds all my work until t
 
 ## For collaborators
 
-**Current status:** Phases 0–2 are built. Phase 0 is a 2D random walk in NumPy and JAX ([Chapter 0](textbook/00-random-walk.md)); Phase 1 is a 1,000-bot flock that uses only local rules ([Chapter 1](textbook/01-flocking.md)); Phase 2 recreates the 2014 Kilobot self-assembly algorithm, with 150 robots building a star, a wall or the letter K ([Chapter 2](textbook/02-self-assembly.md)). Next: clear the Chapter 0–2 understanding gates, then Phase 3 (the self-healing neural cellular automaton, moving to 3D). Phases 0–2 are 2D; the swarm moves to 3D from Phase 3. See [ROADMAP.md](ROADMAP.md) for the full plan and per-phase checklists.
+**Current status:** Phases 0–2 are built. Phase 0 is a 2D random walk in NumPy and JAX ([Chapter 0](textbook/00-random-walk.md)); Phase 1 is a 1,000-bot flock that uses only local rules ([Chapter 1](textbook/01-flocking.md)); Phase 2 recreates the 2014 Kilobot self-assembly algorithm, with 150 robots building a star, a wall or the letter K ([Chapter 2](textbook/02-self-assembly.md)). Phase 3 has a first piece in `phase3/npa/`: a reimplementation of the Neural Particle Automata paper, where moving particles grow a lizard and repair damage to it (see its [README](phase3/npa/README.md), including what was and was not verified). Next: clear the Chapter 0–2 understanding gates, then the rest of Phase 3 (the self-healing neural cellular automaton, moving to 3D). Phases 0–2 are 2D; the swarm moves to 3D from Phase 3. See [ROADMAP.md](ROADMAP.md) for the full plan and per-phase checklists.
 
 ![150 robots assembling themselves into the letter K](media/assemble_k.gif)
 
@@ -14,6 +14,7 @@ programmable matter, inspired by big hero 6. this repo holds all my work until t
 | `phase0/` | Phase 0 code: NumPy and JAX random walks, `animate.py`, `checks.py` |
 | `phase1/` | Phase 1 code: local-rule flocking with brute-force and cell-list neighbour search, `animate.py`, `checks.py` |
 | `phase2/` | Phase 2 code: Kilobot-style self-assembly (gradient, trilateration, edge-following), `animate.py`, `checks.py` |
+| `phase3/npa/` | Phase 3 code so far: Neural Particle Automata (growing and repairing a lizard from moving particles) in JAX, plus a browser demo |
 | `assets/microbot_v1/` | The base microbot: parametric CadQuery model, design note and an in-browser physics sandbox |
 | `textbook/` | One chapter per phase explaining the code from scratch, with exercises |
 | `media/` | Rendered clips and GIFs |
@@ -53,6 +54,14 @@ python phase1/animate.py                # 1,000-bot flock, beacon switches on ha
 ```powershell
 python phase2/checks.py                 # should end with 12/12 checks passed (2-3 minutes)
 python phase2/animate.py --shape k      # also: --shape star, --shape wall
+```
+
+**Running the particle NCA (Phase 3 so far):**
+
+```powershell
+python phase3/npa/checks.py                     # should end with 18/18 checks passed (2-3 minutes)
+python phase3/npa/export_web.py --fetch-paper   # builds the demo's weights (read the licence note in phase3/npa/README.md)
+python -m http.server -d phase3/npa/web 8000    # then open http://localhost:8000
 ```
 
 On macOS or Linux, use `python3 -m venv .venv` and `source .venv/bin/activate` instead. Step 1 of the Phase 0 walkthrough in the roadmap explains what each command does.

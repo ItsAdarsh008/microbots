@@ -159,11 +159,14 @@ def train(cfg, log=print):
     pool_a = np.ones((run.POOL_SIZE, n), np.float32)
     milestones = {int(f * tc["iters"]) for f in run.LR_MILESTONES}
     lr, curve, t0 = tc["lr"], [], time.time()
-    recoveries = 0
+    recoveries, last_blowup, lr_cap = 0, -10_000, lr
 
     for it in range(tc["iters"]):
         if it in milestones:
             lr *= run.LR_DROP
+            lr_cap *= run.LR_DROP
+        if recoveries and it - last_blowup > 300:
+            recoveries = 0
         idx = rng.permutation(run.POOL_SIZE)[:batch]
         x, s, m, a, k = pool_x[idx].copy(), pool_s[idx].copy(), pool_m[idx].copy(), pool_a[idx].copy(), pool_k[idx].copy()
         if it % run.SEED_EVERY == 0:
@@ -184,11 +187,15 @@ def train(cfg, log=print):
                 log(f"loss became {loss} at iteration {it}; giving up after {run.MAX_RECOVERIES} recoveries")
                 break
             params, opt = good
-            lr *= 0.5
+            last_blowup = it
+            lr = max(lr * 0.5, lr_cap * 0.05)
+            pool_x[idx], pool_s[idx] = fresh(pool_k[idx])
+            pool_m[idx], pool_a[idx] = 0.0, 1.0
             log(f"loss became {loss} at iteration {it}; back to the last good weights, lr now {lr:.2e} (recovery {recoveries})")
             continue
         pool_x[idx], pool_s[idx], pool_m[idx], pool_a[idx] = map(np.asarray, (x, s, m, a))
         pool_k[idx] = k       # unchanged for pool samples; the injected seed has its new shape
+        lr = min(lr * 1.02, lr_cap)
         elem = np.asarray(parts["elem"])
         curve.append({"iter": it, "loss": loss, "density": float(parts["density"]), "colour": float(parts["colour"])})
         if it % 100 == 0 or it == tc["iters"] - 1:

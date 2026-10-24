@@ -4,6 +4,13 @@ All numbers come from `runs/*/result.json` via `report.py`. Most are single runs
 the three seeds of the plain baseline differ by about +-0.025 in score, so differences below that are noise. Nothing here
 has been run on real hardware.
 
+> **Correction (found later the same day).** 23 runs stopped well before their iteration budget because my blow-up recovery
+> halved the learning rate permanently and gave up after 8 blow-ups (`report.py` marks them BROKEN). That includes
+> `all_damage_10k` (3,007 of 10,000 iterations; the name is wrong), `gated_all_damage_10k`, `scales2_all_damage`, `gated_all_damage`,
+> `train_all_damage_mem8` and the three `spec_gated_*` specialists. Their repair numbers below are from models whose learning rate
+> had collapsed near the end, so they are real measurements of those checkpoints but not of fully trained models. The recovery
+> logic is fixed (the batch's pool entries are reset, the rate recovers) and the affected runs are being rerun as `*_r2`.
+
 ## 1. Repair is a training-distribution problem (H1: confirmed)
 Repair fraction = 1 - (loss still missing after recovery) / (loss the damage caused at once); 1 means fully repaired.
 Drag levels 0.2 / 0.4 / 0.8 world units are 1 / 2 / 4 sensing radii.

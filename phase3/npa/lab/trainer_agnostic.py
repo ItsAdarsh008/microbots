@@ -144,12 +144,15 @@ def train(cfg, log=print):
     key = jax.random.PRNGKey(cfg.get("seed", 0) + 1)
     milestones = {int(f * tc["iters"]) for f in run.LR_MILESTONES}
     lr, curve, t0 = tc["lr"], [], time.time()
-    recoveries = 0
+    recoveries, last_blowup, lr_cap = 0, -10_000, lr
     mem0 = jnp.zeros((batch, n, cell.mem_dims))
 
     for it in range(tc["iters"]):
         if it in milestones:
             lr *= run.LR_DROP
+            lr_cap *= run.LR_DROP
+        if recoveries and it - last_blowup > 300:
+            recoveries = 0
         x, s, total = map(jnp.asarray, agnostic.train_batch(rng, batch, n, tc["proc_fraction"]))
         ref = render(x, s, total)                 # the reference is the START swarm
         n_warm, n_rec = int(rng.integers(tc["warm"][0], tc["warm"][1] + 1)), int(rng.integers(tc["recover"][0], tc["recover"][1] + 1))
@@ -164,9 +167,11 @@ def train(cfg, log=print):
                 log(f"loss became {loss} at iteration {it}; giving up after {run.MAX_RECOVERIES} recoveries")
                 break
             params, opt = good
-            lr *= 0.5
+            last_blowup = it
+            lr = max(lr * 0.5, lr_cap * 0.05)
             log(f"loss became {loss} at iteration {it}; back to the last good weights, lr now {lr:.2e} (recovery {recoveries})")
             continue
+        lr = min(lr * 1.02, lr_cap)
         curve.append({"iter": it, "loss": loss, "density": float(parts["density"]), "colour": float(parts["colour"])})
         if it % 100 == 0 or it == tc["iters"] - 1:
             log(f"it {it:5d} steps {n_warm}+{n_rec} loss {loss:7.4f} density {curve[-1]['density']:.4f} "

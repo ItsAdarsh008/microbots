@@ -86,7 +86,7 @@ The authors' repository ([TheDevilWillBeBee/NPA](https://github.com/TheDevilWill
 ## Update: our own models, and the experiment lab
 
 - **The demo now ships models we trained** (`web/weights/ours.js`, built by `python export_web.py --ours all_damage_10k base_10k`).
-  They are ours to publish, unlike the paper authors' weights. In the JavaScript engine (not just JAX), `all_damage_10k` returns to
+  They are ours to publish, unlike the paper authors' weights. (`all_damage_10k` is misnamed: its training stopped at about 3,000 of 10,000 iterations after repeated blow-ups; `base_10k` ran the full 10,000.) In the JavaScript engine (not just JAX), `all_damage_10k` returns to
   its own undamaged level after a state wipe, a tail cut, a foot cut and a foot torn off (IoU 0.776 to 0.790 against a control of 0.785).
   The paper-style `base_10k` grows a nicer lizard (control IoU 0.880) but only partly repairs larger damage (0.78 to 0.86). Neither is
   strictly better; closing that gap is hypothesis H21 in `lab/hypotheses.md`. Pictures: `results/repair_js_*.png`, GIFs in `media/`.

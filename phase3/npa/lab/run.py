@@ -48,7 +48,7 @@ POOL_SIZE = 512
 SEED_EVERY = 16
 LR_DROP, LR_MILESTONES = 0.3, (0.2, 0.4, 0.6, 0.8)
 ADAM = (0.9, 0.999, 1e-8)
-MAX_RECOVERIES = 8          # blow-ups survived per run before giving up
+MAX_RECOVERIES = 40         # blow-ups survived in a row-ish (the count resets after 300 clean iterations)
 SPIKE_FACTOR = 6.0          # a loss this many times its recent median counts as a blow-up too
 TRAIN_DEFAULTS = {"mode": "bptt", "iters": 3000, "batch": 8, "steps": [32, 96], "lr": 5e-4, "grid": 128, "grad": "per_tensor",
                   "noise_pos": 0.0, "noise_state": 0.0, "max_minutes": None,
@@ -152,11 +152,14 @@ def train(cfg, log=print):
     pool_a = np.ones((POOL_SIZE, n), np.float32)
     milestones = {int(f * tc["iters"]) for f in LR_MILESTONES}
     lr, curve, t0 = tc["lr"], [], time.time()
-    recoveries = 0
+    recoveries, last_blowup, lr_cap = 0, -10_000, lr
 
     for it in range(tc["iters"]):
         if it in milestones:
             lr *= LR_DROP
+            lr_cap *= LR_DROP
+        if recoveries and it - last_blowup > 300:
+            recoveries = 0
         idx = rng.permutation(POOL_SIZE)[:batch]
         x, s, m, a = pool_x[idx].copy(), pool_s[idx].copy(), pool_m[idx].copy(), pool_a[idx].copy()
         if it % SEED_EVERY == 0:
@@ -178,10 +181,14 @@ def train(cfg, log=print):
                 log(f"loss became {loss} at iteration {it}; giving up after {MAX_RECOVERIES} recoveries")
                 break
             params, opt = good
-            lr *= 0.5
+            last_blowup = it
+            lr = max(lr * 0.5, lr_cap * 0.05)       # temporary: it creeps back up after clean steps
+            pool_x[idx], pool_s[idx] = fresh(len(idx))      # the batch may have come from a poisoned pool entry
+            pool_m[idx], pool_a[idx] = 0.0, 1.0
             log(f"loss became {loss} at iteration {it}; back to the last good weights, lr now {lr:.2e} (recovery {recoveries})")
             continue
         pool_x[idx], pool_s[idx], pool_m[idx], pool_a[idx] = map(np.asarray, (x, s, m, a))
+        lr = min(lr * 1.02, lr_cap)
         curve.append({"iter": it, "loss": loss, "density": float(parts["density"]), "colour": float(parts["colour"])})
         if it % 100 == 0 or it == tc["iters"] - 1:
             log(f"it {it:5d} steps {steps:2d} loss {loss:7.4f} density {curve[-1]['density']:.4f} "

@@ -25,9 +25,10 @@ HERE = Path(__file__).resolve().parent
 WEB = HERE / "web"
 NAMES = {"all_damage_10k": "Ours: trained to repair every kind of damage (1,024 particles)",
          "base_10k": "Ours: trained like the paper, wipes only (1,024 particles)"}
-NOTES = {"all_damage_10k": "Trained here for 10,000 iterations on state wipes, cuts, tears and clumping. In our tests it repairs cuts and "
-                           "clumps at every size and tears up to 2 sensing radii; a piece torn off 4 radii away is only about half recovered.",
-         "base_10k": "Trained here the way the paper does (state wipes only). Wiped colour heals; cuts and tears mostly do not."}
+NOTES = {"all_damage_10k": "Trained here on state wipes, cuts, tears and clumping. NOTE: it was meant to train for 10,000 iterations but "
+                           "stopped at about 3,000 after repeated blow-ups, so treat it as a 3,000-iteration model. In our tests it repairs cuts "
+                           "and clumps at every size and tears up to 2 sensing radii; a piece torn off 4 radii away is only about half recovered.",
+         "base_10k": "Trained here the way the paper does (state wipes only), the full 10,000 iterations. Wiped colour heals; cuts and tears mostly do not."}
 PAPER_URL = "https://raw.githubusercontent.com/TheDevilWillBeBee/NPA/main/data/pretrained/lizard.pth"
 
 

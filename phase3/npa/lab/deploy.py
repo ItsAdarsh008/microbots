@@ -20,10 +20,12 @@ MASTER = HERE / "queue" / "master"
 # eps in world units: about two body diameters (Ø30 mm at 900 mm per unit), so ~13 neighbours in the lizard
 PHYS_EPS = 0.066
 
-EMBODIMENTS = {
-    "phys": {"mode": "phys"},
-    "lattice": {"mode": "lattice"},
-}
+# the recommended physical parameters (embodiment.md D3-D5, locomotion_findings.md), all in world units, 1 unit = 900 mm
+PHYS = {"mode": "phys", "sense_noise": 0.0022, "quant_bits": 8, "dropout": 0.3,        # 2 mm range noise, 8-bit states, line-of-sight losses
+        "max_step": 0.055, "min_step": 0.02,                                        # strides of 18 to 50 mm
+        "step_len_noise": 0.2, "step_dir_noise": 0.087, "bearing_noise": 0.087}     # +-20% length, +-5 deg heading and bearing
+LATTICE = {"mode": "lattice", "sense_noise": 0.0022, "quant_bits": 8, "dropout": 0.3, "hop_success": 0.9}
+EMBODIMENTS = {"phys": PHYS, "lattice": LATTICE}
 
 
 def make(run_name, emb, prio=40):

@@ -153,6 +153,22 @@ def experiments():
         (27, hd("heading_random_mlp_scales2", {"kind": "mlph", "heading": "random", "scales": [1.0, 2.0]})),
         (27, hd("heading_random_equiv_mem4", {"kind": "equiv", "heading": "random", "mem": 4})),
     ]
+    # H15/H16: train INSIDE the physical embodiment (strides, noisy 8-bit sensing, packet loss) at eps 0.05, about 7 neighbours
+    PHYS = {"mode": "phys", "sense_noise": 0.0022, "quant_bits": 8, "dropout": 0.3, "max_step": 0.055, "min_step": 0.02,
+            "step_len_noise": 0.2, "step_dir_noise": 0.087, "bearing_noise": 0.087}
+    all7 = [{"kind": "wipe", "level": [0.05, 0.05], "p": 1.0}] + ALL_DAMAGE[1:]
+
+    def phys(name, cell):
+        cfg = variant(name, {**cell, "embody": PHYS}, {"damage": all7})
+        cfg["eps"] = 0.05
+        return cfg
+
+    out += [
+        (26, phys("phys_mlp_all_damage_eps7", {})),
+        (26, phys("phys_scales2_all_damage_eps7", {"scales": [1.0, 2.0]})),
+        (26, phys("phys_gated_all_damage_eps7", gat)),
+        (26, phys("phys_equiv_random_eps7", {"kind": "equiv", "heading": "random"})),
+    ]
     # H18 fix: rerun the physical-regime configs now that the seed radius is max(2 eps, 0.4)
     for old in ("eps13_base", "eps13_gated3_rms", "eps13_all_damage", "eps13_gated3_rms_all_damage", "eps13_edge", "eps13_attn"):
         for prio, cfg in list(out):

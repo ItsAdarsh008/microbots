@@ -16,3 +16,4 @@ assets/*/sandbox/index.html
 # Build them locally with phase3/npa/export_web.py --fetch-paper.
 *.pth
 phase3/npa/web/weights/lizard_paper.js
+phase3/npa/runs/

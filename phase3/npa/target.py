@@ -55,7 +55,7 @@ def load_target(path=LIZARD_PNG, num_points=TARGET_POINTS):
 # =============================================================================
 # Splatting
 # =============================================================================
-def splat(pos, rgb, pixel, grid=GRID, sigma=SPLAT_SIGMA, total=None):
+def splat(pos, rgb, pixel, grid=GRID, sigma=SPLAT_SIGMA, total=None, weight=None):
     """Draw particles as Gaussian blobs. Returns a (grid, grid, 4) picture: r, g, b, density.
 
     pos: (N, 2) in [-1, 1], rgb: (N, 3). Each blob adds `rgb * weight` and `weight` to its
@@ -71,9 +71,12 @@ def splat(pos, rgb, pixel, grid=GRID, sigma=SPLAT_SIGMA, total=None):
     wx = jnp.exp(-((ax[None, :] - px[:, None]) ** 2) / (2 * sig * sig)) / norm * unit   # (N, grid)
     wy = jnp.exp(-((ax[None, :] - py[:, None]) ** 2) / (2 * sig * sig)) / norm * unit
     chans = jnp.concatenate([rgb, jnp.ones((rgb.shape[0], 1))], axis=-1)               # (N, 4)
+    if weight is not None:                                                             # 0 for deleted particles
+        chans = chans * weight[:, None]
     img = jnp.einsum("ny,nx,nc->yxc", wy, wx, chans)
     if total is not None:
-        img = img * (total / pos.shape[0])
+        count = pos.shape[0] if weight is None else jnp.maximum(jnp.sum(weight), 1.0)
+        img = img * (total / count)
     return img
 
 
@@ -89,12 +92,18 @@ def make_loss(target, grid=GRID):
     def l1l2(v):
         return jnp.abs(v) + v * v
 
-    def render(x, s):
-        x_c = x - x.mean(axis=0) + centre         # the loss does not care where the swarm sits
-        return splat(x_c, npa.colour(s), pixel, grid, total=count)
+    def render(x, s, w):
+        if w is None:
+            x_c = x - x.mean(axis=0) + centre     # the loss does not care where the swarm sits
+        else:
+            x_c = x - jnp.sum(x * w[:, None], axis=0) / jnp.maximum(jnp.sum(w), 1.0) + centre
+        return splat(x_c, npa.colour(s), pixel, grid, total=count, weight=w)
 
-    def loss(x, s, sum_move):
-        img = jax.vmap(render)(x, s)                               # (B, grid, grid, 4)
+    def loss(x, s, sum_move, alive=None):
+        if alive is None:
+            img = jax.vmap(lambda x, s: render(x, s, None))(x, s)  # (B, grid, grid, 4)
+        else:
+            img = jax.vmap(render)(x, s, alive)
         den_diff = l1l2(img[..., 3:] - t_den)
         # the colour only has to match where the density already does (this weight is not trained)
         w = jnp.exp(-jax.lax.stop_gradient(den_diff))
@@ -111,25 +120,39 @@ def make_loss(target, grid=GRID):
     return loss
 
 
-def make_eval(target, grid=GRID):
-    """Build evaluate(x, s) for one swarm: how close is it to the target? Returns a dict of floats.
+def l1l2(v):
+    return jnp.abs(v) + v * v
 
-    density / colour: the two loss terms (lower is better).
+
+def make_eval(target, grid=GRID):
+    """Build evaluate(x, s, alive=None) for one swarm: how close is it to the target? Returns a dict.
+
+    density / colour: the two loss terms (lower is better); loss = density + 5 * colour, the training loss
+    without its regularisers.
     iou: overlap of the swarm's footprint with the target's, where a pixel counts as
          'filled' if its splatted density is at least half the target's typical density.
+    alive: optional (N,) 0/1 mask; deleted particles are ignored and the density is rescaled to the
+         surviving count, so the score judges the shape the survivors make, not how many there are.
     """
-    loss = make_loss(target, grid)
     t_pos = jnp.asarray(target["pos"])
     t_img = splat(t_pos, jnp.asarray(target["rgb"]), target["pixel"], grid)
+    t_rgb, t_den = t_img[..., :3], t_img[..., 3:]
     centre = t_pos.mean(axis=0)
     count, pixel = t_pos.shape[0], target["pixel"]
     t_fill = t_img[..., 3] > 0.5
 
-    def evaluate(x, s):
-        _, parts = loss(x[None], s[None], 0.0)
-        img = splat(x - x.mean(axis=0) + centre, npa.colour(s), pixel, grid, total=count)
+    def evaluate(x, s, alive=None):
+        if alive is None:
+            mean = x.mean(axis=0)
+        else:
+            mean = jnp.sum(x * alive[:, None], axis=0) / jnp.maximum(jnp.sum(alive), 1.0)
+        img = splat(x - mean + centre, npa.colour(s), pixel, grid, total=count, weight=alive)
+        den_diff = l1l2(img[..., 3:] - t_den)
+        colour = jnp.mean(l1l2(img[..., :3] - t_rgb) * jnp.exp(-den_diff))
+        density = jnp.mean(den_diff)
         fill = img[..., 3] > 0.5
         iou = jnp.sum(fill & t_fill) / jnp.maximum(jnp.sum(fill | t_fill), 1)
-        return {"density": parts["density"], "colour": parts["colour"], "iou": iou}
+        return {"density": density, "colour": colour, "loss": DENSITY_WEIGHT * density + COLOUR_WEIGHT * colour,
+                "iou": iou}
 
     return evaluate

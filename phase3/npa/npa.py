@@ -94,7 +94,7 @@ def _inv2x2(M):
     return inv, det
 
 
-def perceive(x, s, eps, eps0, block=None, total=None):
+def perceive(x, s, eps, eps0, block=None, total=None, mass=None):
     """What each particle senses: an (N, 66) array.
 
     x: (N, 2) positions, s: (N, 16) states. Particles have mass 1.
@@ -103,6 +103,8 @@ def perceive(x, s, eps, eps0, block=None, total=None):
     block: process this many rows of the N x N interaction matrix at a time, to save memory.
     total: the particle count the density gradient is divided by (default N). Set it to the original
     count after cutting particles away, so the survivors sense the same thing they did before.
+    mass: (N,) per-particle mass, default 1. A mass of 0 makes a particle invisible to the others, which
+    is how the experiments delete particles without changing array sizes.
     """
     n = x.shape[0]
     x = lax.stop_gradient(x)               # the network does not backpropagate through positions
@@ -115,8 +117,9 @@ def perceive(x, s, eps, eps0, block=None, total=None):
         return r, jnp.sum(r * r, axis=-1)
 
     # density at every particle (the mass of everyone within eps, weighted by closeness)
-    rho = lax.map(lambda xi: jnp.sum(_poly6(offsets(xi)[1], eps), axis=-1), xb).reshape(n)
-    vol = 1.0 / rho                         # the "volume" each particle stands for
+    m = jnp.ones(n) if mass is None else mass
+    rho = lax.map(lambda xi: jnp.sum(_poly6(offsets(xi)[1], eps) * m[None, :], axis=-1), xb).reshape(n)
+    vol = m / jnp.maximum(rho, 1e-12)       # the "volume" each particle stands for (0 for a deleted one)
     vs = vol[:, None] * s
     sb = s.reshape(n // bs, bs, -1)
 
@@ -135,7 +138,7 @@ def perceive(x, s, eps, eps0, block=None, total=None):
         grad1 = jnp.einsum("bcd,bde->bce", grad0, inv)
         # straight-through: use the corrected gradient forward, the plain one for backprop
         grad = grad0 + lax.stop_gradient(grad1 - grad0)
-        drho = jnp.sum(g, axis=1)                                             # (bs, 2)
+        drho = jnp.sum(g * m[None, :, None], axis=1)                          # (bs, 2)
         return smooth, grad, drho
 
     smooth, grad, drho = lax.map(rows, (xb, sb))
@@ -152,13 +155,13 @@ def perceive(x, s, eps, eps0, block=None, total=None):
 # =============================================================================
 # 3. One update step
 # =============================================================================
-def step(params, x, s, update, eps, eps0, block=None, total=None):
+def step(params, x, s, update, eps, eps0, block=None, total=None, mass=None):
     """Advance every particle one step.
 
     update: (N, 1) array of 0/1, which particles actually update this step.
     Returns new positions, new states, and the mean move length (used as a training penalty).
     """
-    z = perceive(x, s, eps, eps0, block, total)
+    z = perceive(x, s, eps, eps0, block, total, mass)
     y = jax.nn.relu(z @ params["w1"] + params["b1"]) @ params["w2"]
     dx, ds = y[:, :SPATIAL_DIMS], y[:, SPATIAL_DIMS:]
     length = jnp.sqrt(jnp.sum(dx * dx, axis=-1, keepdims=True) + 1e-24)

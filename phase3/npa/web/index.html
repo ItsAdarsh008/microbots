@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neural Particle Automata</title>
+<style>
+  :root {
+    --bg: #12141c; --panel: #1b1e29; --line: #2c3040; --text: #e7e9f0; --muted: #98a0b5;
+    --accent: #7ee0a1; --warn: #ffc56b;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f4f5f8; --panel: #ffffff; --line: #d9dce6; --text: #1b1e29; --muted: #5d6579; --accent: #1a8f4a; --warn: #a96a00; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 1000px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  p.sub { margin: 0 0 16px; color: var(--muted); }
+  a { color: var(--accent); }
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; align-items: start; }
+  @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+  .stage { position: relative; background: #0d0f15; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  canvas { display: block; width: 100%; height: auto; aspect-ratio: 1; touch-action: none; cursor: crosshair; }
+  .hint { position: absolute; left: 10px; bottom: 8px; font-size: 12px; color: #98a0b5; pointer-events: none; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; display: grid; gap: 12px; }
+  label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+  label.row { display: flex; align-items: center; gap: 8px; }
+  select, input[type=range] { width: 100%; }
+  select { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+  .buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+  button { background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 7px 12px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #0d1a12; border-color: var(--accent); font-weight: 600; }
+  .stats { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .stats dt { color: var(--muted); } .stats dd { margin: 0; text-align: right; }
+  .note { font-size: 12.5px; color: var(--muted); margin: 0; }
+  .warn { color: var(--warn); }
+  #empty { display: none; padding: 16px; border: 1px solid var(--warn); border-radius: 10px; margin-bottom: 16px; }
+  code { background: var(--panel); padding: 1px 5px; border-radius: 4px; border: 1px solid var(--line); }
+  footer { margin-top: 20px; font-size: 12.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Neural Particle Automata</h1>
+  <p class="sub">A swarm with no leader. Every particle runs the same tiny neural network, sees only the neighbours within a small radius, and the lizard emerges. Drag across it to wipe part of it and watch the particles regrow what is missing.</p>
+
+  <div id="empty">
+    <b>No model loaded.</b> This page needs weights in <code>weights/</code>. Build them with
+    <code>python export_web.py --fetch-paper</code> (see the README), then reload.
+  </div>
+
+  <div class="layout">
+    <div class="stage">
+      <canvas id="view" width="720" height="720"></canvas>
+      <div class="hint" id="hint">drag to erase</div>
+    </div>
+
+    <div class="panel">
+      <div class="buttons">
+        <button id="play" class="primary">Pause</button>
+        <button id="reset">Regrow from seed</button>
+      </div>
+      <div>
+        <div class="note" style="margin-bottom:6px">Damage it (one click):</div>
+        <div class="buttons">
+          <button id="wipe">Wipe the head</button>
+          <button id="cut-tail">Cut the tail</button>
+          <button id="rip-foot">Rip a foot off</button>
+        </div>
+      </div>
+      <div>
+        <div class="note" style="margin-bottom:6px">Or drag on the canvas with:</div>
+        <div class="buttons" id="tools">
+          <button data-tool="erase" class="primary">Eraser</button>
+          <button data-tool="cut">Scissors</button>
+          <button data-tool="drag">Grab</button>
+        </div>
+        <p class="note" id="tool-note" style="margin-top:6px"></p>
+        <p class="note">What heals: wiped colour, and small cut-off or torn-off pieces of the body (a foot appears to grow back). What does not: a torn-off piece far from the body stays stranded, and a cut tail tip stays cut.</p>
+      </div>
+      <label>Model <select id="model"></select></label>
+      <label>Particles <select id="count"></select></label>
+      <label>Speed: <span id="speedv"></span> steps/s <input id="speed" type="range" min="5" max="120" step="5" value="40"></label>
+      <label>Tool size: <span id="brushv"></span> <input id="brush" type="range" min="0.05" max="0.5" step="0.01" value="0.18"></label>
+      <label class="row"><input id="ghost" type="checkbox" checked> Show the target outline</label>
+      <dl class="stats">
+        <dt>Step</dt><dd id="s-step">0</dd>
+        <dt>Particles</dt><dd id="s-n">-</dd>
+        <dt>Running at</dt><dd id="s-rate">-</dd>
+        <dt>Shape match (IoU)</dt><dd id="s-iou">-</dd>
+      </dl>
+      <p class="note" id="model-note"></p>
+    </div>
+  </div>
+
+  <footer>
+    The rule is from <a href="https://arxiv.org/abs/2601.16096">Neural Particle Automata (Kim et al., 2026)</a>.
+    This page runs our reimplementation (<code>npa.js</code>), checked against a JAX version of the same rule.
+    The target is the Noto Emoji lizard (Apache-2.0).
+  </footer>
+</main>
+
+<script src="npa.js"></script>
+<script src="target.js"></script>
+<!-- Models register themselves as window.NPA_MODELS[name]. A missing file is fine. -->
+<script src="weights/lizard_paper.js" onerror="void 0"></script>
+<script src="weights/lizard_ours.js" onerror="void 0"></script>
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const canvas = $("view"), ctx = canvas.getContext("2d");
+  const models = window.NPA_MODELS || {};
+  const names = Object.keys(models);
+  if (!names.length) { $("empty").style.display = "block"; return; }
+
+  // ---- the target outline and the match score ------------------------------------
+  const T = window.NPA_TARGET;                 // { side, centroid, mask (base64 of packed bits) }
+  const bits = Uint8Array.from(atob(T.mask), (c) => c.charCodeAt(0));
+  const filled = (col, row) => {               // is this target pixel part of the lizard?
+    if (col < 0 || row < 0 || col >= T.side || row >= T.side) return false;
+    const k = row * T.side + col;
+    return (bits[k >> 3] >> (k & 7)) & 1;
+  };
+  const pixel = 2 / T.side;                    // the target spans [-1, 1] in both directions
+  const ghost = document.createElement("canvas");
+  ghost.width = ghost.height = T.side;
+  {
+    const g = ghost.getContext("2d"), img = g.createImageData(T.side, T.side);
+    for (let r = 0; r < T.side; r++) for (let c = 0; c < T.side; c++) {
+      const o = 4 * (r * T.side + c);
+      if (filled(c, r)) { img.data[o] = img.data[o + 1] = img.data[o + 2] = 255; img.data[o + 3] = 255; }
+    }
+    g.putImageData(img, 0, 0);
+  }
+  let targetCells = 0;
+  const GRID = 48;                             // match score is computed on a 48 x 48 grid
+  const tFill = new Uint8Array(GRID * GRID);
+  for (let r = 0; r < GRID; r++) for (let c = 0; c < GRID; c++) {
+    const col = Math.floor((c + 0.5) / GRID * T.side), row = Math.floor((r + 0.5) / GRID * T.side);
+    if (filled(col, row)) { tFill[r * GRID + c] = 1; targetCells++; }
+  }
+
+  // ---- state -----------------------------------------------------------------
+  let model, swarm, paused = false, wipe = null, tool = "erase";
+  const view = 1.0;                            // the canvas shows [-view, view] in both directions
+  const rgb = [0, 0, 0];
+  const counts = [1024, 2048, 4096, 8192];
+
+  names.forEach((n) => { const o = document.createElement("option"); o.value = n; o.textContent = models[n].label || n; $("model").appendChild(o); });
+  counts.forEach((n) => { const o = document.createElement("option"); o.value = n; o.textContent = n.toLocaleString(); $("count").appendChild(o); });
+
+  function load(name, n) {
+    model = models[name];
+    n = n || model.particles || 4096;
+    $("count").value = String(n);
+    swarm = new NPA.Swarm(model, n, { eps: model.eps });
+    $("model-note").textContent = model.note || "";
+    $("model-note").classList.toggle("warn", n !== (model.particles || 4096));
+    if (n !== (model.particles || 4096)) $("model-note").textContent += ` Trained at ${model.particles || 4096} particles; ${n} is an experiment.`;
+  }
+  $("model").onchange = () => load($("model").value);
+  $("count").onchange = () => load($("model").value, parseInt($("count").value, 10));
+  $("reset").onclick = () => swarm.reseed();
+  $("play").onclick = () => { paused = !paused; $("play").textContent = paused ? "Play" : "Pause"; };
+  // one-click damage, applied between steps. Landmarks are found on the swarm itself, so they work wherever it sits.
+  $("wipe").onclick = () => { wipe = () => { const [x, y] = swarm.landmark("head"); swarm.erase(x, y, 0.3); }; };
+  $("cut-tail").onclick = () => { wipe = () => { const [x, y] = swarm.landmark("tail"); swarm.remove(x, y, 0.25); }; };
+  $("rip-foot").onclick = () => { wipe = () => { const [x, y] = swarm.landmark("left"); swarm.drag(x, y, 0.2, -0.3, 0); }; };
+  const TOOLS = {
+    erase: ["drag to erase", "Wipes the state of the particles under it, like the damage the swarm was trained on. They stay where they are."],
+    cut: ["drag to cut", "Deletes the particles under it for good. The swarm cannot make new ones, so the rest has to spread out to refill the shape."],
+    drag: ["drag to pull particles", "Pulls the particles under it along with the pointer, tearing them off the body."],
+  };
+  document.querySelectorAll("#tools button").forEach((b) => {
+    b.onclick = () => {
+      tool = b.dataset.tool;
+      document.querySelectorAll("#tools button").forEach((o) => o.classList.toggle("primary", o === b));
+      $("hint").textContent = TOOLS[tool][0]; $("tool-note").textContent = TOOLS[tool][1];
+    };
+  });
+  $("tool-note").textContent = TOOLS.erase[1];
+  $("speed").oninput = () => { $("speedv").textContent = $("speed").value; };
+  $("brush").oninput = () => { $("brushv").textContent = Number($("brush").value).toFixed(2); };
+  $("speed").oninput(); $("brush").oninput();
+
+  // ---- pointer tools -----------------------------------------------------------
+  let pointer = null;
+  const toWorld = (e) => {
+    const b = canvas.getBoundingClientRect();
+    return [((e.clientX - b.left) / b.width * 2 - 1) * view, (1 - (e.clientY - b.top) / b.height * 2) * view];
+  };
+  const use = (p, from) => {
+    const r = +$("brush").value;
+    if (tool === "erase") swarm.erase(p[0], p[1], r);
+    else if (tool === "cut") swarm.remove(p[0], p[1], r);
+    else if (from) swarm.drag(from[0], from[1], r, p[0] - from[0], p[1] - from[1]);
+  };
+  canvas.addEventListener("pointerdown", (e) => { canvas.setPointerCapture(e.pointerId); pointer = toWorld(e); use(pointer, null); });
+  canvas.addEventListener("pointermove", (e) => { const p = toWorld(e); if (e.buttons) use(p, pointer); pointer = p; });
+  canvas.addEventListener("pointerleave", () => { pointer = null; });
+
+  // ---- drawing -----------------------------------------------------------------
+  function centroid() {
+    let cx = 0, cy = 0;
+    for (let i = 0; i < swarm.n; i++) { cx += swarm.x[2 * i]; cy += swarm.x[2 * i + 1]; }
+    return [cx / swarm.n, cy / swarm.n];
+  }
+
+  // how well does the swarm's footprint overlap the target's, after lining up their centres?
+  function iou(c) {
+    const seen = new Uint16Array(GRID * GRID);
+    for (let i = 0; i < swarm.n; i++) {
+      const wx = swarm.x[2 * i] - c[0] + T.centroid[0], wy = swarm.x[2 * i + 1] - c[1] + T.centroid[1];
+      const gc = Math.floor((wx + 1) / 2 * GRID), gr = Math.floor((1 - wy) / 2 * GRID);
+      if (gc >= 0 && gr >= 0 && gc < GRID && gr < GRID) seen[gr * GRID + gc]++;
+    }
+    const need = Math.max(1, 0.3 * swarm.n / targetCells);   // "filled" means a fair share of particles
+    let both = 0, either = 0;
+    for (let k = 0; k < GRID * GRID; k++) {
+      const a = seen[k] >= need, b = tFill[k] === 1;
+      if (a && b) both++;
+      if (a || b) either++;
+    }
+    return both / either;
+  }
+
+  function draw() {
+    const W = canvas.width, scale = W / (2 * view);
+    ctx.fillStyle = "#0d0f15"; ctx.fillRect(0, 0, W, W);
+    const c = centroid();
+    if ($("ghost").checked) {
+      // the outline sits where the target would be if its centre were at the swarm's centre:
+      // the target image spans world [-1, 1], so shift its corner by (swarm centre - target centre)
+      const left = (-1 - T.centroid[0] + c[0] + view) * scale;
+      const top = (view - (1 - T.centroid[1] + c[1])) * scale;
+      ctx.globalAlpha = 0.16;
+      ctx.drawImage(ghost, left, top, 2 * scale, 2 * scale);
+      ctx.globalAlpha = 1;
+    }
+    const r = Math.max(1.4, scale * 0.0095 * Math.sqrt(4096 / swarm.n));
+    for (let i = 0; i < swarm.n; i++) {
+      NPA.colour(swarm.s, i, rgb);
+      ctx.fillStyle = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
+      ctx.fillRect((swarm.x[2 * i] + view) * scale - r, (view - swarm.x[2 * i + 1]) * scale - r, 2 * r, 2 * r);
+    }
+    if (pointer) {
+      ctx.strokeStyle = "rgba(255,255,255,0.7)"; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc((pointer[0] + view) * scale, (view - pointer[1]) * scale, +$("brush").value * scale, 0, 2 * Math.PI); ctx.stroke();
+    }
+    return c;
+  }
+
+  // ---- main loop: run as many steps as the speed setting asks for, within a time budget ------
+  let last = performance.now(), owed = 0, rateSteps = 0, rateT = last, uiT = 0;
+  function frame(now) {
+    const dt = Math.min(now - last, 100); last = now;
+    if (wipe) { wipe(); wipe = null; }
+    if (!paused) {
+      owed += dt / 1000 * +$("speed").value;
+      const budgetEnd = performance.now() + 14;     // never spend more than ~14 ms stepping per frame
+      while (owed >= 1 && performance.now() < budgetEnd) { swarm.step(); owed--; rateSteps++; }
+      if (owed > 4) owed = 4;                       // too slow for the requested speed: do not pile up
+    }
+    const c = draw();
+    if (now - uiT > 250) {
+      uiT = now;
+      $("s-step").textContent = swarm.steps;
+      $("s-n").textContent = swarm.n === swarm.n0 ? swarm.n.toLocaleString() : `${swarm.n.toLocaleString()} of ${swarm.n0.toLocaleString()}`;
+      $("s-iou").textContent = (iou(c) * 100).toFixed(0) + "%";
+      if (now - rateT > 1000) { $("s-rate").textContent = (rateSteps * 1000 / (now - rateT)).toFixed(0) + " steps/s"; rateSteps = 0; rateT = now; }
+    }
+    requestAnimationFrame(frame);
+  }
+
+  load(names[0]);
+  $("model").value = names[0];
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

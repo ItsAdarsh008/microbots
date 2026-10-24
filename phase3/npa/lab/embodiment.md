@@ -71,3 +71,8 @@ that only holds for ideal dots at 120 neighbours is reported as such.
 - the tip-pivot gait itself (a kinematic construction: needs the cannon-es sandbox or a bench test, and a real foot is a toothed Ø10 face that may slip),
 - IR range-and-bearing accuracy of our own ring (literature figures are for other robots),
 - 3 N holding force, and docking reliability when two bots slide into a port.
+
+**D9. Stride granularity versus spacing (new, from the first physical shape-agnostic run).** Sensing at 58 mm forces a bot spacing of about 38 mm for
+neighbours to see each other, and a stride is 18 to 50 mm, so a single move is about a whole spacing: bots cannot make fine adjustments. This is a property of
+the proposed gait and sensor, not of the learning method; `ag_phys_abl_*` separate its parts. If it dominates, the hardware options are a finer gait (shorter minimum stride)
+or a longer sensing radius with sparser swarms.

@@ -139,3 +139,13 @@ It is a lizard result. The same recipe is queued on four shapes in one network (
 7e-8 in position and 2e-6 in state after one step, 4e-6 and 1e-4 after five (my first version was wrong by 0.29 in state: it used the doubled radius in the gradient scale, caught by this
 check). The plain-network parity (1e-5) is unchanged. `pa8_scales2_all_damage` now has a repair clip on the dashboard and is in the public demo. Frames at step 192 and 440 (head wiped,
 tail cut to 970 particles, foot torn off) show a lizard with all legs and the curled tail, qualitatively consistent with its score of 0.085 (one seed).
+
+## 18. Update 19:20: shape-agnostic, geometry-trained (H27, H30)
+Loss after recovery against the do-nothing floor, by severity (small/medium/large), unseen shapes, ideal body unless stated:
+- `ag10k_equiv` (damage mix p 0.2, 10,000 iterations): clump 0.07/0.08/0.09 vs 0.15/0.25/0.53; noise 0.14/0.17/0.20 vs 0.20/0.33/0.47; control 0.005.
+- `ag_geo_attn_mem8` (geometry damage, 6,000 iterations): clump 0.11/0.12/0.13; noise 0.14/0.17/0.20; cut 0.12/0.16/0.23 (do-nothing 0.11/0.21/0.33); control 0.062.
+- `ag_geo_scales2`: nearly identical to `ag_geo_attn_mem8` (control 0.073). So the cells are interchangeable again here; geometry-only training did not beat the mixed-damage run on fidelity.
+- `ag_geo_phys_mlph_random` (physical body: strides, noisy 8-bit sensing, packet loss; every bot with its own random heading): NOT working yet. Control loss 0.217, worse than doing nothing at small and
+  medium damage (e.g. clump 0.23 vs 0.15 at the small level), better only at the largest (clump 0.25 vs 0.53). The body noise and strides alone keep it from holding the original shape.
+  One run, 6,000 iterations; the equivariant physical run and the `warm_loss` runs are queued. The headline for the robot goal is that shape-agnostic repair is shown with ideal bodies and
+  unseen shapes, and not yet with the physical body.

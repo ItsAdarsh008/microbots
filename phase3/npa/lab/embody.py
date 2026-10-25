@@ -116,6 +116,8 @@ DEFAULTS = {
     "axis_seed": 0,                  # seed of the per-bot pole-axis heading; use the same as the cell's heading_seed (default 0)
     "axis_dual": False,              # True: each tick a bot uses ONE of its two orthogonal lines (perpendicular to the pole axis, or along it), chosen at random:
                                      # a bracket for a bot that can quarter-turn (the measured gaits turn the line by about 85 deg)
+    "turn_min": 0.0,                 # axis_turn: smallest proposal length (world units) that can trigger a turn (default 0: any proposal above 1e-7, so network noise flips lines)
+    "turn_margin": 1.0,              # axis_turn: the other line's component must exceed this multiple of the current line's component to turn (1 = whichever is larger)
     "axis_turn": False,              # True (with axis_lock): a controllable quarter-turn. Each bot has one bit of state (which of its two orthogonal lines it is on, kept in
                                      # one extra mem channel). A proposal mostly along the OTHER line makes the tick a turn: no stride, a sideways shift of turn_shift along the old line
                                      # (random sign), and the line switches; a proposal along the current line is a normal stride. The perception frame is kept fixed (a real bot knows
@@ -366,8 +368,10 @@ class Embodied:
             if c["axis_turn"]:
                 d_full = d
                 cur_a = L > 0.5                                             # which line the bot is on (False: perpendicular to the pole axis)
-                want_a = jnp.abs(jnp.sum(d * a, -1, keepdims=True)) > jnp.abs(jnp.sum(d * u, -1, keepdims=True))
-                acts = jnp.sqrt(jnp.sum(d * d, -1, keepdims=True)) > 1e-7
+                comp_a, comp_u = jnp.abs(jnp.sum(d * a, -1, keepdims=True)), jnp.abs(jnp.sum(d * u, -1, keepdims=True))
+                comp_cur, comp_other = jnp.where(cur_a, comp_a, comp_u), jnp.where(cur_a, comp_u, comp_a)
+                acts = jnp.sqrt(jnp.sum(d * d, -1, keepdims=True)) > max(1e-7, c["turn_min"])      # a turn needs a deliberate proposal, not network noise
+                want_a = jnp.where(comp_other > c["turn_margin"] * comp_cur, ~cur_a, cur_a)           # margin > 1: hysteresis
                 turning = lax.stop_gradient(acts & (want_a != cur_a))
                 w = jnp.where(cur_a, a, u); perp = jnp.where(cur_a, u, a)
                 sgn_turn = jnp.where(jax.random.bernoulli(k_tax, 0.5, d.shape[:1] + (1,)), 1.0, -1.0).astype(d.dtype)

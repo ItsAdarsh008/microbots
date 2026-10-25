@@ -11,6 +11,11 @@
      "gif": "gifs/swarm_free_vs_oneline_donut.gif"
     },
     {
+     "name": "free motion vs one-line motion (shape with holes)",
+     "cfg": "same unseen procedural shape with two holes, cut off and squashed, repaired by one-line body-model run ag_axis_mlph_scales2 (left) and free-motion ideal-dot run ag_eps7_scales2_warm1 (right). Different bodies AND training, so it shows the size of the gap, not its cause. One shape, one sample.",
+     "gif": "gifs/swarm_free_vs_oneline_proc6.gif"
+    },
+    {
      "name": "swarm run (body model)",
      "cfg": "1,024 bots on an unseen shape (the lizard emoji), body model (assumed, motion limits measured in MuJoCo): one line per bot, noisy sensing, 30% packet loss. Four copies: no damage, cut off, squashed, scrambled; damaged at step 32, then left alone. ag_axis_mlph_scales2.",
      "gif": "gifs/swarm_body_lizard.gif"

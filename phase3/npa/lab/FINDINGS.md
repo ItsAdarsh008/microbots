@@ -162,3 +162,12 @@ doing nothing at every severity (clump 0.09/0.10/0.11 against 0.15/0.25/0.53; no
 `ag_geo_warm1_mlp`: control 0.053, score 0.164, same pattern slightly weaker. This matches the earlier `ag10k_equiv` (score 0.122, 10,000 iterations, mixed damage) and does not beat it,
 so on unseen shapes with an ideal body, the best we have is: clump and noise repaired well, tears and cuts only a little, colour wipes not at all. One run per cell. The unfixed gap is cuts
 (survivors only) and large tears; both need either more mass than the swarm has or sensing beyond a fragment's neighbours.
+
+## 21. Update 20:40: seeds, drift, the drift penalty across cells, and which part of the body model hurts
+- **H29 (two seeds):** `pa8_scales2_all_damage_s1` scores 0.081 (control 0.078, repair 0.98) against 0.085 for seed 0; the difference, 0.004, is far below the +-0.025 seed spread. The other two winners' seeds are still running.
+- **H28:** `pa4_long_all_damage` (pool cap 4, rollouts of 64 to 160 steps): score 0.135 (was 0.184), control 0.104, drift +0.019 (was +0.075), hard-damage repair 0.83. Longer rollouts under the cap cut the drift without losing repair. One seed.
+- **H30 across cells:** `ag_geo_warm1_attn_mem8` control 0.019, `ag_geo_warm1_equiv` 0.025, `ag_geo_warm3_scales2` 0.035, `ag_geo_warm1_mlp` 0.053 (all 0.06 to 0.15 without the penalty). The drift penalty works for every cell.
+- **H31 (assumed body model, shape-agnostic, one run each):** undamaged control with the full model 0.217; without sensing noise 0.224; without packet loss 0.221; with only the step cap and the no-overlap rule 0.089
+  (`ag_phys_abl_body_only`). The sensing noise and packet loss do not matter; the stride rules (18 mm minimum stride, 20% stride noise) do. The `nostride` run is still pending. This result is
+  now partly moot: the MuJoCo measurements on the CAD meshes (`assets/microbot_v1/mujoco/FINDINGS.md`) show the 18 mm minimum stride is not a property of this gait (strides scale at about 0.3 mm per degree);
+  the real constraint found there is one-line motion (H33), tested by the `ag_axis_*` runs.

@@ -386,3 +386,13 @@ See `assets/microbot_v1/mujoco/FINDINGS.md` (section "Docked pair") and `dock_pa
 
 ## 49. Correction 16:40 to section 47: the unwelded pair's 23 degree "yaw" was a measurement artifact
 The bearing between two independently rolling bots changes by about 22 degrees with opposite rolls (about 15 mm each way over an 82 mm separation), so there was nothing to investigate; it also appears at 90 mm separation with no contact. A pivoting (ball-joint) dock at the tips gives yaw of about -1 degree and 5 mm of motion: it blocks the rolls. So both docks tried (rigid weld and pivot) fail to turn a docked pair with the one-roll script. Details in `assets/microbot_v1/mujoco/FINDINGS.md`.
+
+## 50. Update 17:20: a weaker straight-through weight turns less, and the swarm is still worse than without turning (H39, H43)
+`ag_turnst03_mlph_scales2` (turn_min 0.01, margin 2, `turn_st` 0.3, two rings, one-line body, 6,000 iterations, no blow-ups, one seed). Same thresholds as `ag_turn2_mlph_scales2` (`turn_st` 0) and `ag_turnst2_mlph_scales2` (`turn_st` 1.0):
+| `turn_st` | turns per bot-tick (`lab/turn_rate.py`) | undamaged control | clump | noise | drag | cut |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 (`ag_turn2_mlph_scales2`) | 0 | 0.045 | 0.04/0.13/0.39 | 0.00/0.07/0.20 | 0.00/0.02/0.01 | 0.00/0.02/0.03 |
+| 0.3 (`ag_turnst03_mlph_scales2`) | 0.00458 | 0.157 | -0.03/0.07/0.33 | -0.08/0.02/0.15 | -0.05/-0.01/0.00 | -0.07/-0.01/0.03 |
+| 1.0 (`ag_turnst2_mlph_scales2`) | 0.0195 | 0.213 | -0.08/0.02/0.29 | -0.13/-0.02/0.12 | -0.09/-0.04/-0.02 | -0.11/-0.03/0.02 |
+- **Pattern (three single runs, one seed each):** the more the cells turn, the worse the undamaged swarm (control 0.045, 0.157, 0.213) and the repair, and no turning run beats the no-turn run on cut or drag at any severity. The straight-through gradient does make the cell turn (0.46% of bot-ticks at 0.3), so the explanation in section 36 holds in that sense, but under this body model, this turn cost (a 28 mm side shift, 0.57 of the sensing radius) and these thresholds, turning has cost more than it gave.
+- **H39 (a controllable turn recovers cut and tear repair):** not supported by anything I have run. It is not refuted either: the turn cost is a measured gait (about 4 s and a 32 mm side shift in MuJoCo), the cell was never taught that cost explicitly, and the estimator is a guess. A turn used rarely and deliberately (for example only for cuts) would need a different design, for example a learned cost for turning, which I have not built.

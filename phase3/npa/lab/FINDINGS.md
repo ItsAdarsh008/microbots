@@ -310,3 +310,11 @@ Per-severity gains over do-nothing (small/medium/large, mean over held-out shape
 
 ## 38. Note 03:50: the thinned-ring test (H42) is built and queued, not run
 `lab/cells_mlphthin.py` (cell kind `mlphthin`, option `ring_vis`) is the random-heading plain cell whose second ring sees each pair beyond eps with probability `ring_vis` (default 0.25, from the line-of-sight count in section 34); the hash that decides visibility is symmetric in the pair and fixed while the swarm is still. It is an approximation of occlusion (real shadowing is correlated), not a model of it. `lab/test_thin.py` passes 7 of 7 checks (full visibility equals `npa.perceive` to 1.5e-6; about 25% of far pairs visible, measured 0.246; symmetric; finite step and gradients). Queued: `ag_thin_axis_mlph_scales2` (one-line body, same as `ag_axis_mlph_scales2` otherwise; compare cut 0/0.02/0.03, noise 0/0.07/0.19) and `ag_thin_free_scales2` (ideal body, same as `ag_eps7_scales2_warm1` otherwise; compare noise -0.01/0.07/0.21, cut 0/0.05/0.10). Nothing to read until they finish (about 1 to 3 hours).
+
+## 39. Update 04:08: 20,000 iterations help a little at 120 neighbours (free motion, equivariant cell)
+`ag_geo_warm1_equiv_20k_L` (20,000 iterations, finished) against the three 6,000-iteration seeds of `ag_geo_warm1_equiv`; gains over do-nothing, small/medium/large, mean over held-out shapes:
+| run | control | clump | noise | drag | cut |
+| --- | --- | --- | --- | --- | --- |
+| 6k seeds 0/1/2 | 0.025/0.030/0.027 | 0.04-0.06 / 0.14-0.15 / 0.41-0.42 | 0.03-0.05 / 0.14-0.16 / 0.26-0.27 | 0.01-0.03 / 0.03-0.04 / 0.01-0.02 | 0.00-0.01 / 0.05 / 0.09-0.10 |
+| 20k (one seed) | 0.014 | 0.06/0.16/0.43 | 0.06/0.17/0.28 | 0.04/0.06/0.05 | 0.01/0.06/0.12 |
+The largest changes are drag at medium and large (0.03/0.02 to 0.06/0.05) and cut at large (0.09-0.10 to 0.12), plus a lower undamaged control (0.014). Clump and noise move by 0.01 to 0.02. One seed of the long run, so the drag gain is suggestive, not established; more iterations do not change the picture (cut and tear stay the weakest kinds, still far from full repair).

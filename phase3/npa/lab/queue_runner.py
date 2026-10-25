@@ -66,7 +66,10 @@ def main():
             continue
         cfg = json.loads(job.read_text())
         name = cfg["name"]
-        limit = ((cfg.get("train", {}).get("max_minutes") or 120) + GRACE_MINUTES) * 60
+        tr = cfg.get("train", {})
+        # default budget: 120 min, or about 0.6 s per iteration if that is longer (a 40,000-iteration run needs hours); max_minutes in the config overrides
+        budget = tr.get("max_minutes") or max(120, 0.6 * tr.get("iters", 0) / 60)
+        limit = (budget + GRACE_MINUTES) * 60
         out = HERE.parent / "runs" / name
         out.mkdir(parents=True, exist_ok=True)
         ok = False

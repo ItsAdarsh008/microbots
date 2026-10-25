@@ -59,9 +59,20 @@ The NPA work answers **where** bots should be: a shape that regrows after cuts. 
 | B | **Masked action policy.** Train an NPA-style shared MLP whose output is a choice between *stay*, the slides and the pivots. Moves that break the two rules are masked out, so the policy can never drop a bot. It sees only its 3×3×3 neighbourhood plus its own hidden state. | A training setup on the lattice; the policy would replace the global distance field |
 | C | **Free particles that snap.** Keep the NPA's free movement, but particles latch when they touch and may only unlatch if nothing falls. | Mostly a comparison: shows what the free model gets away with |
 
+## Checked against the microbot v1 design
+
+[`assets/microbot_v1/DESIGN.md`](../assets/microbot_v1/DESIGN.md) answers some of the open questions:
+
+| Question | What v1 says | What it means for this model |
+| --- | --- | --- |
+| How many links per bot? | 6 genderless connectors (2 arm tips, 4 ports), and `block_2x2x2` uses all 6 on a grid | Matches the 6-face cube model here |
+| How does a bot move? | With two 3-joint arms, not by rolling like an M-Block | "Slide" and "pivot" are stand-ins for "move to a neighbouring or diagonal cell while staying linked". Each needs a matching arm sequence on the real bot. |
+| How strong are links? | About 3 N per connector (assumed); only **one** bot can stick out sideways before a connector peels | The arch repair breaks this: half the bridge sticks out several bots long. The model needs a cantilever limit. |
+| Grid or not? | The 32³ target can map onto the `block_2x2x2` lattice (28 × 28 × 81 mm cells) or onto triangulated 3-bot cells | The hand-off grid (option A) fits v1 directly |
+
 ## Questions to settle together
 
-1. **Bot geometry:** does the CAD bot have six connecting faces? Can it pivot (like M-Blocks) or only slide?
-2. **Strength:** how far can a linked arm stick out before the joints fail? In the arch repair, half the bridge sticks out sideways with nothing under it.
-3. **Grid or not:** can the NPA output be snapped to a grid without losing the regrowth behaviour?
+1. **Moves:** which arm sequences give a slide and a pivot on v1? Is there a move v1 can do that the lattice model is missing?
+2. **Cantilever limit:** should rule 2 become "nothing falls **and** nothing sticks out more than one bot sideways"? That changes build order: bridges and overhangs would need temporary supports, or triangulated cells.
+3. **Lattice:** cubic (`block_2x2x2`) or triangulated? The cube model here only covers cubic.
 4. **Which option to try first:** A is quick to try; B is the real research question.

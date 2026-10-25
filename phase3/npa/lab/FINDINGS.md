@@ -284,3 +284,15 @@ Three runs under it are queued: `ag_turn_mlph_scales2`, `ag_turn_mlph_random`, `
 - Within eps: 5.7 to 6.0 neighbours in range, 5.7 to 5.9 visible (the hard cores give 5.8, not 7, at this fill; the real swarm's density was not measured, only assumed).
 - Within 2 eps: 25.8 to 26.4 in range, 10.5 to 10.8 visible (about 41%). So the second ring (between eps and 2 eps) has about 20 bots in range but about 5 visible (about 24%).
 - Reading: a two-ring cell that assumes it senses all bots out to 2 eps cannot get that from an optical line-of-sight sensor in a packed swarm. A relayed radio message through neighbours would not be blocked, but that is a different hardware assumption, and the cell was trained on full rings. This is a 2-D hard-disc stand-in with no sensor model; it says nothing about range-limited radio. The `ag_*scales2` and `ag_eps7_attn_mem8` gains (H35) therefore rest on an unverified sensing assumption. H42 (below) is the test: train and evaluate the two-ring cell with the second ring randomly thinned to about a quarter of its neighbours. Not run yet.
+
+## 35. Update 02:35: with the turn rule fixed the swarm is no longer wrecked, but controllable turning adds nothing over one-line motion (H39, H41)
+Per-severity gains over do-nothing (small/medium/large, mean over held-out shapes), one seed each:
+| run | undamaged control | clump | noise | drag | cut |
+| --- | --- | --- | --- | --- | --- |
+| `ag_turn2_mlph_scales2` (turn_min 0.01, margin 2, two rings) | 0.045 | 0.04/0.13/0.39 | 0.00/0.07/0.20 | 0.00/0.02/0.01 | 0.00/0.02/0.03 |
+| `ag_axis_mlph_scales2` (one-line, two rings; two seeds) | 0.048 | 0.03/0.13/0.39 | 0.00/0.07/0.19 | 0.00/0.02/0.01 | 0.00/0.02/0.03 |
+| `ag_turn2_mlph_random` (turn, one ring) | 0.062 | 0.01/0.10/0.36 | -0.02/0.04/0.15 | 0.00/0.01/0.01 | -0.01/0.01/0.02 |
+| `ag_axis_mlph_random` (one-line, one ring) | 0.061 | 0.01/0.10/0.36 | -0.02/0.04/0.15 | 0.00/0.01/0.01 | -0.01/0.01/0.02 |
+- **H41 (partly supported):** the undamaged control is back to 0.045 and 0.062 (old rule: 0.29 to 0.36), so the earlier failure came from the turn rule (noise triggering 28 mm jumps), as the unit test suggested. I only changed the rule and did not test other causes separately.
+- **H39 (not supported so far):** the turn runs reproduce the one-line numbers to two digits, in both pairs. The cut and tear gains do not rise toward the free-motion values (cut 0/0.05/0.10, drag 0.02/0.04/0.03). A match this close suggests the cells hardly turn, because a turn needs a proposal of at least 11.6 mm and twice as large along the other line; I have not measured how often bots turn, so this is a guess. The result is "no gain observed under this rule and training", not "turning cannot help".
+- Not run: the third run `ag_turn2_equiv_random` is still training; the thinned second ring (H42); a measurement of the turn rate.

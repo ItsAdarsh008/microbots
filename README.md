@@ -3,7 +3,7 @@ programmable matter, inspired by big hero 6. this repo holds all my work until t
 
 ## For collaborators
 
-**Current status:** Phases 0–2 are built. Phase 0 is a 2D random walk in NumPy and JAX ([Chapter 0](textbook/00-random-walk.md)); Phase 1 is a 1,000-bot flock that uses only local rules ([Chapter 1](textbook/01-flocking.md)); Phase 2 recreates the 2014 Kilobot self-assembly algorithm, with 150 robots building a star, a wall or the letter K ([Chapter 2](textbook/02-self-assembly.md)). Next: clear the Chapter 0–2 understanding gates, then Phase 3 (the self-healing neural cellular automaton, moving to 3D). Phases 0–2 are 2D; the swarm moves to 3D from Phase 3. See [ROADMAP.md](ROADMAP.md) for the full plan and per-phase checklists.
+**Current status:** Phases 0–2 are built. Phase 0 is a 2D random walk in NumPy and JAX ([Chapter 0](textbook/00-random-walk.md)); Phase 1 is a 1,000-bot flock that uses only local rules ([Chapter 1](textbook/01-flocking.md)); Phase 2 recreates the 2014 Kilobot self-assembly algorithm, with 150 robots building a star, a wall or the letter K ([Chapter 2](textbook/02-self-assembly.md)). **Linking** (`linking/`) is a side track: 3D cube bots that stay attached while they slide and pivot over each other, build a wall, tower or arch, and repair it after damage ([Linking chapter](textbook/L1-linking.md), [discussion notes](linking/README.md)). Next: clear the Chapter 0–2 understanding gates, then Phase 3 (the self-healing neural cellular automaton, moving to 3D). Phases 0–2 are 2D; the swarm moves to 3D from Phase 3. See [ROADMAP.md](ROADMAP.md) for the full plan and per-phase checklists.
 
 ![150 robots assembling themselves into the letter K](media/assemble_k.gif)
 
@@ -15,6 +15,7 @@ programmable matter, inspired by big hero 6. this repo holds all my work until t
 | `phase1/` | Phase 1 code: local-rule flocking with brute-force and cell-list neighbour search, `animate.py`, `checks.py` |
 | `phase2/` | Phase 2 code: Kilobot-style self-assembly (gradient, trilateration, edge-following), `animate.py`, `checks.py` |
 | `assets/microbot_v1/` | The base microbot: parametric CadQuery model, design note and an in-browser physics sandbox |
+| `linking/` | Linked 3D cube bots: slide and pivot moves, build and repair, `animate.py`, `checks.py`, `diagram.py` |
 | `textbook/` | One chapter per phase explaining the code from scratch, with exercises |
 | `media/` | Rendered clips and GIFs |
 | `ROADMAP.md` | The full plan, timeline and checklists |
@@ -29,7 +30,7 @@ cd microbots
 py install 3.13                 # needs the Python Install Manager from python.org
 py -V:3.13 -m venv .venv        # private Python for this project (.venv is gitignored)
 .venv\Scripts\activate          # run in every new terminal; prompt shows (.venv)
-pip install -r requirements.txt                # jax, numpy, matplotlib, pillow
+pip install -r requirements.txt                # jax, numpy, matplotlib, pillow, scipy
 python -c "import jax; print(jax.devices())"   # should list a CPU device
 ```
 
@@ -53,6 +54,13 @@ python phase1/animate.py                # 1,000-bot flock, beacon switches on ha
 ```powershell
 python phase2/checks.py                 # should end with 12/12 checks passed (2-3 minutes)
 python phase2/animate.py --shape k      # also: --shape star, --shape wall
+```
+
+**Running linking:**
+
+```powershell
+python linking/checks.py                       # should end with 17/17 checks passed (~30 s)
+python linking/animate.py --shape arch --repair   # also: --shape sheet, --shape tower
 ```
 
 On macOS or Linux, use `python3 -m venv .venv` and `source .venv/bin/activate` instead. Step 1 of the Phase 0 walkthrough in the roadmap explains what each command does.

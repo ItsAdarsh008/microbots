@@ -25,3 +25,11 @@ Those are the moments when someone will ask how the project works. The gate make
 | 0 | [A random walk in NumPy and JAX](00-random-walk.md) | 0 | `phase0/` |
 | 1 | [Flocking with local rules](01-flocking.md) | 1 | `phase1/` |
 | 2 | [Self-assembly into a shape](02-self-assembly.md) | 2 | `phase2/` |
+
+### Side track: linking
+
+How bots that must stay attached to each other can still move. Not tied to one phase; it feeds the hand-off between the swarm and the learned shapes.
+
+| # | Chapter | Code |
+| --- | --- | --- |
+| L1 | [Moving while attached](L1-linking.md) | `linking/` |

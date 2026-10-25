@@ -11,6 +11,21 @@
      "gif": "gifs/swarm_body_lizard.gif"
     },
     {
+     "name": "swarm run: donut (a hole)",
+     "cfg": "same as the lizard run, on an unseen shape (donut (a hole)); body model (assumed), ag_axis_mlph_scales2, damaged at step 32. Cuts and squashes are only partly repaired.",
+     "gif": "gifs/swarm_body_donut.gif"
+    },
+    {
+     "name": "swarm run: butterfly",
+     "cfg": "same as the lizard run, on an unseen shape (butterfly); body model (assumed), ag_axis_mlph_scales2, damaged at step 32. Cuts and squashes are only partly repaired.",
+     "gif": "gifs/swarm_body_butterfly.gif"
+    },
+    {
+     "name": "swarm run: procedural shape, two holes",
+     "cfg": "same as the lizard run, on an unseen shape (procedural shape, two holes); body model (assumed), ag_axis_mlph_scales2, damaged at step 32. Cuts and squashes are only partly repaired.",
+     "gif": "gifs/swarm_body_proc_6.gif"
+    },
+    {
      "name": "6 CAD bots in one world (MuJoCo)",
      "cfg": "six microbots on the real CAD meshes, each running the validated one-roll script at its own heading, alternating directions, then rolling back; they collide with each other and the floor. Movement demo only: no controller reacts to neighbours, no self-repair here.",
      "gif": "gifs/multibot_cad_6bots.gif"

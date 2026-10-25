@@ -79,3 +79,8 @@ that only holds for ideal dots at 120 neighbours is reported as such.
 neighbours to see each other, and a stride is 18 to 50 mm, so a single move is about a whole spacing: bots cannot make fine adjustments. This is a property of
 the proposed gait and sensor, not of the learning method; `ag_phys_abl_*` separate its parts. If it dominates, the hardware options are a finer gait (shorter minimum stride)
 or a longer sensing radius with sparser swarms.
+
+**D4 revised, from `assets/microbot_v1/mujoco/FINDINGS.md` (simulation on the real CAD meshes, 2026-10-24).** The tip-pivot orbit assumed above does not work in physics: the tip slips. What does move the bot is
+reaction rolling, which moves it along ONE line perpendicular to its pole axis, with fine stride control (about 0.3 mm per degree of azimuth sweep, up to about 50 mm) and a small drift along the axis (-0.0064 s^2 mm).
+It cannot turn with the moves tried. So the assumed "18 mm minimum stride" and holonomic motion were wrong, and the body model that matches the CAD is: per-bot random fixed pole axis, motion on one line,
+fine strides, max 50 mm. In `embody.py`: `axis_lock=True`, `axis_drift=7.4` (world units), `min_step=0`, `step_dir_noise=0`. Foot friction, noise levels and the sensors remain assumptions.

@@ -112,6 +112,9 @@ DEFAULTS = {
     "step_len_noise": 0.0,           # relative sigma of the executed stride length (recommended 0.2)
     "step_dir_noise": 0.0,           # sigma (rad) of the executed stride direction (recommended 0.087 = 5 deg)
     "bearing_noise": 0.0,            # sigma (rad) of the bearing error of a sensed neighbour (approximated, see docstring)
+    "axis_lock": False,              # True: each bot can only slide along ONE line, perpendicular to its (fixed, random) pole axis
+    "axis_seed": 0,                  # seed of the per-bot pole-axis heading; use the same as the cell's heading_seed (default 0)
+    "axis_drift": 0.0,               # sideways drift along the pole axis per stride s: axis_drift * s**2, random sign (measured: 7.4 in world units)
     "stop_proj_grad": False,         # True: forward uses the overlap push, backward ignores it (stops exploding gradients)
     "hop_success": 1.0,              # lattice: probability a proposed hop succeeds (recommended 0.9)
     "latency": 0,
@@ -335,6 +338,15 @@ class Embodied:
     def _stride(self, d, key):
         """Deadzone, execution noise, then the smooth speed cap (so the cap bounds the executed move)."""
         c = self.spec
+        axis = None
+        if c["axis_lock"]:
+            import heading as _hd
+            th = _hd.headings(d.shape[0], c["axis_seed"])
+            a = jnp.stack([jnp.cos(th), jnp.sin(th)], axis=-1)          # pole axis in the world
+            u = jnp.stack([-jnp.sin(th), jnp.cos(th)], axis=-1)         # the one direction the bot can roll
+            d = jnp.sum(d * u, axis=-1, keepdims=True) * u
+            axis = (a, u)
+            key, k_sign = jax.random.split(key)
         if c["min_step"] > 0.0:
             ln = jnp.sqrt(jnp.sum(d * d, axis=-1, keepdims=True) + 1e-24)
             go = lax.stop_gradient(ln >= c["min_step"]).astype(d.dtype)
@@ -345,7 +357,13 @@ class Embodied:
             ang = c["step_dir_noise"] * jax.random.normal(kd, d.shape[:1], d.dtype)
             co, si = jnp.cos(ang), jnp.sin(ang)
             d = scale * jnp.stack([co * d[:, 0] - si * d[:, 1], si * d[:, 0] + co * d[:, 1]], axis=-1)
-        return cap_move(d, c["max_step"])
+        d = cap_move(d, c["max_step"])
+        if axis is not None and c["axis_drift"]:
+            a, u = axis
+            sgn = jnp.where(jax.random.bernoulli(k_sign, 0.5, d.shape[:1] + (1,)), 1.0, -1.0).astype(d.dtype)
+            s_len = jnp.sum(d * u, axis=-1, keepdims=True)
+            d = d + a * sgn * c["axis_drift"] * s_len * s_len
+        return d
 
     # ---- lattice hop --------------------------------------------------------------------------------------------
     def _hop(self, x, d, update, live, k_tie, k_hop):

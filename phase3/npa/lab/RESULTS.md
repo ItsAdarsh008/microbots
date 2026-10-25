@@ -1,5 +1,5 @@
 ```
-## agnostic  (30 runs)
+## agnostic  (31 runs)
 name                            score d.base   ctrl  drift    easy   hard  wipe   cut  drag clump shuff noise   params  train
 ag10k_equiv_random              0.122         0.005 +0.003  +0.094 +0.141   nan +0.07 +0.17 +0.18 +0.08 +0.05 +0.16   12,518  106m
 ag10k_equiv                     0.122         0.005 +0.003  +0.094 +0.141   nan +0.07 +0.17 +0.18 +0.08 +0.05 +0.16   12,518   96m
@@ -9,6 +9,7 @@ ag10k_scales2                   0.135         0.002 +0.001  +0.099 +0.166   nan 
 ag10k_mlph_random               0.136         0.005 +0.003  +0.104 +0.157   nan +0.07 +0.18 +0.19 +0.10 +0.06 +0.18   10,880   94m
 ag_attn_mem8                    0.140         0.006 +0.004  +0.100 +0.168   nan +0.07 +0.21 +0.20 +0.09 +0.05 +0.18   24,228   42m
 ag_gated3_rms_mem8_lr3e4        0.140         0.021 +0.006  +0.088 +0.150   nan +0.06 +0.18 +0.18 +0.08 +0.05 +0.16  112,256   26m
+ag_eps7_ideal_warm1_equiv       0.141         0.001 +0.001  +0.097 +0.182   nan +0.07 +0.21 +0.21 +0.12 +0.05 +0.17   12,518   61m
 ag_mlp                          0.145         0.017 +0.011  +0.095 +0.161   nan +0.06 +0.20 +0.19 +0.09 +0.05 +0.18   10,880   28m
 ag_mlp_mem8                     0.146         0.020 +0.014  +0.094 +0.157   nan +0.06 +0.19 +0.19 +0.09 +0.05 +0.18   13,952   38m
 ag_geo_warm1_equiv              0.147         0.025 +0.022  +0.115 +0.129   nan +0.06 +0.14 +0.17 +0.08 +0.13 +0.15   12,518   37m
@@ -47,7 +48,7 @@ spec_gated_butterfly_10k        1.128         1.150 +0.068  -0.026 -0.018  1.00 
 name                            score d.base   ctrl  drift    easy   hard  wipe   cut  drag clump shuff noise   params  train
 shape_key_base                  0.283         0.216 -0.012  +0.028 +0.108  0.56 +0.02 +0.14 +0.10 +0.09 +0.01 +0.05   10,880   13m
 
-## lizard  (125 runs; base score 0.359 +- 0.025 over 3 seeds)
+## lizard  (126 runs; base score 0.359 +- 0.025 over 3 seeds)
 name                            score d.base   ctrl  drift    easy   hard  wipe   cut  drag clump shuff noise   params  train
 pa4_gated_all_damage            0.080 -0.279  0.075 -0.002  -0.002 +0.010  0.92 -0.00 +0.00 +0.03 -0.00 -0.00 -0.00  109,184   49m
 pa8_scales2_all_damage_s1       0.081 -0.278  0.078 +0.001  +0.003 +0.003  0.98 +0.00 +0.00 +0.00 +0.00 +0.00 +0.00   19,328   57m
@@ -119,6 +120,10 @@ name                            score d.base   ctrl  drift    easy   hard  wipe 
 ms4_base                        0.413         0.365 -0.076  +0.014 +0.082  0.64 +0.01 +0.08 +0.09 +0.08 +0.01 +0.03   10,880   68m
 ms4_gated3_rms_all_damage       3.051         2.966 +0.079  +0.014 +0.157  0.14 +0.07 +0.15 +0.02 +0.30 -0.01 -0.01  109,184   59m
 ms4_gated3_rms                  7.390         7.419 +1.830  +0.024 -0.083  0.33 -0.24 -0.17 +0.17 -0.25 +0.24 +0.07  109,184   55m
+
+## octopus  (1 runs)
+name                            score d.base   ctrl  drift    easy   hard  wipe   cut  drag clump shuff noise   params  train
+shape_octopus_all_damage        0.552         0.524 +0.042  +0.045 +0.011  0.89 +0.08 +0.00 +0.04 -0.00 +0.04 +0.03   10,880   15m
 
 ## snowflake  (1 runs)
 name                            score d.base   ctrl  drift    easy   hard  wipe   cut  drag clump shuff noise   params  train

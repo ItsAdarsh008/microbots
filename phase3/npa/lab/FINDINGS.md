@@ -171,3 +171,9 @@ so on unseen shapes with an ideal body, the best we have is: clump and noise rep
   (`ag_phys_abl_body_only`). The sensing noise and packet loss do not matter; the stride rules (18 mm minimum stride, 20% stride noise) do. The `nostride` run is still pending. This result is
   now partly moot: the MuJoCo measurements on the CAD meshes (`assets/microbot_v1/mujoco/FINDINGS.md`) show the 18 mm minimum stride is not a property of this gait (strides scale at about 0.3 mm per degree);
   the real constraint found there is one-line motion (H33), tested by the `ag_axis_*` runs.
+
+## 22. Update 21:00: sensing at about 7 neighbours keeps fidelity but costs repair (H32: partly supported, one run)
+`ag_eps7_ideal_warm1_equiv` (ideal body, eps 0.05 so about 7 neighbours instead of 120, equivariant cell, `warm_loss` 1.0, 10,000 iterations, unseen shapes): undamaged control 0.001 and score 0.141,
+against control 0.025 and score 0.147 for the same cell at eps 0.2. So with an ideal body the swarm holds its shape perfectly while sensing only 7 neighbours; the fidelity loss in the body-model runs comes from
+the body model's motion and noise, not from how few neighbours the bots see. Repair is weaker, though: gain over doing nothing at small/medium/large severity is clump 0.05/0.14/0.39 (eps 0.2: 0.06/0.15/0.42), noise -0.01/0.04/0.13 (0.05/0.16/0.27), drag 0.00/0.01/0.01 (0.03/0.04/0.02), cut 0.00/0.01/0.01 (0.01/0.05/0.09).
+So at 7 neighbours the swarm keeps its shape but repairs noise, tears and cuts much less; only clump damage is repaired about as well. H32's claim holds for fidelity, not for repair.

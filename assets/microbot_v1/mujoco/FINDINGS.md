@@ -71,3 +71,11 @@ sequences with a fixed 20/45 deg grid; a smarter search (more waypoints, optimis
 by the IMU roll angle restores only part of the turn (-36 to -56 deg instead of -75 deg in `demo_comp.py`). `render_demo.py` therefore shows each manoeuvre from a clean rest state.
 
 **Compute note.** MuJoCo contacts run on the CPU, so the GPUs do not speed this up; the hosts' cores do (30 to 52 each). About 9,600 sequences took roughly 10 minutes across five hosts.
+
+
+## Docked pair (dock_pair.py): a rigid weld does not give an in-place turn
+Question from the literature review: can two docked bots do what one cannot, for example turn in place? Test: two bots, a weld constraint between their bodies at the initial pose (a stand-in for the connector; the toothed face, which face docks and the magnets' holding torque are NOT modelled), both run the one-roll script with azimuth +90 and -90 (opposite) or +90 and +90 (same). One run per case, no repeats, so nothing here is a statistic.
+- **Side by side along the roll direction (offsets 32 mm, or 22 mm diagonal):** the pair barely moves (centre 3.6 to 5.1 mm, yaw 0), identical for welded, free, opposite and same-direction rolls: the neighbour blocks the roll. A single bot rolls about 18 mm in the same script.
+- **Poles overlapping (offset 32 mm along the pole axis):** the arms collide at the start (22 contacts); numbers meaningless (98 mm of motion), discarded.
+- **End to end, tips touching (offset 82 mm; each bot reaches 40.9 mm along its pole):** welded and opposite rolls: yaw 0.1 deg, the pair centre moves 44 to 48 mm and the body +Y z goes to +0.99, i.e. the pair flips over (single bots end at -0.34). Welded and same-direction: yaw -1.5 deg, centre 28 mm. Not welded, opposite rolls: yaw -22.7 deg, centre 6 mm (touching tips only). 
+- **Reading:** with this rigid weld a docked pair does NOT turn in place in this model: side-by-side docking blocks the roll, end-to-end docking with opposite rolls tumbles the pair. An unwelded touching pair did yaw about 23 deg, which I did not investigate. A softer or one-sided (pivoting) dock, or a different dock face, could behave differently and was not tried.

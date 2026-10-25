@@ -6,6 +6,11 @@
    "text": "Robots: bot swarm run and MuJoCo on the CAD meshes",
    "runs": [
     {
+     "name": "free motion vs one-line motion (donut)",
+     "cfg": "same unseen shape and damage (cut off; squashed), repaired by two different runs: left = one-line body model (noise, 30% packet loss; ag_axis_mlph_scales2), right = free motion with ideal dots (ag_eps7_scales2_warm1, 10,000 iterations). The two differ in more than motion (body noise, packet loss, random headings, training length), so this shows the size of the gap, not its cause.",
+     "gif": "gifs/swarm_free_vs_oneline_donut.gif"
+    },
+    {
      "name": "swarm run (body model)",
      "cfg": "1,024 bots on an unseen shape (the lizard emoji), body model (assumed, motion limits measured in MuJoCo): one line per bot, noisy sensing, 30% packet loss. Four copies: no damage, cut off, squashed, scrambled; damaged at step 32, then left alone. ag_axis_mlph_scales2.",
      "gif": "gifs/swarm_body_lizard.gif"

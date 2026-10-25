@@ -7,7 +7,7 @@
   const TABS = {
     lizard: { note: "the lizard, ideal dots (the paper's setting)", pick: "pa8_scales2_all_damage", empty: "pick a lizard run" },
     shapes: { note: "unseen shapes, no compass, ideal dots", pick: null, empty: "pick a shape run (no clips yet: only plain networks have one)" },
-    robot: { note: "bot body: MuJoCo on the CAD, and runs through the body model (assumed)", pick: "swarm run (body model)", empty: "pick the MuJoCo clip, or a body-model run" },
+    robot: { note: "bot body: MuJoCo on the CAD, and runs through the body model (assumed)", pick: "free motion vs one-line motion (donut)", empty: "pick the MuJoCo clip, or a body-model run" },
   };
   const inTab = (name) => (D.runs[name].tab || "lizard") === tab;
   const open = new Set();   // collapsed groups are the default; ids here are expanded

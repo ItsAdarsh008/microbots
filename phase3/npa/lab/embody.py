@@ -114,6 +114,10 @@ DEFAULTS = {
     "bearing_noise": 0.0,            # sigma (rad) of the bearing error of a sensed neighbour (approximated, see docstring)
     "axis_lock": False,              # True: each bot can only slide along ONE line, perpendicular to its (fixed, random) pole axis
     "axis_seed": 0,                  # seed of the per-bot pole-axis heading; use the same as the cell's heading_seed (default 0)
+    "axis_dual": False,              # True: each tick a bot uses ONE of its two orthogonal lines (perpendicular to the pole axis, or along it), chosen at random:
+                                     # a bracket for a bot that can quarter-turn (the measured gaits turn the line by about 85 deg)
+    "turn_tax": 0.0,                 # with axis_dual: probability that the tick is spent turning (no stride; a side shift of turn_shift instead)
+    "turn_shift": 0.0,               # world units: the sideways translation a turn causes (measured: 33 mm = 0.0284 u)
     "axis_drift": 0.0,               # sideways drift along the pole axis per stride s: axis_drift * s**2, random sign (measured: 7.4 in world units)
     "stop_proj_grad": False,         # True: forward uses the overlap push, backward ignores it (stops exploding gradients)
     "hop_success": 1.0,              # lattice: probability a proposed hop succeeds (recommended 0.9)
@@ -344,9 +348,15 @@ class Embodied:
             th = _hd.headings(d.shape[0], c["axis_seed"])
             a = jnp.stack([jnp.cos(th), jnp.sin(th)], axis=-1)          # pole axis in the world
             u = jnp.stack([-jnp.sin(th), jnp.cos(th)], axis=-1)         # the one direction the bot can roll
-            d = jnp.sum(d * u, axis=-1, keepdims=True) * u
-            axis = (a, u)
-            key, k_sign = jax.random.split(key)
+            key, k_sign, k_dual, k_tax = jax.random.split(key, 4)
+            if c["axis_dual"]:
+                use_a = jax.random.bernoulli(k_dual, 0.5, d.shape[:1] + (1,))
+                w = jnp.where(use_a, a, u)                                  # the line used this tick
+                perp = jnp.where(use_a, u, a)                               # the direction a turn's side shift and the drift act along
+            else:
+                w, perp = u, a
+            d = jnp.sum(d * w, axis=-1, keepdims=True) * w
+            axis = (perp, w)
         if c["min_step"] > 0.0:
             ln = jnp.sqrt(jnp.sum(d * d, axis=-1, keepdims=True) + 1e-24)
             go = lax.stop_gradient(ln >= c["min_step"]).astype(d.dtype)
@@ -358,6 +368,11 @@ class Embodied:
             co, si = jnp.cos(ang), jnp.sin(ang)
             d = scale * jnp.stack([co * d[:, 0] - si * d[:, 1], si * d[:, 0] + co * d[:, 1]], axis=-1)
         d = cap_move(d, c["max_step"])
+        if axis is not None and c["axis_dual"] and c["turn_tax"] > 0.0:
+            perp = axis[0]
+            lost = jax.random.bernoulli(k_tax, c["turn_tax"], d.shape[:1] + (1,)).astype(d.dtype)
+            sgn_t = jnp.where(jax.random.bernoulli(jax.random.fold_in(k_tax, 1), 0.5, d.shape[:1] + (1,)), 1.0, -1.0).astype(d.dtype)
+            d = (1.0 - lost) * d + lost * (c["turn_shift"] * sgn_t * perp)      # a turn consumes the tick and shifts the bot sideways
         if axis is not None and c["axis_drift"]:
             a, u = axis
             sgn = jnp.where(jax.random.bernoulli(k_sign, 0.5, d.shape[:1] + (1,)), 1.0, -1.0).astype(d.dtype)

@@ -26,7 +26,10 @@ def build(off, weld):
     q = np.zeros(4); mujoco.mju_mat2Quat(q, R0.ravel())
     for i in range(2):
         x = x.replace(f'<body name="b{i}_bot" pos="0 0 0">', f'<body name="b{i}_bot" pos="{pos[i][0]} {pos[i][1]} {BODY_R/1000 + 0.0002}" quat="{q[0]} {q[1]} {q[2]} {q[3]}">')
-    if weld:
+    if weld == "connect":      # a ball joint at the touching tips: the pair can pivot about that point (a pivoting dock), unlike a rigid weld
+        a = off[0] / 2000.0
+        x = x.replace("</mujoco>", f'<equality><connect body1="b0_bot" body2="b1_bot" anchor="0 0 {a}" solref="0.002 1"/></equality></mujoco>')
+    elif weld:
         x = x.replace("</mujoco>", '<equality><weld body1="b0_bot" body2="b1_bot" solref="0.002 1"/></equality></mujoco>')
     return x
 
@@ -69,7 +72,7 @@ def run(weld=True, signs=(1, -1), off=(22.0, 22.0), out=None):
             if out and step % per == 0:
                 r.update_scene(data, camera=cam); img = Image.fromarray(r.render()); d = ImageDraw.Draw(img)
                 d.rectangle([0, 0, W, 22], fill=(251, 251, 250))
-                d.text((8, 5), f"{'docked (welded)' if weld else 'free (no weld)'} pair   pair yaw {((yaw_deg(model, data) - y0 + 180) % 360) - 180:5.1f} deg", fill=(26, 26, 26)); frames.append(img)
+                d.text((8, 5), f"{('pivot dock' if weld == 'connect' else 'docked (welded)') if weld else 'free (no weld)'} pair   pair yaw {((yaw_deg(model, data) - y0 + 180) % 360) - 180:5.1f} deg", fill=(26, 26, 26)); frames.append(img)
     c1 = np.mean([data.xpos[model.body(f"b{i}_bot").id][:2] for i in range(2)], axis=0)
     yaw = ((yaw_deg(model, data) - y0 + 180) % 360) - 180
     zs = [float(data.xmat[model.body(f"b{i}_bot").id].reshape(3, 3)[2, 1]) for i in range(2)]

@@ -330,3 +330,16 @@ The largest changes are drag at medium and large (0.03/0.02 to 0.06/0.05) and cu
 - **H25 (partly):** the criterion was within 25% on each shape; only the butterfly meets it. The other three are 28 to 38% worse. Quadrupling the iterations cut the overall score from 0.413 to 0.304 and the damage excess is small (overall 0.083, mostly in cut and drag), so more training is helping, but one network does not yet match specialists at four times the per-shape budget.
 - **Caveats (not checked):** the multi-shape and single-shape evaluators may use different damage levels and shape orientation, so the ratios are indicative; one seed; the specialists were trained for 10,000 iterations, not 40,000, so this is not an iteration-matched comparison for the specialists.
 - Still running: the two-radius and memory versions of the same test (`ms4_scales2_pa8_L`, `ms4_mem8_pa8_L`, `ms4_scales2_pa4_L`).
+
+## 41. Update 05:25: the two-radius and memory recipes make one network work on all four shapes (H25, H29)
+The three remaining four-shape runs finished (40,000 iterations each, no blow-ups, one seed each). Per-shape score, with the undamaged control in brackets (lower is better), and the overall damage excess:
+| run | lizard | star | bone | butterfly | overall score | excess |
+| --- | --- | --- | --- | --- | --- | --- |
+| `ms4_base_40k_L` (plain, section 40) | 0.306 (0.258) | 0.308 (0.226) | 0.278 (0.184) | 0.325 (0.216) | 0.304 | 0.083 |
+| `ms4_scales2_pa8_L` (two radii, damage training, pool age cap 8) | 0.135 (0.135) | 0.098 (0.099) | 0.114 (0.113) | 0.169 (0.174) | 0.129 | -0.001 |
+| `ms4_mem8_pa8_L` (gated cell with 8 memory channels, same recipe) | 0.124 (0.127) | 0.085 (0.082) | 0.098 (0.093) | 0.160 (0.160) | 0.117 | 0.001 |
+| `ms4_scales2_pa4_L` (two radii, cap 4) | 0.141 (0.120) | 0.091 (0.090) | 0.124 (0.126) | 0.186 (0.186) | 0.136 | 0.005 |
+- **Damage excess is about zero for every damage kind** (largest 0.021, wipe, `pa4`): with the two-radius or memory cell and damage training, each of the four shapes returns to its own undamaged level after a wipe, cut, drag, clump, shuffle or noise. The remaining loss is the growth quality (control 0.09 to 0.19), not repair. That matches the single-shape lizard result for this recipe (`pa8_scales2_all_damage`: score 0.085, control 0.084, excess 0.001).
+- **Comparison with specialists, with a confound:** these scores are 0.4 to 0.6 times the plain 10,000-iteration specialists (`spec_base_*` 0.218 to 0.304; `base_10k` 0.221), but the specialists use the plain recipe, so this mostly shows the recipe, not multi-shape vs single-shape. The same-recipe lizard specialist (`pa8_scales2_all_damage`, 0.085) is 1.5 to 1.7 times better than the multi-shape lizard score (0.124 to 0.141); no same-recipe specialists for the other three shapes were compared. Also unchecked: whether the multi-shape and single-shape evaluators share damage levels.
+- **Memory cell:** `ms4_mem8_pa8_L` is the best here (0.117), but the same cell diverged on a second seed on the lizard (section 30, H40). One seed here, so it is not shown to be stable.
+- **What it does not show:** these are shapes the network was trained on (four known shapes, ideal dots, free motion); it says nothing about unseen shapes (that is the `ag_*` track, where repair of cuts and tears is still weak) or the robot body.

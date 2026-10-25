@@ -116,6 +116,10 @@ DEFAULTS = {
     "axis_seed": 0,                  # seed of the per-bot pole-axis heading; use the same as the cell's heading_seed (default 0)
     "axis_dual": False,              # True: each tick a bot uses ONE of its two orthogonal lines (perpendicular to the pole axis, or along it), chosen at random:
                                      # a bracket for a bot that can quarter-turn (the measured gaits turn the line by about 85 deg)
+    "axis_turn": False,              # True (with axis_lock): a controllable quarter-turn. Each bot has one bit of state (which of its two orthogonal lines it is on, kept in
+                                     # one extra mem channel). A proposal mostly along the OTHER line makes the tick a turn: no stride, a sideways shift of turn_shift along the old line
+                                     # (random sign), and the line switches; a proposal along the current line is a normal stride. The perception frame is kept fixed (a real bot knows
+                                     # its turn from its IMU).
     "turn_tax": 0.0,                 # with axis_dual: probability that the tick is spent turning (no stride; a side shift of turn_shift instead)
     "turn_shift": 0.0,               # world units: the sideways translation a turn causes (measured: 33 mm = 0.0284 u)
     "axis_drift": 0.0,               # sideways drift along the pole axis per stride s: axis_drift * s**2, random sign (measured: 7.4 in world units)
@@ -262,11 +266,14 @@ class Embodied:
         self.mode = c["mode"]
         self.pitch = float(c["pitch"] or 2.0 * c["port_d"])
         self._pend = 2 if (self.mode == "phys" and c["latency"]) else 0
+        self._turn = bool(c["axis_turn"])
+        if self._turn and (not c["axis_lock"] or c["latency"] or self.mode != "phys"):
+            raise ValueError("axis_turn needs mode 'phys', axis_lock=True and latency=0")
 
     # ---- the cell interface -------------------------------------------------------------------------------------
     @property
     def mem_dims(self):
-        return self.base.mem_dims + self._pend
+        return self.base.mem_dims + self._pend + (1 if self._turn else 0)
 
     def __getattr__(self, name):             # in_dims, out_dims, cfg, scales, apply, ... come from the wrapped cell
         if name in ("base", "spec"):
@@ -325,8 +332,15 @@ class Embodied:
         if lattice:
             return self._hop(x, d, update, live, k_tie, k_hop), s_new, bmem_o, move
 
-        d = self._stride(d, k_stride)
-        if self._pend:
+        if self._turn:
+            L = mem[:, bm:bm + 1]
+            d, L_new = self._stride(d, k_stride, L)
+            L_new = jnp.where(lv, L_new, L)
+        else:
+            d = self._stride(d, k_stride)
+        if self._turn:
+            mem_out = jnp.concatenate([bmem_o, L_new], axis=-1)
+        elif self._pend:
             pend = mem[:, bm:] * lv
             mem_out = jnp.concatenate([bmem_o, d], axis=-1)
             d = pend
@@ -339,7 +353,7 @@ class Embodied:
         return jnp.where(lv, x_new, x), s_new, mem_out, move
 
     # ---- stride (phys) ------------------------------------------------------------------------------------------
-    def _stride(self, d, key):
+    def _stride(self, d, key, L=None):
         """Deadzone, execution noise, then the smooth speed cap (so the cap bounds the executed move)."""
         c = self.spec
         axis = None
@@ -349,7 +363,17 @@ class Embodied:
             a = jnp.stack([jnp.cos(th), jnp.sin(th)], axis=-1)          # pole axis in the world
             u = jnp.stack([-jnp.sin(th), jnp.cos(th)], axis=-1)         # the one direction the bot can roll
             key, k_sign, k_dual, k_tax = jax.random.split(key, 4)
-            if c["axis_dual"]:
+            if c["axis_turn"]:
+                d_full = d
+                cur_a = L > 0.5                                             # which line the bot is on (False: perpendicular to the pole axis)
+                want_a = jnp.abs(jnp.sum(d * a, -1, keepdims=True)) > jnp.abs(jnp.sum(d * u, -1, keepdims=True))
+                acts = jnp.sqrt(jnp.sum(d * d, -1, keepdims=True)) > 1e-7
+                turning = lax.stop_gradient(acts & (want_a != cur_a))
+                w = jnp.where(cur_a, a, u); perp = jnp.where(cur_a, u, a)
+                sgn_turn = jnp.where(jax.random.bernoulli(k_tax, 0.5, d.shape[:1] + (1,)), 1.0, -1.0).astype(d.dtype)
+                turn_move = c["turn_shift"] * sgn_turn * w
+                L_new = jnp.where(turning, want_a.astype(d.dtype), L)
+            elif c["axis_dual"]:
                 use_a = jax.random.bernoulli(k_dual, 0.5, d.shape[:1] + (1,))
                 w = jnp.where(use_a, a, u)                                  # the line used this tick
                 perp = jnp.where(use_a, u, a)                               # the direction a turn's side shift and the drift act along
@@ -368,6 +392,13 @@ class Embodied:
             co, si = jnp.cos(ang), jnp.sin(ang)
             d = scale * jnp.stack([co * d[:, 0] - si * d[:, 1], si * d[:, 0] + co * d[:, 1]], axis=-1)
         d = cap_move(d, c["max_step"])
+        if axis is not None and c["axis_turn"]:
+            if c["axis_drift"]:
+                sgn_d = jnp.where(jax.random.bernoulli(k_sign, 0.5, d.shape[:1] + (1,)), 1.0, -1.0).astype(d.dtype)
+                s_len = jnp.sum(d * axis[1], axis=-1, keepdims=True)
+                d = d + axis[0] * sgn_d * c["axis_drift"] * s_len * s_len
+            d = jnp.where(turning, turn_move, d)
+            return d, L_new
         if axis is not None and c["axis_dual"] and c["turn_tax"] > 0.0:
             perp = axis[0]
             lost = jax.random.bernoulli(k_tax, c["turn_tax"], d.shape[:1] + (1,)).astype(d.dtype)

@@ -399,3 +399,14 @@ The bearing between two independently rolling bots changes by about 22 degrees w
 
 ## 51. Note 17:40: second side-by-side clip (shape with two holes)
 `dashboard/gifs/swarm_free_vs_oneline_proc6.gif`: procedural shape 6 (two holes), cut off (891 bots left) and squashed, step 147, one-line body-model run `ag_axis_mlph_scales2` (left) against free-motion ideal-dot run `ag_eps7_scales2_warm1` (right). In the clip the free-motion swarm closes the cut and keeps the hole; the one-line swarm leaves a ragged gap and a loose clump. Same caveats as section 48: the two runs differ in body noise, packet loss, headings and training length, one shape, one sample, one seed.
+
+## 52. Update 18:40: the thinned-ring and attention-memory runs replicate (H35, H42)
+Second seeds finished (10,000 iterations each, no blow-ups). Gains over do-nothing, small/medium/large, mean over held-out shapes:
+| run | control | clump | noise | drag | cut |
+| --- | --- | --- | --- | --- | --- |
+| `ag_thin_free_scales2` (seed 0) | 0.057 | 0.04/0.14/0.40 | -0.02/0.07/0.20 | 0.01/0.03/0.02 | -0.01/0.04/0.08 |
+| `ag_thin_free_scales2_s1` | 0.065 | 0.03/0.13/0.39 | -0.03/0.06/0.20 | 0.01/0.03/0.02 | -0.01/0.04/0.08 |
+| `ag_eps7_attn_mem8_warm1` (seed 0) | 0.075 | 0.02/0.12/0.39 | -0.04/0.06/0.20 | 0.00/0.02/0.02 | -0.02/0.03/0.07 |
+| `ag_eps7_attn_mem8_warm1_s1` | 0.060 | 0.03/0.13/0.39 | -0.04/0.06/0.20 | 0.00/0.03/0.02 | -0.01/0.04/0.07 |
+- Both pairs agree to within 0.01 on every cell of the table, so the earlier single-seed numbers were not lucky seeds. H42 (second-ring gains survive random thinning to a quarter, free motion) now has two seeds for the free-motion case; the one-line thinned case (`ag_thin_axis_mlph_scales2`) still has one. H35 (attention plus memory recovers part of the repair at 7 neighbours) is replicated: noise 0.06/0.20, cut 0.03 to 0.04/0.07.
+- The full-ring free-motion run `ag_eps7_scales2_warm1` (two seeds: noise 0.07/0.21, cut 0.05/0.09 to 0.10) is still slightly ahead of the thinned ring (cut 0.04/0.08) and the attention-memory cell (cut 0.04/0.07) on cuts; the differences are 0.01 to 0.02, near the seed-to-seed spread.

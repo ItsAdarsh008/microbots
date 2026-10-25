@@ -44,3 +44,30 @@ Waypoints of the nominal top three (each waypoint sets both azimuths and both pi
 **Reading.** A bot can switch between two roughly orthogonal lines of motion (a quarter turn) for about 5 s and 40 to 60 mm of unwanted translation; with fine strides along each line that is enough in principle to reach any
 position on the plane, in a Manhattan-like way. Caveats: simulation only, flat-disc feet, selected from 360 random samples and checked only against joint-angle error and friction (not against model error such as tooth
 engagement, cable limits or a real floor); turning angles other than about 85 deg were not found; whether it also works with neighbours touching was not tested.
+
+
+## Scaled search (9,600 random sequences on five hosts' CPU cores) and sensitivity test
+`gait_random.py` was run with 22 to 46 worker processes per host: 4,800 sequences for turning (`turn_a.json`, `turn_b.json`) and 6,400 for motion along the pole axis (`axis_a.json`, `axis_b.json`; objective: displacement along the
+pole axis minus half the sideways displacement, per second). The top 10 of each file were re-run 24 times with +-5 deg on every waypoint angle and friction from 0.4 to 1.0 (`gait_robust.py`).
+
+**Turning, best robust results** (yaw of the line of motion, mod 180; "dx, dy" = body displacement in the start frame, mm):
+
+| File, rank | Mean yaw | Spread | Change > 45 deg | Ended upright | dx, dy | Time |
+| --- | --- | --- | --- | --- | --- | --- |
+| `turn_b` 14 | -86 deg | 17 deg | 100% | 100% | 11 +- 4, 32 +- 2 | 4.1 s |
+| `turn_b` 13 | -88 deg | 9 deg | 100% | 71% | -1 +- 3, 28 +- 4 | 3.9 s |
+| `turn_a` 7 | -68 deg | 11 deg | 96% | 96% | -42 +- 7, -51 +- 5 | 3.4 s |
+| `turn_a` 3 | -79 deg | 14 deg | 100% | 96% | -61 +- 28, -69 +- 24 | 3.7 s |
+| `turn_a` 10 | +87 deg | 16 deg | 100% | 92% | -36 +- 34, 30 +- 15 | 4.1 s |
+
+`turn_b` 14 is the most useful: about the same turn as the earlier best, faster, and its side shift is predictable to about 2 mm, so a controller could compensate it. Both turn directions occur (`turn_a` 10 is positive). Many of the other top candidates were
+flukes (mean yaw near 0 under perturbation), so a nominal result from one run is not evidence.
+
+**Motion along the pole axis: no robust gait found.** None of the 40 best axis candidates moves a bot reliably along its pole axis: the spread of the displacement is about as large as its mean (for example dx -137 +- 63 mm,
+-105 +- 37 mm, 129 +- 62 mm), and the sequences that do displace the bot along the old axis also turn it by about 75 deg, so they are turn-plus-roll combinations rather than a straight slide. Negative result from about 6,400 random three-waypoint
+sequences with a fixed 20/45 deg grid; a smarter search (more waypoints, optimisation instead of sampling) might do better.
+
+**Chaining is not solved.** Starting a second manoeuvre from the state the first leaves behind does not reproduce the clean-start result: after a roll the ball has rotated about its pole axis, so the arms' pitch plane is no longer vertical. Offsetting the azimuths
+by the IMU roll angle restores only part of the turn (-36 to -56 deg instead of -75 deg in `demo_comp.py`). `render_demo.py` therefore shows each manoeuvre from a clean rest state.
+
+**Compute note.** MuJoCo contacts run on the CPU, so the GPUs do not speed this up; the hosts' cores do (30 to 52 each). About 9,600 sequences took roughly 10 minutes across five hosts.

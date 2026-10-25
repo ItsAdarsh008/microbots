@@ -11,6 +11,11 @@
      "gif": "gifs/swarm_body_lizard.gif"
     },
     {
+     "name": "6 CAD bots in one world (MuJoCo)",
+     "cfg": "six microbots on the real CAD meshes, each running the validated one-roll script at its own heading, alternating directions, then rolling back; they collide with each other and the floor. Movement demo only: no controller reacts to neighbours, no self-repair here.",
+     "gif": "gifs/multibot_cad_6bots.gif"
+    },
+    {
      "name": "roll + quarter-turn gait",
      "cfg": "one bot from rest: a roll (left) and the validated turning gait (right); simulation, flat-disc feet",
      "gif": "gifs/body_roll_turn.gif"

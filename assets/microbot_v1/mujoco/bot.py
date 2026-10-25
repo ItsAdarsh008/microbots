@@ -55,12 +55,14 @@ def _xml(friction):
   <compiler angle="degree"/>
   <option timestep="0.0005" gravity="0 0 -9.81" cone="elliptic" impratio="10" iterations="60" integrator="implicitfast"/>
   <asset>
+    <texture name="grid" type="2d" builtin="checker" rgb1="0.88 0.88 0.86" rgb2="0.74 0.74 0.72" width="256" height="256"/>
+    <material name="grid" texture="grid" texrepeat="100 100"/>
     <mesh name="turret" file="{STL}/part_turret.stl" scale="{mm}"/>
     <mesh name="arm" file="{STL}/part_arm.stl" scale="{mm}"/>
     <mesh name="tip" file="{STL}/part_tip.stl" scale="{mm}"/>
   </asset>
   <worldbody>
-    <geom name="floor" type="plane" size="2 2 0.1" condim="6" friction="{friction} 0.005 0.0001" rgba="0.9 0.9 0.9 1"/>
+    <geom name="floor" type="plane" size="2 2 0.1" material="grid" condim="6" friction="{friction} 0.005 0.0001" rgba="0.9 0.9 0.9 1"/>
     <body name="bot" pos="0 0 {BODY_R/1000 + 0.0002}">
       <freejoint name="free"/>
       <geom name="ball" type="sphere" size="{BODY_R/1000}" condim="6" mass="{MASS['body']}" friction="{friction} 0.005 0.0001" rgba="0.3 0.5 0.9 1"/>

@@ -1,0 +1,15 @@
+{
+ "groups": [
+  {
+   "id": "body",
+   "text": "Bot body: MuJoCo on the CAD meshes",
+   "runs": [
+    {
+     "name": "roll + quarter-turn gait",
+     "cfg": "one bot from rest: a roll (left) and the validated turning gait (right); simulation, flat-disc feet",
+     "gif": "gifs/body_roll_turn.gif"
+    }
+   ]
+  }
+ ]
+}

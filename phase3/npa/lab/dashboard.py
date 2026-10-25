@@ -217,9 +217,18 @@ def main():
         for n, r in runs.items():
             r["gif"] = f"gifs/{n}.gif" if (DASH / "gifs" / f"{n}.gif").exists() else None
     base = [r["score"] for n, r in runs.items() if re.fullmatch(r"base(_s\d+)?", n) and r["state"] == "done"]
+    tree = build_tree(runs, load_hypotheses())
+    extra = DASH / "extra.json"            # hand-written entries (e.g. the MuJoCo body demos): {"groups": [{"id", "text", "runs": [{"name", "cfg", "gif"}]}]}
+    if extra.exists():
+        for g in reversed(json.loads(extra.read_text())["groups"]):
+            kids = []
+            for r in g["runs"]:
+                runs[r["name"]] = {"state": "demo", "cfg": r.get("cfg", ""), "curve": [], "gif": r["gif"] if (DASH / r["gif"]).exists() else None}
+                kids.append({"run": r["name"], "kids": []})
+            tree.insert(0, {"id": g["id"], "text": g["text"], "status": "", "kids": kids})
     data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "base": round(float(np.mean(base)), 3) if base else None,
             "counts": {s: sum(r["state"] == s for r in runs.values()) for s in ("running", "queued", "done")},
-            "good": GOOD_SCORE, "good_repair": GOOD_REPAIR, "runs": runs, "tree": build_tree(runs, load_hypotheses())}
+            "good": GOOD_SCORE, "good_repair": GOOD_REPAIR, "runs": runs, "tree": tree}
     (DASH / "data.js").write_text("window.NPA_DASH = " + json.dumps(data, separators=(",", ":")) + ";\n")
     print("data.js:", len(runs), "runs,", data["counts"])
     if a.deploy:

@@ -11,6 +11,7 @@
 
   // dot kind: good / finished / dropped / running / queued
   function kind(r) {
+    if (r.state === "demo") return "main";
     if (r.state === "queued") return "q";
     if (r.state === "running") return "run";
     if (r.state === "failed" || r.broken || r.diverged) return "dead";

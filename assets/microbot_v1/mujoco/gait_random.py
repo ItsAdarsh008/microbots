@@ -6,6 +6,7 @@ A waypoint sets (az_top, pitch_top, az_bot, pitch_bot); joints slew at 120 deg/s
 sequence by the change of the pole axis' horizontal heading (yaw), the body's translation, and whether the bot ends upright
 (pole axis within 15 deg of horizontal, ball on the floor) so the move could be repeated.
 """
+import os
 import sys
 from multiprocessing import Pool
 from pathlib import Path
@@ -31,7 +32,8 @@ def evaluate(seq, mu=0.6):
         s.goal(**wp); s.run(dur); t += dur
     yaw = (yaw_deg(s) - y0 + 180) % 360 - 180
     yaw_eff = (yaw + 90) % 180 - 90            # the bot is end-to-end symmetric: only the LINE it can move along matters, so yaw mod 180
-    return {"seq": seq, "yaw": yaw, "yaw_eff": yaw_eff, "move": float(np.linalg.norm(s.body_xy() - b0)), "tilt": tilt_deg(s), "z": s.body_z(), "time": t,
+    mv = s.body_xy() - b0
+    return {"seq": seq, "yaw": yaw, "yaw_eff": yaw_eff, "dx": float(mv[0]), "dy": float(mv[1]), "move": float(np.linalg.norm(s.body_xy() - b0)), "tilt": tilt_deg(s), "z": s.body_z(), "time": t,
             "ok": bool(np.isfinite(s.body_xy()).all())}
 
 
@@ -43,16 +45,22 @@ def work(args):
 if __name__ == "__main__":
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 300
     seed = int(sys.argv[2]) if len(sys.argv) > 2 else 0
-    with Pool(3) as p:
+    with Pool(int(os.environ.get("WORKERS", 3))) as p:
         res = p.map(work, [(i, seed) for i in range(n)], chunksize=5)
     good = [r for r in res if r["ok"] and abs(r["tilt"]) < 15 and r["z"] < 16.5]
-    good.sort(key=lambda r: -abs(r["yaw_eff"]) / r["time"])
+    OBJ = os.environ.get("OBJ", "turn")          # "turn": yaw of the line per second; "axis": displacement along the pole axis (world x at the start)
+    key = (lambda r: -abs(r["yaw_eff"]) / r["time"]) if OBJ == "turn" else (lambda r: -(abs(r["dx"]) - 0.5 * abs(r["dy"])) / r["time"])
+    good.sort(key=key)
     print(f"{n} sequences; ended upright: {len(good)}; effective yaw (mod 180) > 20 deg: {sum(abs(r['yaw_eff'])>20 for r in good)}; > 45 deg: {sum(abs(r['yaw_eff'])>45 for r in good)}")
     print(f"{'yaw':>7} {'yaw mod180':>10} {'deg/s':>6} {'move mm':>8} {'tilt':>6}  waypoints (az_top, pitch_top, az_bot, pitch_bot)")
     for r in good[:8]:
         print(f"{r['yaw']:7.1f} {r['yaw_eff']:10.1f} {abs(r['yaw_eff'])/r['time']:6.1f} {r['move']:8.1f} {r['tilt']:6.1f}  " + " | ".join(f"({w['az_top']:.0f},{w['pitch_top']:.0f},{w['az_bot']:.0f},{w['pitch_bot']:.0f})" for w in r["seq"]))
     import json
-    json.dump(good[:20], open(Path(__file__).resolve().parent / "gait_random_best.json", "w"), indent=1)
+    json.dump(good[:40], open(Path(__file__).resolve().parent / os.environ.get("OUT", "gait_random_best.json"), "w"), indent=1)
+    if OBJ == "axis":
+        print("\nbest motion ALONG the pole axis (dx) with little sideways motion (dy):")
+        for r in good[:6]:
+            print(f"  dx {r['dx']:7.1f} mm  dy {r['dy']:7.1f} mm  yaw {r['yaw_eff']:6.1f}  tilt {r['tilt']:5.1f}  {r['time']:.1f} s")
     print("\nrobustness of the best 6 (effective yaw at friction 0.4 / 0.6 / 1.0; 0.6 is the search value):")
     for r in good[:6]:
         ys = [evaluate(r["seq"], mu)["yaw_eff"] for mu in (0.4, 0.6, 1.0)]

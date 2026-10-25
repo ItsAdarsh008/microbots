@@ -7,42 +7,42 @@
    "runs": [
     {
      "name": "free motion vs one-line motion (donut)",
-     "cfg": "same unseen shape and damage (cut off; squashed), repaired by two different runs: left = one-line body model (noise, 30% packet loss; ag_axis_mlph_scales2), right = free motion with ideal dots (ag_eps7_scales2_warm1, 10,000 iterations). The two differ in more than motion (body noise, packet loss, random headings, training length), so this shows the size of the gap, not its cause.",
+     "cfg": "Same damage, two runs. Left: bots that can only slide along one line each (body model, noisy). Right: free motion, ideal dots. Different bodies and training: shows the gap, not its cause.",
      "gif": "gifs/swarm_free_vs_oneline_donut.gif"
     },
     {
      "name": "free motion vs one-line motion (shape with holes)",
-     "cfg": "same unseen procedural shape with two holes, cut off and squashed, repaired by one-line body-model run ag_axis_mlph_scales2 (left) and free-motion ideal-dot run ag_eps7_scales2_warm1 (right). Different bodies AND training, so it shows the size of the gap, not its cause. One shape, one sample.",
+     "cfg": "Same as the donut clip, on a shape with two holes. Free motion closes the cut; one-line leaves a ragged gap.",
      "gif": "gifs/swarm_free_vs_oneline_proc6.gif"
     },
     {
      "name": "swarm run (body model)",
-     "cfg": "1,024 bots on an unseen shape (the lizard emoji), body model (assumed, motion limits measured in MuJoCo): one line per bot, noisy sensing, 30% packet loss. Four copies: no damage, cut off, squashed, scrambled; damaged at step 32, then left alone. ag_axis_mlph_scales2.",
+     "cfg": "1,024 bots on an unseen shape. Four copies: no damage, cut off, squashed, scrambled. Damaged at step 32, then left alone. One-line body model.",
      "gif": "gifs/swarm_body_lizard.gif"
     },
     {
      "name": "swarm run: donut (a hole)",
-     "cfg": "same as the lizard run, on an unseen shape (donut (a hole)); body model (assumed), ag_axis_mlph_scales2, damaged at step 32. Cuts and squashes are only partly repaired.",
+     "cfg": "Donut, same four cases. Cuts and squashes are only partly repaired.",
      "gif": "gifs/swarm_body_donut.gif"
     },
     {
      "name": "swarm run: butterfly",
-     "cfg": "same as the lizard run, on an unseen shape (butterfly); body model (assumed), ag_axis_mlph_scales2, damaged at step 32. Cuts and squashes are only partly repaired.",
+     "cfg": "Butterfly, same four cases.",
      "gif": "gifs/swarm_body_butterfly.gif"
     },
     {
      "name": "swarm run: procedural shape, two holes",
-     "cfg": "same as the lizard run, on an unseen shape (procedural shape, two holes); body model (assumed), ag_axis_mlph_scales2, damaged at step 32. Cuts and squashes are only partly repaired.",
+     "cfg": "Shape with two holes, same four cases.",
      "gif": "gifs/swarm_body_proc_6.gif"
     },
     {
      "name": "6 CAD bots in one world (MuJoCo)",
-     "cfg": "six microbots on the real CAD meshes, each running the validated one-roll script at its own heading, alternating directions, then rolling back; they collide with each other and the floor. Movement demo only: no controller reacts to neighbours, no self-repair here.",
+     "cfg": "Six bots on the real CAD meshes, each rolling at its own heading. Movement only: nothing reacts to neighbours, no repair.",
      "gif": "gifs/multibot_cad_6bots.gif"
     },
     {
      "name": "roll + quarter-turn gait",
-     "cfg": "one bot from rest: a roll (left) and the validated turning gait (right); simulation, flat-disc feet",
+     "cfg": "One bot on the CAD: a roll (left) and the turning gait (right).",
      "gif": "gifs/body_roll_turn.gif"
     }
    ]

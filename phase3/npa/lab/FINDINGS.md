@@ -155,3 +155,10 @@ Shape-agnostic, geometry-damage training, body model (strides, noisy 8-bit sensi
 score 0.262 (undamaged control 0.234); plain MLP with a random heading per bot 0.251 (0.217); rotation-equivariant cell with random headings 0.282 (0.253). The spread between them (0.03)
 is about the seed spread, so the data do not show a cost of having no compass, or any benefit of the equivariant cell, in this setting. All three have an undamaged control of 0.22 to 0.25, so the
 body model's step and noise limits, not the cell, set the fidelity floor; the four ablations (`ag_phys_abl_*`) are the test of which part of the body model does it.
+
+## 20. Update 20:10: the drift penalty fixes the fidelity loss (H30: supported)
+`ag_geo_warm1_equiv` (rotation-equivariant cell, geometry damage, `warm_loss` 1.0, 6,000 iterations): undamaged control 0.025 (0.154 without the penalty), score 0.147; better than
+doing nothing at every severity (clump 0.09/0.10/0.11 against 0.15/0.25/0.53; noise 0.14/0.18/0.20 against 0.20/0.33/0.47; cut 0.10/0.16/0.24 against 0.11/0.21/0.33; drag 0.12/0.19/0.27 against 0.15/0.23/0.29).
+`ag_geo_warm1_mlp`: control 0.053, score 0.164, same pattern slightly weaker. This matches the earlier `ag10k_equiv` (score 0.122, 10,000 iterations, mixed damage) and does not beat it,
+so on unseen shapes with an ideal body, the best we have is: clump and noise repaired well, tears and cuts only a little, colour wipes not at all. One run per cell. The unfixed gap is cuts
+(survivors only) and large tears; both need either more mass than the swarm has or sensing beyond a fragment's neighbours.

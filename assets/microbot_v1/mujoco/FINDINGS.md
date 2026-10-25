@@ -11,7 +11,36 @@ Everything is simulation: nothing has been built or measured on hardware, and th
 | What does move it? | **Reaction rolling.** Sweeping one arm's azimuth rolls the ball about the pole axis (111 to 149 deg for a 90 deg sweep); the body moves 28 to 37 mm perpendicular to the pole axis (arc = 15 mm * roll angle). The sign of the sweep sets the direction. It is robust to friction. |
 | Stride vs sweep (pitch 30, mu 0.6) | 10 deg: 2.6 mm; 20: 5.5; 30: 8.8; 45: 14.1; 60: 19.6; 90: 30.4; 135: 43.3; 180: 50.8 mm. About 0.3 mm per degree, so stride length is finely controllable (the assumed 18 mm minimum stride is not a property of this gait). Motion time = sweep / 120 deg/s. |
 | Drift along the pole axis | -0.0064 * stride^2 (mm), toward the swept arm's far side: 1.3 mm at 14 mm stride, 5.9 at 30, 19 at 51. Same sign for both sweep directions, so alternating the two arms should cancel it. |
-| Can it turn? | **Not with these moves.** Yaw change after one-arm +90, both arms +90/+90, and opposite +90/-90 sweeps: -0.8, -2.4 and 0.2 deg. Other gaits (planting both tips and rotating, docking to a neighbour) were not tried, so steering is unproven rather than impossible. |
+| Can it turn? | **Not with these single-arm or paired-sweep moves** (a three-waypoint gait can: see the last section). Yaw change after one-arm +90, both arms +90/+90, and opposite +90/-90 sweeps: -0.8, -2.4 and 0.2 deg. Other gaits (planting both tips and rotating, docking to a neighbour) were not tried, so steering is unproven rather than impossible. |
 
 **What this means for the swarm model.** As designed and with this gait, a bot slides along ONE line only, perpendicular to its own fixed pole axis, in either direction, in strides from a few mm to 50 mm. It is not a holonomic
 planar mover. `lab/embody.py` now has `axis_lock` (moves projected onto each bot's allowed line, with the random per-bot pole-axis heading that the no-compass cells already use) and `axis_drift` (the measured drift).
+
+
+## Steering exists (update, later the same day)
+`gait_search.py` (plant one tip, drag the other arm) turns the bot by at most 11 deg and tips the pole axis by up to 30 deg: not useful. `gait_random.py` then searched 360 random sequences of three waypoints over
+the four pitch and azimuth joints (angles in 20 and 45 deg steps, 120 deg/s slew, 0.4 s settle), keeping those that end upright (pole axis within 15 deg of horizontal, ball on the floor). Because the bot is end-to-end
+symmetric, what matters is the yaw of the line it can move along, i.e. yaw modulo 180 deg: 264 of 360 ended upright, 168 changed the line by more than 20 deg and 79 by more than 45 deg (several top raw scores
+of about 180 deg were somersaults that reversed the pole axis, not turns). The best three were then re-run 24 times each with every waypoint angle perturbed by 5 deg (normal) and friction drawn from 0.4 to 1.0
+(`gait_robust.py`):
+
+| Gait | Mean yaw of the line | Spread | Runs with change > 45 deg | Ended upright | Translation during the turn | Time |
+| --- | --- | --- | --- | --- | --- | --- |
+| 3 | -84 deg | 11 deg | 100% | 100% | 36 mm | 4.9 s |
+| 1 | -86 deg | 24 deg | 92% | 100% | 52 mm | 4.4 s |
+| 2 | +68 deg | 15 deg | 92% | 88% | 58 mm | 3.8 s |
+| 4 (rejected) | +7 deg | 42 deg | 25% | 75% | 64 mm | 4.6 s |
+
+(Gait numbers follow the order in `gait_random_best.json` at the time of the test; the table lists them best-first. The first three entries of that file are the nominal top three.)
+
+Waypoints of the nominal top three (each waypoint sets both azimuths and both pitches, in degrees; the sign of a turn is fixed by its sequence, so a turn the other way needs its own search):
+
+| Nominal rank | Waypoints |
+| --- | --- |
+| 1 | (az_top 180, pitch_top -60, az_bot -180, pitch_bot -80) → (az_top 90, pitch_top -80, az_bot -135, pitch_bot -80) → (az_top 0, pitch_top -40, az_bot -45, pitch_bot 40) |
+| 2 | (az_top -45, pitch_top -80, az_bot -90, pitch_bot 20) → (az_top -90, pitch_top 60, az_bot 0, pitch_bot 40) → (az_top -90, pitch_top 60, az_bot 45, pitch_bot -40) |
+| 3 | (az_top 135, pitch_top -20, az_bot -135, pitch_bot -60) → (az_top -90, pitch_top -80, az_bot 0, pitch_bot 20) → (az_top -135, pitch_top -40, az_bot -45, pitch_bot -60) |
+
+**Reading.** A bot can switch between two roughly orthogonal lines of motion (a quarter turn) for about 5 s and 40 to 60 mm of unwanted translation; with fine strides along each line that is enough in principle to reach any
+position on the plane, in a Manhattan-like way. Caveats: simulation only, flat-disc feet, selected from 360 random samples and checked only against joint-angle error and friction (not against model error such as tooth
+engagement, cable limits or a real floor); turning angles other than about 85 deg were not found; whether it also works with neighbours touching was not tested.

@@ -8,6 +8,7 @@ sequence by the change of the pole axis' horizontal heading (yaw), the body's tr
 """
 import sys
 from multiprocessing import Pool
+from pathlib import Path
 import numpy as np
 from bot import BotSim, JOINT_SPEED
 from gait_search import yaw_deg, tilt_deg
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     for r in good[:8]:
         print(f"{r['yaw']:7.1f} {r['yaw_eff']:10.1f} {abs(r['yaw_eff'])/r['time']:6.1f} {r['move']:8.1f} {r['tilt']:6.1f}  " + " | ".join(f"({w['az_top']:.0f},{w['pitch_top']:.0f},{w['az_bot']:.0f},{w['pitch_bot']:.0f})" for w in r["seq"]))
     import json
-    json.dump(good[:20], open("gait_random_best.json", "w"), indent=1)
+    json.dump(good[:20], open(Path(__file__).resolve().parent / "gait_random_best.json", "w"), indent=1)
     print("\nrobustness of the best 6 (effective yaw at friction 0.4 / 0.6 / 1.0; 0.6 is the search value):")
     for r in good[:6]:
         ys = [evaluate(r["seq"], mu)["yaw_eff"] for mu in (0.4, 0.6, 1.0)]

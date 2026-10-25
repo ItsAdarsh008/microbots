@@ -8,6 +8,7 @@ angle perturbed by N(0, 5 deg) and friction drawn from U[0.4, 1.0], and reports 
 import json
 import sys
 from multiprocessing import Pool
+from pathlib import Path
 import numpy as np
 from gait_random import evaluate
 
@@ -27,7 +28,7 @@ def work(args):
 
 if __name__ == "__main__":
     n = int(sys.argv[1]) if len(sys.argv) > 1 else 24
-    best = json.load(open("gait_random_best.json"))[:4]
+    best = json.load(open(Path(__file__).resolve().parent / "gait_random_best.json"))[:4]
     print(f"{n} perturbed runs per gait (angles +-{SIGMA} deg, friction 0.4 to 1.0)")
     print(f"{'gait':>4} {'nominal':>8} {'mean':>7} {'std':>6} {'|yaw|>45':>9} {'upright':>8} {'move mm (mean)':>15} {'time s':>7}")
     with Pool(3) as p:

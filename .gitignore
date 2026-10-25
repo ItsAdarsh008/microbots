@@ -23,3 +23,5 @@ phase3/npa/runs/
 phase3/npa/lab/queue/
 phase3/npa/lab/fleet.*
 phase3/npa/lab/STOP*
+phase3/npa/lab/watchdog.log
+phase3/npa/lab/STOP_WATCHDOG

@@ -116,6 +116,7 @@ DEFAULTS = {
     "axis_seed": 0,                  # seed of the per-bot pole-axis heading; use the same as the cell's heading_seed (default 0)
     "axis_dual": False,              # True: each tick a bot uses ONE of its two orthogonal lines (perpendicular to the pole axis, or along it), chosen at random:
                                      # a bracket for a bot that can quarter-turn (the measured gaits turn the line by about 85 deg)
+    "turn_st": 0.0,                  # axis_turn: weight of a straight-through gradient from the cell's full 2-D proposal (forward unchanged); 0 = off (the turn is cut off from the gradient)
     "turn_min": 0.0,                 # axis_turn: smallest proposal length (world units) that can trigger a turn (default 0: any proposal above 1e-7, so network noise flips lines)
     "turn_margin": 1.0,              # axis_turn: the other line's component must exceed this multiple of the current line's component to turn (1 = whichever is larger)
     "axis_turn": False,              # True (with axis_lock): a controllable quarter-turn. Each bot has one bit of state (which of its two orthogonal lines it is on, kept in
@@ -402,6 +403,11 @@ class Embodied:
                 s_len = jnp.sum(d * axis[1], axis=-1, keepdims=True)
                 d = d + axis[0] * sgn_d * c["axis_drift"] * s_len * s_len
             d = jnp.where(turning, turn_move, d)
+            if c["turn_st"]:
+                # straight-through: forward unchanged, but the backward pass sees the bot move as the cell proposed (capped), so the gradient
+                # can say that moving along the other line would help; the executed move is still one-line or a turn.
+                d_free = cap_move(d_full, c["max_step"])
+                d = d + c["turn_st"] * (d_free - lax.stop_gradient(d_free))
             return d, L_new
         if axis is not None and c["axis_dual"] and c["turn_tax"] > 0.0:
             perp = axis[0]

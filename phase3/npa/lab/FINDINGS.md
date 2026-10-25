@@ -220,3 +220,20 @@ motion at the same 7 neighbours: `ag_eps7_ideal_warm1_equiv` (seed 0) and `_s1` 
 (noise 0.26 to 0.13, cut 0.09 to 0.02, drag 0.02 to about 0) comes from having 7 neighbours instead of 120, not from the body. (3) Fidelity at 7 neighbours is seed-dependent (control 0.001 and 0.076 for free motion); the one-line runs sit in that range (0.059 to 0.077), so no cost of the constraint on fidelity is
 shown either. (4) At eps 0.2 two seeds of the free-motion run agree (control 0.025 and 0.030; gains within 0.02). (5) The turn-action bracket (`ag_dual*`, queued) will therefore probably show little gain; it remains a direct test. What this says for the project: sensing radius, not the motion constraint, is the limiting factor for repair on
 the measured body, so the wider-ring and memory fixes (H35, runs queued) matter more than steering.
+
+## 27. Update 23:20: a wider sensing ring recovers the repair lost at 7 neighbours (H35: supported, one seed); the one-line constraint then matters for cuts and tears
+Replicates: `ag_geo_warm1_equiv` (free motion, 120 neighbours) scores 0.147, 0.160, 0.153 over three seeds (control 0.025, 0.030, 0.027); `ag_geo_warm1_attn_mem8` 0.148 and 0.148 over two (control 0.019, 0.021). Both replicate well.
+Gain over doing nothing at small/medium/large severity at about 7 neighbours (eps 0.05):
+
+| Run | Control | Clump | Noise | Drag | Cut |
+| --- | --- | --- | --- | --- | --- |
+| free, one ring (`ag_eps7_ideal_warm1_equiv`, 2 seeds) | 0.001, 0.076 | 0.05/0.13/0.39, 0.02/0.11/0.38 | -0.01/0.04/0.13, -0.05/0.03/0.15 | 0.00/0.01/0.01, -0.01/0.02/0.02 | 0.00/0.01/0.01, -0.01/0.02/0.04 |
+| **free, two rings** (`ag_eps7_scales2_warm1`) | 0.029 | 0.03/0.13/0.40 | -0.01/0.07/0.21 | 0.02/0.04/0.03 | 0.00/0.05/0.10 |
+| one-line, one ring (`ag_axis_mlph_random`) | 0.061 | 0.01/0.10/0.36 | -0.02/0.04/0.15 | 0.00/0.01/0.01 | -0.01/0.01/0.02 |
+| one-line, two rings (`ag_axis_mlph_scales2`) | 0.048 | 0.03/0.13/0.39 | 0.00/0.07/0.19 | 0.00/0.02/0.01 | 0.00/0.02/0.03 |
+| (reference: free, 120 neighbours, `ag_geo_warm1_equiv`) | 0.025 | 0.06/0.15/0.42 | 0.05/0.16/0.27 | 0.03/0.04/0.02 | 0.01/0.05/0.09 |
+
+**Reading.** (1) A second sensing ring (out to twice the radius) at 7 neighbours brings back most of the repair of the 120-neighbour model: noise 0.21 (0.27), cut 0.10 (0.09), drag 0.03 to 0.04 (0.02 to 0.04), and keeps the control low. (2) With that sensing in place, the one-line
+constraint does cost repair: with two rings, cut 0.10 free vs 0.03 one-line, drag 0.04 vs 0.01, while noise (0.21 vs 0.19) and clump hardly change. So the earlier conclusion (section 26) that the constraint costs almost nothing holds for a sensing-starved swarm, not once the
+swarm can sense enough to repair cuts and tears. (3) Caveats: the free and one-line runs differ in more than motion (the one-line ones also have random headings, sensing noise and packet loss); each is one seed (replicates queued: `ag_eps7_scales2_warm1_s1`, `ag_axis_mlph_scales2_s1`); and the second ring is an assumption about
+the hardware: it needs sensing or relayed messages out to about 4 body diameters (118 mm at this scale), which line-of-sight occlusion may prevent. The turn bracket with two rings (`ag_dual_mlph_scales2`, `ag_dualtax_mlph_scales2`, queued) is the direct test of whether turning gives the cut and tear repair back.

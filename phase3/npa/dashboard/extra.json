@@ -3,8 +3,13 @@
   {
    "id": "body",
    "tab": "robot",
-   "text": "Bot body: MuJoCo on the CAD meshes",
+   "text": "Robots: bot swarm run and MuJoCo on the CAD meshes",
    "runs": [
+    {
+     "name": "swarm run (body model)",
+     "cfg": "1,024 bots on an unseen shape (the lizard emoji), body model (assumed, motion limits measured in MuJoCo): one line per bot, noisy sensing, 30% packet loss. Four copies: no damage, cut off, squashed, scrambled; damaged at step 32, then left alone. ag_axis_mlph_scales2.",
+     "gif": "gifs/swarm_body_lizard.gif"
+    },
     {
      "name": "roll + quarter-turn gait",
      "cfg": "one bot from rest: a roll (left) and the validated turning gait (right); simulation, flat-disc feet",

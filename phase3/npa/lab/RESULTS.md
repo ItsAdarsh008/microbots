@@ -1,5 +1,5 @@
 ```
-## agnostic  (31 runs)
+## agnostic  (33 runs)
 name                            score d.base   ctrl  drift    easy   hard  wipe   cut  drag clump shuff noise   params  train
 ag10k_equiv_random              0.122         0.005 +0.003  +0.094 +0.141   nan +0.07 +0.17 +0.18 +0.08 +0.05 +0.16   12,518  106m
 ag10k_equiv                     0.122         0.005 +0.003  +0.094 +0.141   nan +0.07 +0.17 +0.18 +0.08 +0.05 +0.16   12,518   96m
@@ -17,7 +17,9 @@ ag_geo_warm1_attn_mem8          0.148         0.019 +0.019  +0.122 +0.136   nan 
 ag_gated3_rms                   0.150         0.046 +0.017  +0.078 +0.130   nan +0.06 +0.16 +0.16 +0.07 +0.04 +0.14  109,184   28m
 ag_geo_attn_mem8                0.151         0.062 +0.002  +0.081 +0.096   nan +0.06 +0.11 +0.12 +0.06 +0.08 +0.11   24,228   58m
 ag_geo_scales2                  0.157         0.073 +0.008  +0.078 +0.091   nan +0.05 +0.10 +0.12 +0.05 +0.07 +0.11   19,328   58m
+ag_geo_warm1_scales2            0.159         0.042 +0.040  +0.113 +0.121   nan +0.06 +0.13 +0.16 +0.08 +0.13 +0.15   19,328   47m
 ag_geo_warm3_scales2            0.163         0.035 +0.035  +0.121 +0.135   nan +0.06 +0.15 +0.17 +0.09 +0.13 +0.17   19,328   64m
+ag_phys_abl_nostride            0.164         0.075 +0.070  +0.062 +0.115   nan +0.05 +0.13 +0.14 +0.07 +0.05 +0.09   10,880   85m
 ag_geo_warm1_mlp                0.164         0.053 +0.050  +0.107 +0.115   nan +0.06 +0.12 +0.15 +0.07 +0.13 +0.14   10,880   32m
 ag_geo_mlp                      0.174         0.102 -0.007  +0.070 +0.075   nan +0.05 +0.08 +0.11 +0.04 +0.09 +0.08   10,880   50m
 ag_phys_abl_body_only           0.176         0.089 +0.085  +0.071 +0.103   nan +0.05 +0.11 +0.13 +0.07 +0.06 +0.11   10,880   36m
@@ -33,11 +35,12 @@ ag_geo_phys_equiv_random        0.282         0.253 +0.033  +0.021 +0.037   nan 
 smoke_ag                        0.539         0.485 +0.382  +0.034 +0.073   nan -0.00 +0.05 +0.05 +0.12 +0.01 +0.09   12,416    0m
 ag10k_gated3_rms               10.188        10.623 +9.277  -0.254 -0.615   nan -0.91 -0.69 -0.47 -0.68 +0.01 +0.14  109,184   55m
 
-## bone  (3 runs)
+## bone  (4 runs)
 name                            score d.base   ctrl  drift    easy   hard  wipe   cut  drag clump shuff noise   params  train
 spec_base_bone_10k              0.218         0.131 -0.042  +0.021 +0.153  0.47 +0.02 +0.20 +0.17 +0.09 +0.01 +0.03   10,880   52m
 shape_bone_all_damage           0.344         0.327 +0.131  +0.011 +0.023  0.80 +0.01 +0.01 +0.03 +0.03 -0.00 +0.03   10,880   10m
 spec_gated_bone_10k             1.612         1.610 +0.004  -0.015 +0.020  0.61 -0.01 +0.02 +0.03 +0.01 -0.04 +0.00  109,184    4m  BROKEN
+spec_gated_bone_10k_r2          1.648         1.623 +0.066  +0.010 +0.040  0.49 +0.00 +0.04 +0.05 +0.03 +0.01 +0.02  109,184    5m  BROKEN
 
 ## butterfly  (2 runs)
 name                            score d.base   ctrl  drift    easy   hard  wipe   cut  drag clump shuff noise   params  train

@@ -177,3 +177,9 @@ so on unseen shapes with an ideal body, the best we have is: clump and noise rep
 against control 0.025 and score 0.147 for the same cell at eps 0.2. So with an ideal body the swarm holds its shape perfectly while sensing only 7 neighbours; the fidelity loss in the body-model runs comes from
 the body model's motion and noise, not from how few neighbours the bots see. Repair is weaker, though: gain over doing nothing at small/medium/large severity is clump 0.05/0.14/0.39 (eps 0.2: 0.06/0.15/0.42), noise -0.01/0.04/0.13 (0.05/0.16/0.27), drag 0.00/0.01/0.01 (0.03/0.04/0.02), cut 0.00/0.01/0.01 (0.01/0.05/0.09).
 So at 7 neighbours the swarm keeps its shape but repairs noise, tears and cuts much less; only clump damage is repaired about as well. H32's claim holds for fidelity, not for repair.
+
+## 23. Update 21:30: H31 confirmed; the harm was the stride rules I assumed (one run per ablation)
+Undamaged control of the shape-agnostic runs under the assumed body model (geometry damage, `warm_loss` 1.0 where noted, about 7 neighbours): full model 0.217; without sensing noise 0.224; without packet loss 0.221;
+without the stride rules (`ag_phys_abl_nostride`: no minimum stride, no stride noise) 0.075; only the step cap and the no-overlap rule (`ag_phys_abl_body_only`) 0.089. Sensing noise and packet loss do not matter; the stride
+deadzone and stride noise do. The MuJoCo measurements on the CAD meshes (`assets/microbot_v1/mujoco/FINDINGS.md`) show that this bot has no minimum stride (about 0.3 mm per degree of azimuth sweep), so the harmful
+part of the assumed model is not a property of the real body. The gated specialists (`spec_gated_*`) keep blowing up (H26) and are not used in the multi-shape comparison; `spec_base_*` are.

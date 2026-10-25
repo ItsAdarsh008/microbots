@@ -2,6 +2,7 @@
  "groups": [
   {
    "id": "body",
+   "tab": "robot",
    "text": "Bot body: MuJoCo on the CAD meshes",
    "runs": [
     {

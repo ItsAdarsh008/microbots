@@ -105,6 +105,16 @@ def parent_of(name, known):
     return None
 
 
+def tab_of(name, r):
+    """Which dashboard tab a run belongs to: robot (runs through the bot body model), shapes (shape-agnostic or non-lizard targets), lizard."""
+    cfg = r.get("cfg") or ""
+    if "body model" in cfg:
+        return "robot"
+    if r.get("agnostic") or r.get("shape") not in (None, "lizard") or "agnostic" in cfg or "multi-shape" in cfg or name.startswith(("ag_", "ms4_", "spec_")):
+        return "shapes"
+    return "lizard"
+
+
 def collect():
     runs = {}
     now = time.time()
@@ -145,6 +155,7 @@ def collect():
             except ValueError:
                 pass
     for name, r in runs.items():
+        r["tab"] = tab_of(name, r)
         r["curve"] = read_curve(name)
         r["gif"] = f"gifs/{name}.gif" if (DASH / "gifs" / f"{name}.gif").exists() else None
     return runs
@@ -223,7 +234,7 @@ def main():
         for g in reversed(json.loads(extra.read_text())["groups"]):
             kids = []
             for r in g["runs"]:
-                runs[r["name"]] = {"state": "demo", "cfg": r.get("cfg", ""), "curve": [], "gif": r["gif"] if (DASH / r["gif"]).exists() else None}
+                runs[r["name"]] = {"state": "demo", "tab": g.get("tab", "robot"), "cfg": r.get("cfg", ""), "curve": [], "gif": r["gif"] if (DASH / r["gif"]).exists() else None}
                 kids.append({"run": r["name"], "kids": []})
             tree.insert(0, {"id": g["id"], "text": g["text"], "status": "", "kids": kids})
     data = {"updated": time.strftime("%Y-%m-%d %H:%M"), "base": round(float(np.mean(base)), 3) if base else None,

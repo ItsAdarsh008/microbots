@@ -3,7 +3,13 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
   const out = $("out"), gif = $("gif");
-  let D = window.NPA_DASH, layout = "tree", view = "clip", current = null, filter = "";
+  let D = window.NPA_DASH, layout = "tree", view = "clip", current = null, filter = "", tab = "lizard";
+  const TABS = {
+    lizard: { note: "the lizard, ideal dots (the paper's setting)", pick: "pa8_scales2_all_damage", empty: "pick a lizard run" },
+    shapes: { note: "unseen shapes, no compass, ideal dots", pick: null, empty: "pick a shape run (no clips yet: only plain networks have one)" },
+    robot: { note: "bot body: MuJoCo on the CAD, and runs through the body model (assumed)", pick: "roll + quarter-turn gait", empty: "pick the MuJoCo clip, or a body-model run" },
+  };
+  const inTab = (name) => (D.runs[name].tab || "lizard") === tab;
   const open = new Set();   // collapsed groups are the default; ids here are expanded
 
   const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
@@ -53,7 +59,7 @@
     return d;
   }
 
-  function matches(name) { return !filter || name.toLowerCase().includes(filter) || (D.runs[name].cfg || "").toLowerCase().includes(filter); }
+  function matches(name) { return inTab(name) && (!filter || name.toLowerCase().includes(filter) || (D.runs[name].cfg || "").toLowerCase().includes(filter)); }
   function anyMatch(n) { return matches(n.run) || (n.kids || []).some(anyMatch); }
   function prune(n) { return { run: n.run, kids: (n.kids || []).filter(anyMatch).map(prune) }; }
 
@@ -66,7 +72,7 @@
       const sec = el("section", "group");
       const h = el("button", "ghead"); h.type = "button";
       h.append(el("b", "", g.id), el("span", "", g.text), el("i", "", count(kids)));
-      const isOpen = filter || open.has(g.id) || (current && JSON.stringify(kids).includes('"' + current + '"'));
+      const isOpen = filter || tab === "robot" || open.has(g.id) || (current && JSON.stringify(kids).includes('"' + current + '"'));
       h.onclick = () => { open.has(g.id) ? open.delete(g.id) : open.add(g.id); render(); };
       sec.append(h);
       if (isOpen) { const ol = el("ol", "kids"); kids.forEach((k) => ol.append(runNode(k.run, k.kids, 0))); sec.append(ol); }
@@ -87,8 +93,15 @@
   function render() { layout === "tree" ? renderTree() : renderList(); header(); }
 
   function header() {
-    const c = D.counts;
-    $("meta").textContent = `${c.running} running · ${c.queued} queued · ${c.done} done`;
+    const mine = Object.keys(D.runs).filter(inTab).map((n) => D.runs[n].state);
+    const n = (s) => mine.filter((x) => x === s).length;
+    $("meta").textContent = `${n("running")} running · ${n("queued")} queued · ${n("done")} done`;
+    document.querySelectorAll(".tabs button").forEach((b) => {
+      const t = b.dataset.tab, cnt = Object.keys(D.runs).filter((k) => (D.runs[k].tab || "lizard") === t).length;
+      b.textContent = b.textContent.replace(/ \d+$/, "") + " " + cnt;
+      b.setAttribute("aria-pressed", String(t === tab));
+    });
+    $("tabnote").textContent = TABS[tab].note;
     $("foot").textContent = `updated ${D.updated} · ideal-dot results on a 1,024-particle lizard unless a run says otherwise · base score ${D.base ?? "–"}`;
   }
 
@@ -113,8 +126,8 @@
     if (!hasGif) gif.removeAttribute("src");
     $("empty").hidden = showLoss || hasGif;
     if (!showLoss && !hasGif) {
-      $("etitle").textContent = r ? current : "pick a run";
-      $("enote").textContent = r ? "no clip for this one (only the plain 66-128-18 network has one)" : "runs with ▶ have a repair clip";
+      $("etitle").textContent = r ? current : TABS[tab].empty;
+      $("enote").textContent = r ? "no clip for this one (only the plain 66-128-18 network has one)" : (tab === "robot" ? "the body-model runs are numbers only; the MuJoCo clip shows the real CAD" : "runs with ▶ have a repair clip");
     }
     if (showLoss) drawLoss();
   }
@@ -149,6 +162,14 @@
     g.font = "12px Arial"; let lx = m.l; series.slice().reverse().forEach((s) => { g.fillStyle = s.col; g.fillRect(lx, H - 24, 14, 3); g.fillStyle = "#5a5a5a"; g.fillText(s.label, lx + 20, H - 19); lx += 40 + s.label.length * 7; });
   }
 
+  function setTab(t) {
+    tab = t; filter = ""; $("q").value = "";
+    const want = TABS[t].pick && D.runs[TABS[t].pick] ? TABS[t].pick : null;
+    current = want;
+    render(); stage();
+  }
+  document.querySelectorAll(".tabs button").forEach((b) => { b.onclick = () => setTab(b.dataset.tab); });
+
   function setPressed(ids, on) { ids.forEach((id) => $(id).setAttribute("aria-pressed", String(id === on))); }
   $("l-tree").onclick = () => { layout = "tree"; setPressed(["l-tree", "l-list"], "l-tree"); render(); };
   $("l-list").onclick = () => { layout = "list"; setPressed(["l-tree", "l-list"], "l-list"); render(); };
@@ -164,5 +185,6 @@
     document.head.append(s);
   }
   setInterval(reload, 60000);
-  render(); stage();
+  const hashTab = location.hash.slice(1);
+  if (TABS[hashTab]) setTab(hashTab); else setTab("lizard");
 })();

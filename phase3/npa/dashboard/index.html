@@ -23,6 +23,8 @@
       <div class="layout" role="group" aria-label="View"><button type="button" id="l-tree" aria-pressed="true">Tree</button><button type="button" id="l-list" aria-pressed="false">List</button></div>
     </div>
     <div class="reader" id="reader" tabindex="0">
+      <div class="tabs" role="tablist" aria-label="Demo"><button type="button" role="tab" data-tab="lizard" aria-pressed="true">Lizard</button><button type="button" role="tab" data-tab="shapes" aria-pressed="false">Shapes</button><button type="button" role="tab" data-tab="robot" aria-pressed="false">Robot</button></div>
+      <p class="tabnote" id="tabnote"></p>
       <input class="search" id="q" type="search" placeholder="filter runs" aria-label="Filter runs">
       <div class="legend" aria-hidden="true"><span class="lg lg-main">good</span><span class="lg lg-fin">finished</span><span class="lg lg-dead">dropped</span><span class="lg lg-run">running</span><span class="lg lg-q">queued</span></div>
       <div id="out"></div>

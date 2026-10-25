@@ -387,7 +387,7 @@ See `assets/microbot_v1/mujoco/FINDINGS.md` (section "Docked pair") and `dock_pa
 ## 49. Correction 16:40 to section 47: the unwelded pair's 23 degree "yaw" was a measurement artifact
 The bearing between two independently rolling bots changes by about 22 degrees with opposite rolls (about 15 mm each way over an 82 mm separation), so there was nothing to investigate; it also appears at 90 mm separation with no contact. A pivoting (ball-joint) dock at the tips gives yaw of about -1 degree and 5 mm of motion: it blocks the rolls. So both docks tried (rigid weld and pivot) fail to turn a docked pair with the one-roll script. Details in `assets/microbot_v1/mujoco/FINDINGS.md`.
 
-## 50. Update 17:20: a weaker straight-through weight turns less, and the swarm is still worse than without turning (H39, H43)
+## 50. Update 17:10: a weaker straight-through weight turns less, and the swarm is still worse than without turning (H39, H43)
 `ag_turnst03_mlph_scales2` (turn_min 0.01, margin 2, `turn_st` 0.3, two rings, one-line body, 6,000 iterations, no blow-ups, one seed). Same thresholds as `ag_turn2_mlph_scales2` (`turn_st` 0) and `ag_turnst2_mlph_scales2` (`turn_st` 1.0):
 | `turn_st` | turns per bot-tick (`lab/turn_rate.py`) | undamaged control | clump | noise | drag | cut |
 | --- | --- | --- | --- | --- | --- | --- |

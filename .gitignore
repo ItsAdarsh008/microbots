@@ -21,7 +21,11 @@ phase3/npa/runs/
 # experiment lab runtime state
 .claude/worktrees/
 phase3/npa/lab/queue/
-phase3/npa/lab/fleet.*
+phase3/npa/lab/fleet.log
+phase3/npa/lab/fleet.pid
+phase3/npa/lab/fleet.stdout
+phase3/npa/lab/fleet.state*
 phase3/npa/lab/STOP*
 phase3/npa/lab/watchdog.log
 phase3/npa/lab/STOP_WATCHDOG
+phase3/npa/lab/heartbeat

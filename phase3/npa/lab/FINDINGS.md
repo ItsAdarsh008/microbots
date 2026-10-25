@@ -173,6 +173,8 @@ so on unseen shapes with an ideal body, the best we have is: clump and noise rep
   the real constraint found there is one-line motion (H33), tested by the `ag_axis_*` runs.
 
 ## 22. Update 21:00: sensing at about 7 neighbours keeps fidelity but costs repair (H32: partly supported, one run)
+
+> **CORRECTED at 22:55 (section 26): a second seed has control 0.076, not 0.001; the fidelity claim here came from a lucky seed. The repair numbers replicate.**
 `ag_eps7_ideal_warm1_equiv` (ideal body, eps 0.05 so about 7 neighbours instead of 120, equivariant cell, `warm_loss` 1.0, 10,000 iterations, unseen shapes): undamaged control 0.001 and score 0.141,
 against control 0.025 and score 0.147 for the same cell at eps 0.2. So with an ideal body the swarm holds its shape perfectly while sensing only 7 neighbours; the fidelity loss in the body-model runs comes from
 the body model's motion and noise, not from how few neighbours the bots see. Repair is weaker, though: gain over doing nothing at small/medium/large severity is clump 0.05/0.14/0.39 (eps 0.2: 0.06/0.15/0.42), noise -0.01/0.04/0.13 (0.05/0.16/0.27), drag 0.00/0.01/0.01 (0.03/0.04/0.02), cut 0.00/0.01/0.01 (0.01/0.05/0.09).
@@ -185,13 +187,36 @@ deadzone and stride noise do. The MuJoCo measurements on the CAD meshes (`assets
 part of the assumed model is not a property of the real body. The gated specialists (`spec_gated_*`) keep blowing up (H26) and are not used in the multi-shape comparison; `spec_base_*` are.
 
 ## 24. Update 22:10: a third seed for the winner, and the first result under the measured one-line body model
+
+> **CORRECTED at 22:55 (section 26): the one-line-motion comparison in the second bullet used the wrong reference (120 neighbours); the lizard seed result in the first bullet stands.**
 - **H29 (three seeds):** `pa8_scales2_all_damage` scores 0.085, 0.081 (_s1) and 0.085 (_s2); control 0.078 to 0.084; hard-damage repair 0.98 to 0.99. The spread, 0.004, is far below the +-0.025 seed spread of the earlier runs. Confirmed on the lizard for this cell; `pa8_mem8_all_damage_s1` is still running.
 - **H33 (one run):** `ag_axis_equiv_random` (shape-agnostic, unseen shapes; body model with one-line motion per bot, measured drift, no minimum stride, 30% packet loss, sensing noise, each bot with its own random heading; equivariant cell; about 7 neighbours): undamaged control 0.077 (the old assumed body model: 0.253 for the same cell; free motion: 0.025), score 0.163 against a do-nothing floor of 0.181. Gain over doing nothing at small/medium/large severity:
 clump 0.01/0.10/0.36 (free motion 0.06/0.15/0.42), noise -0.02/0.05/0.16 (0.05/0.16/0.27), drag -0.01/0.01/0.01, cut -0.02/0.01/0.03. So with the measured one-line motion the swarm keeps its shape and still repairs clump and noise damage at
 medium and large severity, but less than with free motion, tears and cuts barely at all, and it is slightly worse than doing nothing at small damage. One run; `ag_axis_mlph_random`, `ag_axis_mlph_scales2` and the two `ag_axis_ideal_*` runs are still to come.
 
 ## 25. Update 22:35: one-line motion costs repair, not noise (H33, H36; three runs)
+
+> **CORRECTED at 22:55 (see section 26): the comparison below is confounded. The free-motion reference used 120 neighbours, the one-line runs 7; against free motion at 7 neighbours the one-line constraint costs almost nothing. Read section 26 before using the conclusions of this section.**
 Gain over doing nothing at small/medium/large severity, unseen shapes, body model with one-line motion (measured drift, no minimum stride), about 7 neighbours: `ag_axis_ideal_mlph` (no sensing noise or packet loss) clump 0.01/0.10/0.36, noise -0.03/0.01/0.11, drag -0.01/0.01/0.01, cut -0.01/0.01/0.02, control 0.064;
 `ag_axis_mlph_random` (noise, packet loss, random headings) clump 0.01/0.10/0.36, noise -0.02/0.04/0.15, drag 0.00/0.01/0.01, cut -0.01/0.01/0.02, control 0.061; `ag_axis_equiv_random` as in section 24 (control 0.077). Free motion (`ag_geo_warm1_equiv`):
 clump 0.06/0.15/0.42, noise 0.05/0.16/0.27, drag 0.03/0.04/0.02, cut 0.01/0.05/0.09, control 0.025. So the one-line constraint costs a third to a half of the noise and cut repair and a little of the clump repair; sensing noise and
 packet loss do not (the noise-free run is no better than the noisy ones) and the cell makes no difference. Three runs, one seed each. A bracket for a bot that can turn (H36) is queued.
+
+## 26. Correction 22:55: the one-line constraint costs almost nothing; I had compared against the wrong reference (H33, H36)
+**What was wrong.** Sections 24 and 25 compared the one-line-motion runs (about 7 neighbours, eps 0.05) with the free-motion run `ag_geo_warm1_equiv` at eps 0.2, i.e. about 120 neighbours. That confounds the motion constraint with the number of neighbours. The right reference is free
+motion at the same 7 neighbours: `ag_eps7_ideal_warm1_equiv` (seed 0) and `_s1` (seed 1; ideal body, equivariant cell, `warm_loss` 1.0, 10,000 iterations).
+
+**The like-for-like numbers** (gain over doing nothing at small/medium/large severity; control = undamaged loss):
+
+| Run (about 7 neighbours) | Control | Clump | Noise | Drag | Cut |
+| --- | --- | --- | --- | --- | --- |
+| free motion, seed 0 | 0.001 | 0.05/0.13/0.39 | -0.01/0.04/0.13 | 0.00/0.01/0.01 | 0.00/0.01/0.01 |
+| free motion, seed 1 | 0.076 | 0.02/0.11/0.38 | -0.05/0.03/0.15 | -0.01/0.02/0.02 | -0.01/0.02/0.04 |
+| one-line, noisy, random headings (`ag_axis_mlph_random`) | 0.061 | 0.01/0.10/0.36 | -0.02/0.04/0.15 | 0.00/0.01/0.01 | -0.01/0.01/0.02 |
+| one-line, no noise (`ag_axis_ideal_mlph`) | 0.064 | 0.01/0.10/0.36 | -0.03/0.01/0.11 | -0.01/0.01/0.01 | -0.01/0.01/0.02 |
+| one-line, equivariant (`ag_axis_equiv_random`) | 0.077 | 0.01/0.10/0.36 | -0.02/0.05/0.16 | -0.01/0.01/0.01 | -0.02/0.01/0.03 |
+
+**What stands.** (1) At 7 neighbours, with free or one-line motion, the swarm repairs clump damage at medium and large severity (about 0.10 and 0.36 to 0.39) and noise at large severity (0.11 to 0.16), and essentially nothing else; the one-line constraint costs at most a few hundredths. (2) The big drop in repair
+(noise 0.26 to 0.13, cut 0.09 to 0.02, drag 0.02 to about 0) comes from having 7 neighbours instead of 120, not from the body. (3) Fidelity at 7 neighbours is seed-dependent (control 0.001 and 0.076 for free motion); the one-line runs sit in that range (0.059 to 0.077), so no cost of the constraint on fidelity is
+shown either. (4) At eps 0.2 two seeds of the free-motion run agree (control 0.025 and 0.030; gains within 0.02). (5) The turn-action bracket (`ag_dual*`, queued) will therefore probably show little gain; it remains a direct test. What this says for the project: sensing radius, not the motion constraint, is the limiting factor for repair on
+the measured body, so the wider-ring and memory fixes (H35, runs queued) matter more than steering.

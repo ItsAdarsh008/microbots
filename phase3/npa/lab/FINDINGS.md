@@ -115,6 +115,8 @@ so the cap helps the plain MLP but not memory or gated cells (H26 stays open). O
 (`pa4_all_damage__phys`, body noise and strides only, ideal sensing radius) are queued.
 
 ## 15. Update 18:25: the best lizard models so far, and what they are (H23, H26 revised)
+
+> **CORRECTED at 00:30 (section 30): `pa8_mem8_all_damage` did not replicate: seed 1 diverged (score 2.17). The two-radius model `pa8_scales2_all_damage` did replicate on three seeds.**
 `pa8_scales2_all_damage` (plain MLP that also senses at 2 eps, 19k parameters, damage on every kind, pool entries reset after 8 uses, 10,000 iterations, no
 blow-ups): score 0.085, control loss 0.084, grown-lizard IoU 0.955, hard-damage repair 0.99, drift 0.000. `pa8_mem8_all_damage` (gated cell with RMSNorm and 8 private
 memory channels, same recipe, 36 blow-ups recovered): score 0.086, control 0.080, repair 0.92, drift 0. For comparison: `base_10k` 0.221, `pa4_all_damage` 0.184,
@@ -126,6 +128,8 @@ makes the damage-trained rule stable (H26 was wrong that memory cells cannot tra
 It is a lizard result. The same recipe is queued on four shapes in one network (`ms4_*_pa8`, 40,000 iterations), which is the transfer test that matters.
 
 ## 16. Update 18:50: three cells, one recipe; geometry-only agnostic training is too active (H29 supported, H27 revised, H30)
+
+> **CORRECTED at 00:30 (section 30): the statement below that three cells reach 0.085 to 0.098 rested on single seeds; the gated memory cell diverged on its second seed.**
 - `pa4_attn_mem8_all_damage` (local attention + RMSNorm + 8 memory channels, cap 4): score 0.098, control 0.093, hard-damage repair 0.97, drift 0.00. With `pa8_scales2_all_damage` (0.085)
   and `pa8_mem8_all_damage` (0.086), three different cells reach 0.085 to 0.098 with damage training and a pool-age cap, so the recipe is not specific to one cell (still one seed each).
   Plain MLP: cap 3 gives 0.180 (repair 0.85), cap 4 0.184 (0.81), cap 2 0.269 (0.49, growth suffers); caps 8 and 16 stopped at about 4,900 iterations.
@@ -254,3 +258,9 @@ Three runs under it are queued: `ag_turn_mlph_scales2`, `ag_turn_mlph_random`, `
 - **Process failure found (mine):** the queue runner killed every job after 135 minutes (120 default plus 15 grace). `ms4_base_40k` was killed twice at iteration 31,000 of 40,000 and then failed; `ms4_scales2_pa8`, `ms4_mem8_pa8` and `ms4_scales2_pa4` (the four-shape transfer test, 40,000 iterations) were
   restarted from scratch three times each and `ag_geo_warm1_equiv_20k` was heading the same way. So **the multi-shape transfer test (H25) has produced nothing yet** despite about six hours of GPU time. The runner now allows about 0.6 s per iteration (or the config's `max_minutes`), and the five runs are requeued as `*_L` with `max_minutes`
   480 (240 for the 20k run); the old copies will keep wasting slots until their third attempt times out. `health.py` already reports a job in `failed/`; the recurring check now has to read the cause, including timeouts.
+
+## 30. Correction 00:30: the memory-cell lizard winner does not replicate; and a reporting blind spot (H29)
+- **`pa8_mem8_all_damage_s1`** (gated cell with RMSNorm and 8 private memory channels, damage on every kind, pool age cap 8, 10,000 iterations) **diverged**: 27 blow-up recoveries by iteration 1,193, then it finished with a training loss near 59 and scores 2.168 (control 2.098), against 0.086 for seed 0.
+  So that cell's result is seed-dependent (one good seed in two); the gated-plus-memory block remains unstable under damage training (H26). The two-radius `pa8_scales2_all_damage` replicated on three seeds (0.085, 0.081, 0.085), so H29 stands for that cell only. `pa4_attn_mem8_all_damage` (0.098) is still a single seed.
+- **Reporting blind spot (mine):** `lab/report.py` prints only the best 60 runs per shape by default, and the lizard has more than 100, so any run worse than rank 60 was silently omitted from every check that grepped its output, including this run's result for hours.
+  The checks now call `report.py --top 400`. Earlier "no result yet" statements about lizard runs may have been this, not a missing result.

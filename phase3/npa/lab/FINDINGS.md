@@ -318,3 +318,15 @@ Per-severity gains over do-nothing (small/medium/large, mean over held-out shape
 | 6k seeds 0/1/2 | 0.025/0.030/0.027 | 0.04-0.06 / 0.14-0.15 / 0.41-0.42 | 0.03-0.05 / 0.14-0.16 / 0.26-0.27 | 0.01-0.03 / 0.03-0.04 / 0.01-0.02 | 0.00-0.01 / 0.05 / 0.09-0.10 |
 | 20k (one seed) | 0.014 | 0.06/0.16/0.43 | 0.06/0.17/0.28 | 0.04/0.06/0.05 | 0.01/0.06/0.12 |
 The largest changes are drag at medium and large (0.03/0.02 to 0.06/0.05) and cut at large (0.09-0.10 to 0.12), plus a lower undamaged control (0.014). Clump and noise move by 0.01 to 0.02. One seed of the long run, so the drag gain is suggestive, not established; more iterations do not change the picture (cut and tear stay the weakest kinds, still far from full repair).
+
+## 40. Update 04:55: the four-shape transfer test finally ran: 4x the iterations help a lot, but one plain network is still 28 to 38% worse on three of four shapes (H25)
+`ms4_base_40k_L` (one plain 66-128-18 network trained on lizard, star, bone and butterfly together, 40,000 iterations, 197 minutes, no blow-ups; the first run to complete after the runner's time limit was fixed, section 29). Per-shape score (lower is better; control loss in brackets) against the single-shape specialists trained for 10,000 iterations:
+| shape | `ms4_base_40k_L` | specialist | ratio | `ms4_base` (10k, for scale) |
+| --- | --- | --- | --- | --- |
+| lizard | 0.306 (0.258) | `base_10k` 0.221 (0.169) | 1.38 | 0.447 |
+| star | 0.308 (0.226) | `spec_base_star_10k` 0.232 (0.153) | 1.33 | 0.448 |
+| bone | 0.278 (0.184) | `spec_base_bone_10k` 0.218 (0.131) | 1.28 | 0.353 |
+| butterfly | 0.325 (0.216) | `spec_base_butterfly_10k` 0.304 (0.220) | 1.07 | 0.405 |
+- **H25 (partly):** the criterion was within 25% on each shape; only the butterfly meets it. The other three are 28 to 38% worse. Quadrupling the iterations cut the overall score from 0.413 to 0.304 and the damage excess is small (overall 0.083, mostly in cut and drag), so more training is helping, but one network does not yet match specialists at four times the per-shape budget.
+- **Caveats (not checked):** the multi-shape and single-shape evaluators may use different damage levels and shape orientation, so the ratios are indicative; one seed; the specialists were trained for 10,000 iterations, not 40,000, so this is not an iteration-matched comparison for the specialists.
+- Still running: the two-radius and memory versions of the same test (`ms4_scales2_pa8_L`, `ms4_mem8_pa8_L`, `ms4_scales2_pa4_L`).

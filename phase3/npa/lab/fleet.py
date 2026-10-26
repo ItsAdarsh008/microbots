@@ -124,7 +124,7 @@ def main():
         cycle += 1
         try:
             ensure_watchdog()
-            if len(list((QUEUE / "master").glob("*.json"))) < LOW_WATER:
+            if not (HERE / "NO_AUTOLOOP").exists() and len(list((QUEUE / "master").glob("*.json"))) < LOW_WATER:
                 new = autoloop.generate(n=10, rng=random.Random())
                 for prio, cfg in new:
                     (QUEUE / "master" / f"{prio:02d}_{cfg['name']}.json").write_text(json.dumps(cfg, indent=1))

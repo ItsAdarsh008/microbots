@@ -1,0 +1,290 @@
+{
+ "ag_axis_mlph_scales2|donut|none": {
+  "n": 1024,
+  "median_nn_mm": 53.56399917602539,
+  "touch_34mm": {
+   "mean_degree": 0.0,
+   "largest_component": 0.0009765625,
+   "bridge_fraction": 0.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.0
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 1.09765625,
+   "largest_component": 0.01171875,
+   "bridge_fraction": 0.7935943060498221,
+   "Q_rel": NaN,
+   "ref_mean_degree": 1.15625
+  }
+ },
+ "ag_axis_mlph_scales2|donut|cut": {
+  "n": 955,
+  "median_nn_mm": 53.474754333496094,
+  "touch_34mm": {
+   "mean_degree": 0.0,
+   "largest_component": 0.0010471204188481676,
+   "bridge_fraction": 0.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.0
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 1.1015706806282723,
+   "largest_component": 0.012565445026178011,
+   "bridge_fraction": 0.8022813688212928,
+   "Q_rel": NaN,
+   "ref_mean_degree": 1.15625
+  }
+ },
+ "ag_axis_mlph_scales2|donut|clump": {
+  "n": 1024,
+  "median_nn_mm": 53.077064514160156,
+  "touch_34mm": {
+   "mean_degree": 0.009765625,
+   "largest_component": 0.001953125,
+   "bridge_fraction": 1.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.0
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 1.283203125,
+   "largest_component": 0.0986328125,
+   "bridge_fraction": 0.669710806697108,
+   "Q_rel": NaN,
+   "ref_mean_degree": 1.15625
+  }
+ },
+ "ag_axis_mlph_scales2|donut|noise": {
+  "n": 1024,
+  "median_nn_mm": 48.622867584228516,
+  "touch_34mm": {
+   "mean_degree": 0.013671875,
+   "largest_component": 0.001953125,
+   "bridge_fraction": 1.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.0
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 2.021484375,
+   "largest_component": 0.205078125,
+   "bridge_fraction": 0.5043478260869565,
+   "Q_rel": NaN,
+   "ref_mean_degree": 1.15625
+  }
+ },
+ "ag_axis_mlph_scales2|proc:6|none": {
+  "n": 1024,
+  "median_nn_mm": 36.10285568237305,
+  "touch_34mm": {
+   "mean_degree": 0.27734375,
+   "largest_component": 0.0068359375,
+   "bridge_fraction": 0.9154929577464789,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.607421875
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 5.587890625,
+   "largest_component": 1.0,
+   "bridge_fraction": 0.0,
+   "Q_rel": 0.9978471087945177,
+   "ref_mean_degree": 5.59765625
+  }
+ },
+ "ag_axis_mlph_scales2|proc:6|cut": {
+  "n": 891,
+  "median_nn_mm": 36.07892990112305,
+  "touch_34mm": {
+   "mean_degree": 0.2895622895622896,
+   "largest_component": 0.008978675645342313,
+   "bridge_fraction": 0.9534883720930233,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.607421875
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 5.490460157126824,
+   "largest_component": 0.9977553310886644,
+   "bridge_fraction": 0.0024529844644317253,
+   "Q_rel": 4.06511426441769e-09,
+   "ref_mean_degree": 5.59765625
+  }
+ },
+ "ag_axis_mlph_scales2|proc:6|clump": {
+  "n": 1024,
+  "median_nn_mm": 36.0671272277832,
+  "touch_34mm": {
+   "mean_degree": 0.41796875,
+   "largest_component": 0.06640625,
+   "bridge_fraction": 0.9112149532710281,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.607421875
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 5.349609375,
+   "largest_component": 0.9912109375,
+   "bridge_fraction": 0.0065717415115005475,
+   "Q_rel": -8.344579265356564e-09,
+   "ref_mean_degree": 5.59765625
+  }
+ },
+ "ag_axis_mlph_scales2|proc:6|noise": {
+  "n": 1024,
+  "median_nn_mm": 34.03782653808594,
+  "touch_34mm": {
+   "mean_degree": 0.734375,
+   "largest_component": 0.0107421875,
+   "bridge_fraction": 0.9920212765957447,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.607421875
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 5.275390625,
+   "largest_component": 0.9990234375,
+   "bridge_fraction": 0.0033320992225101815,
+   "Q_rel": 1.5819677250199886e-11,
+   "ref_mean_degree": 5.59765625
+  }
+ },
+ "ag_eps7_scales2_warm1|donut|none": {
+  "n": 1024,
+  "median_nn_mm": 53.30409622192383,
+  "touch_34mm": {
+   "mean_degree": 0.0,
+   "largest_component": 0.0009765625,
+   "bridge_fraction": 0.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.0
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 1.1484375,
+   "largest_component": 0.017578125,
+   "bridge_fraction": 0.7959183673469388,
+   "Q_rel": NaN,
+   "ref_mean_degree": 1.15625
+  }
+ },
+ "ag_eps7_scales2_warm1|donut|cut": {
+  "n": 955,
+  "median_nn_mm": 54.367366790771484,
+  "touch_34mm": {
+   "mean_degree": 0.0,
+   "largest_component": 0.0010471204188481676,
+   "bridge_fraction": 0.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.0
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 0.9968586387434555,
+   "largest_component": 0.016753926701570682,
+   "bridge_fraction": 0.8676470588235294,
+   "Q_rel": NaN,
+   "ref_mean_degree": 1.15625
+  }
+ },
+ "ag_eps7_scales2_warm1|donut|clump": {
+  "n": 1024,
+  "median_nn_mm": 53.97144317626953,
+  "touch_34mm": {
+   "mean_degree": 0.0,
+   "largest_component": 0.0009765625,
+   "bridge_fraction": 0.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.0
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 1.134765625,
+   "largest_component": 0.1376953125,
+   "bridge_fraction": 0.6953528399311532,
+   "Q_rel": NaN,
+   "ref_mean_degree": 1.15625
+  }
+ },
+ "ag_eps7_scales2_warm1|donut|noise": {
+  "n": 1024,
+  "median_nn_mm": 52.113441467285156,
+  "touch_34mm": {
+   "mean_degree": 0.0,
+   "largest_component": 0.0009765625,
+   "bridge_fraction": 0.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.0
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 1.890625,
+   "largest_component": 0.2490234375,
+   "bridge_fraction": 0.43388429752066116,
+   "Q_rel": NaN,
+   "ref_mean_degree": 1.15625
+  }
+ },
+ "ag_eps7_scales2_warm1|proc:6|none": {
+  "n": 1024,
+  "median_nn_mm": 35.11731719970703,
+  "touch_34mm": {
+   "mean_degree": 0.49609375,
+   "largest_component": 0.0087890625,
+   "bridge_fraction": 0.8464566929133859,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.607421875
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 5.59765625,
+   "largest_component": 1.0,
+   "bridge_fraction": 0.0,
+   "Q_rel": 1.0017073554885911,
+   "ref_mean_degree": 5.59765625
+  }
+ },
+ "ag_eps7_scales2_warm1|proc:6|cut": {
+  "n": 891,
+  "median_nn_mm": 38.395931243896484,
+  "touch_34mm": {
+   "mean_degree": 0.09652076318742986,
+   "largest_component": 0.006734006734006734,
+   "bridge_fraction": 0.9302325581395349,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.607421875
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 5.371492704826038,
+   "largest_component": 1.0,
+   "bridge_fraction": 0.0029251984956122023,
+   "Q_rel": 1.1111261172428797,
+   "ref_mean_degree": 5.59765625
+  }
+ },
+ "ag_eps7_scales2_warm1|proc:6|clump": {
+  "n": 1024,
+  "median_nn_mm": 37.98483657836914,
+  "touch_34mm": {
+   "mean_degree": 0.09765625,
+   "largest_component": 0.0048828125,
+   "bridge_fraction": 1.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.607421875
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 5.537109375,
+   "largest_component": 1.0,
+   "bridge_fraction": 0.0,
+   "Q_rel": 1.0223446075402618,
+   "ref_mean_degree": 5.59765625
+  }
+ },
+ "ag_eps7_scales2_warm1|proc:6|noise": {
+  "n": 1024,
+  "median_nn_mm": 36.26728820800781,
+  "touch_34mm": {
+   "mean_degree": 0.2265625,
+   "largest_component": 0.005859375,
+   "bridge_fraction": 1.0,
+   "Q_rel": NaN,
+   "ref_mean_degree": 0.607421875
+  },
+  "arm_reach_56mm": {
+   "mean_degree": 5.6328125,
+   "largest_component": 1.0,
+   "bridge_fraction": 0.00034674063800277393,
+   "Q_rel": 0.954164753095518,
+   "ref_mean_degree": 5.59765625
+  }
+ }
+}

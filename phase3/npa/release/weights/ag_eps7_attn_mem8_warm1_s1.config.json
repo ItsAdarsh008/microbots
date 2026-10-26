@@ -1,0 +1,54 @@
+{
+ "name": "ag_eps7_attn_mem8_warm1_s1",
+ "particles": 1024,
+ "seed": 1,
+ "eps": 0.05,
+ "cell": {
+  "kind": "attn",
+  "mem": 8,
+  "norm": "rms"
+ },
+ "train": {
+  "mode": "agnostic",
+  "iters": 10000,
+  "batch": 4,
+  "grid": 128,
+  "warm_loss": 1.0,
+  "damage": [
+   {
+    "kind": "cut",
+    "level": [
+     0.1,
+     0.35
+    ],
+    "p": 0.5
+   },
+   {
+    "kind": "drag",
+    "level": [
+     0.2,
+     1.0
+    ],
+    "p": 0.5
+   },
+   {
+    "kind": "clump",
+    "level": [
+     0.3,
+     0.8
+    ],
+    "p": 0.5
+   },
+   {
+    "kind": "noise",
+    "level": [
+     0.1,
+     0.6
+    ],
+    "p": 0.4
+   }
+  ],
+  "max_minutes": 300
+ },
+ "rev": 1
+}

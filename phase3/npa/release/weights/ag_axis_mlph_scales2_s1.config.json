@@ -1,0 +1,72 @@
+{
+ "name": "ag_axis_mlph_scales2_s1",
+ "particles": 1024,
+ "seed": 1,
+ "eps": 0.05,
+ "cell": {
+  "kind": "mlph",
+  "heading": "random",
+  "scales": [
+   1.0,
+   2.0
+  ],
+  "embody": {
+   "mode": "phys",
+   "sense_noise": 0.0017,
+   "quant_bits": 8,
+   "dropout": 0.3,
+   "bearing_noise": 0.087,
+   "body_r": 0.0129,
+   "port_d": 0.0121,
+   "max_step": 0.043,
+   "min_step": 0.0,
+   "step_len_noise": 0.2,
+   "step_dir_noise": 0.0,
+   "axis_lock": true,
+   "axis_drift": 7.4,
+   "stop_proj_grad": true
+  }
+ },
+ "train": {
+  "mode": "agnostic",
+  "iters": 6000,
+  "batch": 4,
+  "grid": 128,
+  "damage": [
+   {
+    "kind": "cut",
+    "level": [
+     0.1,
+     0.35
+    ],
+    "p": 0.5
+   },
+   {
+    "kind": "drag",
+    "level": [
+     0.2,
+     1.0
+    ],
+    "p": 0.5
+   },
+   {
+    "kind": "clump",
+    "level": [
+     0.3,
+     0.8
+    ],
+    "p": 0.5
+   },
+   {
+    "kind": "noise",
+    "level": [
+     0.1,
+     0.6
+    ],
+    "p": 0.4
+   }
+  ],
+  "warm_loss": 1.0
+ },
+ "rev": 13
+}

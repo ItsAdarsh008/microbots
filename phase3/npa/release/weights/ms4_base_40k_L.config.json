@@ -1,0 +1,30 @@
+{
+ "particles": 1024,
+ "seed": 0,
+ "cell": {},
+ "train": {
+  "iters": 40000,
+  "batch": 8,
+  "grid": 128,
+  "damage": [
+   {
+    "kind": "wipe",
+    "level": [
+     0.2,
+     0.2
+    ],
+    "p": 1.0
+   }
+  ],
+  "mode": "multishape",
+  "max_minutes": 480
+ },
+ "name": "ms4_base_40k_L",
+ "shapes": [
+  "lizard",
+  "star",
+  "bone",
+  "butterfly"
+ ],
+ "rev": 15
+}

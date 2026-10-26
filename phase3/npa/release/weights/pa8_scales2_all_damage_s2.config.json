@@ -1,0 +1,53 @@
+{
+ "name": "pa8_scales2_all_damage_s2",
+ "particles": 1024,
+ "seed": 2,
+ "shape": "lizard",
+ "cell": {
+  "scales": [
+   1.0,
+   2.0
+  ]
+ },
+ "train": {
+  "iters": 10000,
+  "batch": 8,
+  "grid": 128,
+  "damage": [
+   {
+    "kind": "wipe",
+    "level": [
+     0.2,
+     0.2
+    ],
+    "p": 1.0
+   },
+   {
+    "kind": "cut",
+    "level": [
+     0.1,
+     0.3
+    ],
+    "p": 0.5
+   },
+   {
+    "kind": "drag",
+    "level": [
+     0.2,
+     0.8
+    ],
+    "p": 0.3
+   },
+   {
+    "kind": "clump",
+    "level": [
+     0.3,
+     0.7
+    ],
+    "p": 0.3
+   }
+  ],
+  "pool_max_age": 8
+ },
+ "rev": 5
+}

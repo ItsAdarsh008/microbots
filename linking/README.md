@@ -76,3 +76,10 @@ The NPA work answers **where** bots should be: a shape that regrows after cuts. 
 2. **Cantilever limit:** should rule 2 become "nothing falls **and** nothing sticks out more than one bot sideways"? That changes build order: bridges and overhangs would need temporary supports, or triangulated cells.
 3. **Lattice:** cubic (`block_2x2x2`) or triangulated? The cube model here only covers cubic.
 4. **Which option to try first:** A is quick to try; B is the real research question.
+
+## For Kuan: what worked and what didn't
+
+- [`EXPERIMENTS.md`](EXPERIMENTS.md): every approach tried, in order, with the numbers and what failed
+- [`sandbox/index.html`](sandbox/index.html): the in-browser sandbox (one file)
+- [`sandbox/tests/`](sandbox/tests/): headless runs that produce the step counts
+- `git log -- linking/`: one commit per change, with test results in the message

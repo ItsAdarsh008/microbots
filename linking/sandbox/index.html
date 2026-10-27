@@ -35,8 +35,14 @@ body { background: var(--bg); color: var(--fg); font-family: var(--sans); }
 .app { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 100%; }
 .stage { position: relative; background: var(--stage); min-width: 0; min-height: 0; }
 .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.look {
+  position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 14px; z-index: 2;
+  display: inline-flex; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 3px; gap: 2px;
+}
+.look button { border: 0; background: transparent; padding: 6px 12px; font-size: 13px; border-radius: 6px; color: var(--muted); }
+.look button[aria-pressed="true"] { background: var(--locked); color: #fff; }
 .status {
-  position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 14px; right: 16px;
+  position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 62px; right: 16px;
   display: flex; flex-direction: column; gap: 4px; pointer-events: none;
 }
 .status h2 { margin: 0; font-size: 17px; font-weight: 600; text-wrap: balance; }
@@ -89,6 +95,10 @@ input[type="text"] {
 
 <div class="app">
   <div class="stage" id="stage">
+    <div class="look" role="group" aria-label="How bots are drawn">
+      <button id="lookCube" type="button" aria-pressed="true">Cubes</button>
+      <button id="lookBot" type="button" aria-pressed="false">Microbot v1</button>
+    </div>
     <div class="status" id="status"><h2 id="statusTitle">Building</h2><p id="statusText"></p></div>
     <div class="hint">Drag to orbit · scroll to zoom · click a bot to cut a hole</div>
   </div>
@@ -514,7 +524,17 @@ function goalCells() {
     const x = xOf(i), y = yOf(i), z = zOf(i);
     for (const d of FACES) if (solid(x + d[0], y + d[1], z + d[2])) { touch[i] = 1; any = true; break; }
   }
-  return { goal: any ? touch : goal, layer };
+  const open = any ? touch : goal;
+  // Holes first: an open cell already filled in on 3 or 4 sides of its layer
+  // is a hole forming. Those get a bot of their own before anything else.
+  const holes = [];
+  for (let i = layer * LAYER; i < (layer + 1) * LAYER; i++) {
+    if (!open[i]) continue;
+    const x = xOf(i), y = yOf(i); let n = 0;
+    for (let k = 0; k < 4; k++) { const a = x + FACES[k][0], b = y + FACES[k][1]; if (inG(a, b, layer) && S.locked[idx(a, b, layer)]) n++; }
+    if (n >= 3) holes.push(i);
+  }
+  return { goal: open, layer, holes };
 }
 
 const BIG = 1e6;
@@ -543,6 +563,17 @@ function distanceField(goal) {
     }
     return false;
   };
+  // A diagonal step is a pivot, which swings through one of the two corner
+  // cells between start and end. If both corners are filled with bots that
+  // never move, no pivot can make that step, so the map doesn't count it.
+  const canStep = (x, y, z, d) => {
+    if (Math.abs(d[0]) + Math.abs(d[1]) + Math.abs(d[2]) === 1) return true;
+    const k = [0, 1, 2].filter(n => d[n] !== 0);
+    const c1 = [x, y, z], c2 = [x, y, z];
+    c1[k[0]] += d[k[0]]; c2[k[1]] += d[k[1]];
+    const free = c => inG(c[0], c[1], c[2]) && !fixedAt(idx(c[0], c[1], c[2]));
+    return free(c1) || free(c2);
+  };
   const buckets = [[]];
   for (let i = 0; i < N; i++) if (goal[i]) { dist[i] = 0; buckets[0].push(i); }
   // pass 1: only along fixed surfaces
@@ -553,7 +584,7 @@ function distanceField(goal) {
         const a = x + d[0], b = y + d[1], c = z + d[2];
         if (!inG(a, b, c)) continue;
         const j = idx(a, b, c);
-        if (dist[j] !== BIG || fixedAt(j) || S.keepOut[j] || !fixedNear(j) || !holdable(j)) continue;
+        if (dist[j] !== BIG || fixedAt(j) || S.keepOut[j] || !fixedNear(j) || !holdable(j) || !canStep(x, y, z, d)) continue;
         dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
       }
     }
@@ -566,7 +597,7 @@ function distanceField(goal) {
         const a = x + d[0], b = y + d[1], c = z + d[2];
         if (!inG(a, b, c)) continue;
         const j = idx(a, b, c);
-        if (dist[j] !== BIG || fixedAt(j) || S.keepOut[j] || !botNear(j) || !holdable(j)) continue;
+        if (dist[j] !== BIG || fixedAt(j) || S.keepOut[j] || !botNear(j) || !holdable(j) || !canStep(x, y, z, d)) continue;
         dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
       }
     }
@@ -578,10 +609,14 @@ function distanceField(goal) {
 // steps of each other belong to the same site), give each site its own
 // distance map, and hand out the free bots in proportion to how many cells
 // each site still needs, nearest bots first. Returns bot -> its distance map.
-function shareOutWork(goal, bots) {
-  const site = new Int32Array(N).fill(-1), sites = [];
+function shareOutWork(goal, bots, holes) {
+  const site = new Int32Array(N).fill(-1), sites = [], hole = [];
+  // Each hole is its own site. If nothing has moved for a few steps the hole
+  // claims are dropped, so an unreachable hole can't hold everyone up.
+  for (const i of (S.stalls > 3 ? [] : holes.slice(0, 8))) { site[i] = sites.length; sites.push([i]); hole.push(true); }
   for (let i = 0; i < N; i++) {
     if (!goal[i] || site[i] >= 0) continue;
+    hole.push(false);
     const id = sites.length, cells = [i]; site[i] = id;
     for (let h = 0; h < cells.length; h++) {
       const c = cells[h], x = xOf(c), y = yOf(c), z = zOf(c);
@@ -594,16 +629,26 @@ function shareOutWork(goal, bots) {
     sites.push(cells);
   }
   S.sites = sites.length;
-  if (sites.length <= 1) { const d = distanceField(goal); return () => d; }
-  const fields = sites.map(cells => { const g = new Uint8Array(N); for (const c of cells) g[c] = 1; return distanceField(g); });
-  const total = sites.reduce((n, c) => n + c.length, 0);
-  const quota = sites.map(c => Math.max(1, Math.round(bots.length * c.length / total)));
+  const fields = sites.length === 1 ? [distanceField(goal)]
+    : sites.map(cells => { const g = new Uint8Array(N); for (const c of cells) g[c] = 1; return distanceField(g); });
+  // Claims: each hole is claimed by its one nearest bot, handed out first.
+  // The other bots are shared between sites by how much work each has left.
+  const rest = bots.length - sites.filter((c, k) => hole[k]).length;
+  const total = sites.reduce((n, c, k) => n + (hole[k] ? 0 : c.length), 0) || 1;
+  const quota = sites.map((c, k) => hole[k] ? 1 : Math.max(1, Math.round(rest * c.length / total)));
   const pairs = [];
-  for (const b of bots) for (let k = 0; k < sites.length; k++) if (fields[k][S.pos[b]] < BIG) pairs.push([fields[k][S.pos[b]], b, k]);
+  for (const b of bots) for (let k = 0; k < sites.length; k++) if (fields[k][S.pos[b]] < BIG) pairs.push([fields[k][S.pos[b]] - (hole[k] ? 1e5 : 0), b, k]);
   pairs.sort((u, v) => u[0] - v[0]);
   const pick = new Map();
   for (const [, b, k] of pairs) if (!pick.has(b) && quota[k] > 0) { pick.set(b, k); quota[k]--; }
-  const nearest = distanceField(goal);
+  const nearest = fields.length === 1 ? fields[0] : distanceField(goal);
+  // Give way: cells within two of a claimed hole. Other bots there step aside.
+  S.clear = new Uint8Array(N); S.holeBot = new Set();
+  for (const [b, k] of pick) if (hole[k]) {
+    S.holeBot.add(b);
+    const i = sites[k][0], x = xOf(i), y = yOf(i), z = zOf(i);
+    for (let a = x - 2; a <= x + 2; a++) for (let c = y - 2; c <= y + 2; c++) for (let e = z - 2; e <= z + 2; e++) if (inG(a, c, e)) S.clear[idx(a, c, e)] = 1;
+  }
   return b => pick.has(b) ? fields[pick.get(b)] : nearest;
 }
 
@@ -628,19 +673,31 @@ function tick() {
   S.kind.fill(0); S.from.set(S.pos); S.via.set(S.pos);
   const building = !done();
   let goal;
-  if (building) { const g = goalCells(); goal = g.goal; }
+  let holes = [];
+  if (building) { const g = goalCells(); goal = g.goal; holes = g.holes; }
   else if (parked()) { S.step++; S.stalls = 0; return 0; }
   else goal = parkingGoal();
   if (building) S.parkLock.fill(0);           // shape needs work: every spare helps
   const busy = Uint8Array.from(S.occ);
   const order = [];
   for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !fixedAt(S.pos[b])) order.push(b);
-  const fieldOf = building ? shareOutWork(goal, order) : (() => { const d = distanceField(goal); return () => d; })();
+  const fieldOf = building ? shareOutWork(goal, order, holes) : (() => { const d = distanceField(goal); return () => d; })();
   for (let k = order.length - 1; k > 0; k--) { const r = (Math.random() * (k + 1)) | 0; [order[k], order[r]] = [order[r], order[k]]; }
   let moves = 0;
   for (const b of order) {
-    const dist = fieldOf(b), p = S.pos[b], here = dist[p], opts = [];
-    for (const m of legalMoves(p)) {
+    let dist = fieldOf(b);
+    const p = S.pos[b], opts = [];
+    if (building && S.clear && S.clear[p] && !S.holeBot.has(b)) {
+      // Give way: this bot is crowding a hole another bot has claimed. Step
+      // out of the area if it can; otherwise carry on as usual.
+      for (const m of legalMoves(p)) {
+        if (fixedAt(m.c) || busy[m.c] || busy[m.via] || S.keepOut[m.c] || S.keepOut[m.via]) continue;
+        if (!S.clear[m.c]) opts.push([Math.random(), m]);
+      }
+      if (opts.length) dist = null;
+    }
+    const here = dist ? dist[p] : 0;
+    if (dist) for (const m of legalMoves(p)) {
       if (fixedAt(m.c) || busy[m.c] || busy[m.via] || S.keepOut[m.c] || S.keepOut[m.via]) continue;
       if (dist[m.c] < here) opts.push([dist[m.c] + Math.random() * 0.1, m]);
       else if (dist[m.c] === here && Math.random() < SIDEWAYS) opts.push([dist[m.c] + 0.5, m]);
@@ -781,7 +838,9 @@ function updateLinks() {
       const j = idx(a, c, e), o = S.idAt[j];
       if (o < 0 || S.kind[o]) continue;
       v.set(x + d[0] / 2, y + d[1] / 2, z + d[2] / 2);
-      const sc = new THREE.Vector3(d[0] ? 0.3 : 0.16, d[1] ? 0.3 : 0.16, d[2] ? 0.3 : 0.16);
+      // cubes: a short latch in the gap; microbot: a port-to-port bar between balls
+      const along = botLook ? (d[2] ? 0.12 : 0.44) : 0.3, across = botLook ? 0.07 : 0.16;
+      const sc = new THREE.Vector3(d[0] ? along : across, d[1] ? along : across, d[2] ? along : across);
       m4.compose(v, q.identity(), sc); links.setMatrixAt(n++, m4);
     }
   }
@@ -789,17 +848,47 @@ function updateLinks() {
   return n;
 }
 
+// Microbot v1 look, after Kuan's CAD: a charcoal ball with an arm on each
+// pole (orange hinge, dark tube, silver connector tip). The ball carries the
+// state colour, mixed with charcoal. Stylised: the real bot docks on a
+// 28 x 28 x 81 mm grid, drawn here on the sandbox's equal spacing.
+const BOT = (() => {
+  const g = new THREE.Group(), parts = [];
+  const add = (geo, colour) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: colour }), MAXB); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); g.add(m); parts.push(m); return m; };
+  const ball = add(new THREE.SphereGeometry(0.29, 18, 12), 0xffffff);
+  const rod = new THREE.CylinderGeometry(0.065, 0.065, 0.8, 10); rod.rotateX(Math.PI / 2); add(rod, 0x3d424b);
+  for (const zs of [1, -1]) {
+    const hinge = new THREE.BoxGeometry(0.2, 0.09, 0.13); hinge.translate(0, 0, zs * 0.31); add(hinge, 0xc4741f);
+    const tip = new THREE.CylinderGeometry(0.1, 0.1, 0.08, 14); tip.rotateX(Math.PI / 2); tip.translate(0, 0, zs * 0.45); add(tip, 0xc9ccd2);
+  }
+  world.add(g); g.visible = false;
+  return { group: g, ball, parts };
+})();
+const CHARCOAL = new THREE.Color(0x26282d), tint = new THREE.Color();
+let botLook = false;
+function setLook(bot) {
+  botLook = bot; cubes.visible = !bot; BOT.group.visible = bot;
+  $("lookCube").setAttribute("aria-pressed", String(!bot)); $("lookBot").setAttribute("aria-pressed", String(bot));
+  linkCount = updateLinks(); draw(playing ? 0 : 1);
+}
+
 function draw(s) {
   let n = 0;
   for (let b = 0; b < S.pos.length; b++) {
     if (!S.alive[b]) continue;
     const [p, r] = pose(b, s);
-    m4.compose(p, r, one); cubes.setMatrixAt(n, m4);
-    cubes.setColorAt(n, S.kind[b] === 2 ? C.pivot : S.locked[S.pos[b]] ? (S.support[S.pos[b]] ? C.support : C.locked) : C.free);
+    m4.compose(p, r, one);
+    const colour = S.kind[b] === 2 ? C.pivot : S.locked[S.pos[b]] ? (S.support[S.pos[b]] ? C.support : C.locked) : C.free;
+    if (botLook) {
+      for (const part of BOT.parts) part.setMatrixAt(n, m4);
+      BOT.ball.setColorAt(n, tint.copy(colour).lerp(CHARCOAL, 0.45));
+    } else { cubes.setMatrixAt(n, m4); cubes.setColorAt(n, colour); }
     instToBot[n] = b; n++;
   }
-  cubes.count = n; cubes.instanceMatrix.needsUpdate = true;
-  if (cubes.instanceColor) cubes.instanceColor.needsUpdate = true;
+  const mesh = botLook ? BOT.parts : [cubes];
+  for (const part of mesh) { part.count = n; part.instanceMatrix.needsUpdate = true; }
+  const coloured = botLook ? BOT.ball : cubes;
+  if (coloured.instanceColor) coloured.instanceColor.needsUpdate = true;
   let f = 0;
   for (const c of S.falling) { v.set(c.x, c.y, c.z); m4.compose(v, q.identity(), one); falls.setMatrixAt(f++, m4); }
   falls.count = f; falls.instanceMatrix.needsUpdate = true;
@@ -845,6 +934,8 @@ function reset() {
   S = newSwarm($("shape").value); acc = 0; updateGhost(); linkCount = updateLinks(); draw(1); setStats();
 }
 $("shape").addEventListener("change", reset);
+$("lookCube").addEventListener("click", () => setLook(false));
+$("lookBot").addEventListener("click", () => setLook(true));
 const buildText = () => { $("shape").value = "text"; reset(); };
 $("buildText").addEventListener("click", buildText);
 $("text").addEventListener("keydown", e => { if (e.key === "Enter") buildText(); });
@@ -866,7 +957,7 @@ renderer.domElement.addEventListener("pointerup", e => {
   const r = renderer.domElement.getBoundingClientRect();
   ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
-  const hit = ray.intersectObject(cubes)[0];
+  const hit = ray.intersectObject(botLook ? BOT.ball : cubes)[0];
   if (!hit) return;
   const b = instToBot[hit.instanceId], i = S.pos[b], cx = xOf(i), cy = yOf(i), cz = zOf(i);
   cutCells((x, y, z) => (x - cx) ** 2 + (y - cy) ** 2 + (z - cz) ** 2 <= 2.6);

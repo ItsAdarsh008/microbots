@@ -145,6 +145,7 @@ input[type="text"] {
       <div class="row" role="group" aria-label="How bots attach">
         <button id="modelArms" type="button" aria-pressed="true">With their arms</button>
         <button id="modelFaces" type="button" aria-pressed="false">Any touching face</button>
+        <button id="modelTri" type="button" aria-pressed="false">Triangles (truss bridge)</button>
       </div>
       <p class="note" id="modelNote"></p>
     </div>
@@ -998,6 +999,211 @@ function draw(s) {
 }
 const instToBot = new Int32Array(MAXB);
 
+
+// ================================================================== triangle truss mode
+// A vertical sheet of triangles. Every node has 6 neighbours at 60 degrees.
+// Bots sit on nodes and are linked to every occupied neighbour (two of those
+// links are its arms, docked tip to tip; any others plug into its side ports).
+// A bot moves by rolling 60 degrees around a neighbour that both its old and
+// new spot share, which is how hexagonal modular robots move. As everywhere
+// else, no move may leave a bot without a chain of links to the floor.
+const TI = 58, TJ = 16, TN = TI * TJ;
+const tid = (i, j) => i + TI * j, tiOf = n => n % TI, tjOf = n => (n / TI) | 0;
+const tIn = (i, j) => i >= 0 && i < TI && j >= 0 && j < TJ;
+const TX = n => tiOf(n) + (tjOf(n) % 2) * 0.5 - 4, TZ = n => tjOf(n) * 0.866, TY = 16;
+function tNbrs(n) {
+  const i = tiOf(n), j = tjOf(n), o = j % 2, out = [];
+  const c = [[i + 1, j], [i - 1, j], [i - 1 + o, j + 1], [i + o, j + 1], [i - 1 + o, j - 1], [i + o, j - 1]];
+  for (const [a, b] of c) if (tIn(a, b)) out.push(tid(a, b));
+  return out;
+}
+const TNB = Array.from({ length: TN }, (_, n) => tNbrs(n));
+let T = null;
+function triNew() {
+  const target = new Uint8Array(TN);
+  for (let j = 0; j < 6; j++) for (const i0 of [16, 42]) for (let i = i0; i < i0 + 4; i++) target[tid(i, j)] = 1;   // two towers
+  for (let j = 6; j < 8; j++) for (let i = 16; i < 46; i++) target[tid(i, j)] = 1;                              // the truss span
+  let need = 0; for (let n = 0; n < TN; n++) need += target[n];
+  const occ = new Uint8Array(TN), idAt = new Int32Array(TN).fill(-1), pos = [];
+  let left = need + 40;
+  for (let j = 0; j < TJ && left; j++) for (let i = 1; i < 11 && left; i++) { const n = tid(i, j); occ[n] = 1; idAt[n] = pos.length; pos.push(n); left--; }
+  const slots = []; for (let j = 0; j < 4; j++) for (let i = 1; i < 11; i++) slots.push(tid(i, j));   // a 10 x 4 pad, filled bottom row first
+  return { target, need, occ, idAt, locked: new Uint8Array(TN), parkLock: new Uint8Array(TN), slots,
+           pos: Int32Array.from(pos), from: Int32Array.from(pos), pivot: new Int32Array(pos.length).fill(-1),
+           alive: new Uint8Array(pos.length).fill(1), step: 0, stalls: 0, lost: 0, cuts: 0, falling: [] };
+}
+const tFixed = n => T.locked[n] || T.parkLock[n];
+function tConnected() {
+  const seen = new Uint8Array(TN), q = [];
+  for (let i = 0; i < TI; i++) if (T.occ[i]) { seen[i] = 1; q.push(i); }       // bottom row stands on the floor
+  for (let h = 0; h < q.length; h++) for (const m of TNB[q[h]]) if (T.occ[m] && !seen[m]) { seen[m] = 1; q.push(m); }
+  return seen;
+}
+function tAllAttached() { const seen = tConnected(); for (let b = 0; b < T.pos.length; b++) if (T.alive[b] && !seen[T.pos[b]]) return false; return true; }
+function tGoal() {
+  const goal = new Uint8Array(TN); let row = -1;
+  for (let j = 0; j < TJ && row < 0; j++) for (let i = 0; i < TI; i++) if (T.target[tid(i, j)] && !T.locked[tid(i, j)]) { row = j; break; }
+  if (row < 0) return null;
+  for (let i = 0; i < TI; i++) { const n = tid(i, row); if (T.target[n] && !T.occ[n] && (row === 0 || TNB[n].some(m => T.occ[m]))) goal[n] = 1; }
+  return goal;
+}
+function tField(goal, chains = true) {
+  const dist = new Int32Array(TN).fill(BIG), q = [];
+  for (let n = 0; n < TN; n++) if (goal[n]) { dist[n] = 0; q.push(n); }
+  const onSurface = n => tjOf(n) === 0 || TNB[n].some(m => tFixed(m));
+  const nearBot = n => tjOf(n) === 0 || TNB[n].some(m => T.occ[m]);
+  for (let h = 0; h < q.length; h++) for (const m of TNB[q[h]]) if (dist[m] === BIG && !tFixed(m) && onSurface(m)) { dist[m] = dist[q[h]] + 1; q.push(m); }
+  if (!chains) return dist;           // when parking, walk back along the build, never hang off loose bots
+  const q2 = q.slice();
+  for (let h = 0; h < q2.length; h++) for (const m of TNB[q2[h]]) if (dist[m] === BIG && !tFixed(m) && nearBot(m)) { dist[m] = dist[q2[h]] + 1; q2.push(m); }
+  return dist;
+}
+const tDone = () => { for (let n = 0; n < TN; n++) if (T.target[n] && !T.locked[n]) return false; return true; };
+const tParked = () => { for (let b = 0; b < T.pos.length; b++) if (T.alive[b] && !tFixed(T.pos[b])) return false; return true; };
+function triTick() {
+  T.from.set(T.pos); T.pivot.fill(-1);
+  const building = !tDone();
+  let goal;
+  if (building) { goal = tGoal(); T.parkLock.fill(0); }
+  else if (tParked()) { T.step++; return; }
+  else {
+    goal = new Uint8Array(TN); let k = 3, gap = false;
+    for (const n of T.slots) { if (T.occ[n]) { if (!gap && !T.locked[n]) T.parkLock[n] = 1; continue; } gap = true; goal[n] = 1; if (!--k) break; }
+  }
+  const dist = tField(goal, building), busy = Uint8Array.from(T.occ), order = [];
+  for (let b = 0; b < T.pos.length; b++) if (T.alive[b] && !tFixed(T.pos[b])) order.push(b);
+  for (let k = order.length - 1; k > 0; k--) { const r = (Math.random() * (k + 1)) | 0; [order[k], order[r]] = [order[r], order[k]]; }
+  let moves = 0;
+  for (const b of order) {
+    const p = T.pos[b], opts = [];
+    for (const n of TNB[p]) {
+      if (busy[n] || tFixed(n)) continue;
+      // roll around a shared neighbour: one of the two nodes next to both p and n
+      const shared = TNB[n].filter(m => m !== p && TNB[p].includes(m) && T.occ[m]);
+      if (!shared.length && tjOf(n) + tjOf(p) > 0) continue;
+      const key = dist[n] < dist[p] ? dist[n] : dist[n] === dist[p] && Math.random() < SIDEWAYS ? dist[n] + 0.5
+                : T.stalls > 3 && Math.random() < 0.3 ? BIG : -1;
+      if (key >= 0) opts.push([key + Math.random() * 0.1, n, shared[0] ?? -1]);
+    }
+    opts.sort((a, c) => a[0] - c[0]);
+    for (const [, n, piv] of opts) {
+      T.occ[p] = 0; T.occ[n] = 1; T.pos[b] = n;
+      if (tAllAttached()) {
+        T.idAt[p] = -1; T.idAt[n] = b; T.pivot[b] = piv; busy[n] = 1; moves++;
+        if (goal[n]) { (building ? T.locked : T.parkLock)[n] = 1; goal[n] = 0; }
+        break;
+      }
+      T.occ[n] = 0; T.occ[p] = 1; T.pos[b] = p;
+    }
+  }
+  if (building) {
+    // a bot standing on a bridge spot at or below the row being built is in place: lock it
+    let row = TJ - 1;
+    outer: for (let j = 0; j < TJ; j++) for (let i = 0; i < TI; i++) if (T.target[tid(i, j)] && !T.occ[tid(i, j)]) { row = j; break outer; }
+    for (let b = 0; b < T.pos.length; b++) { const n = T.pos[b]; if (T.alive[b] && T.target[n] && tjOf(n) <= row) T.locked[n] = 1; }
+  }
+  T.stalls = moves ? 0 : T.stalls + 1; T.step++;
+}
+function triCut(test) {
+  const removed = [];
+  for (let b = 0; b < T.pos.length; b++) if (T.alive[b] && test(T.pos[b])) removed.push(b);
+  for (const b of removed) { T.alive[b] = 0; T.occ[T.pos[b]] = 0; T.locked[T.pos[b]] = 0; T.idAt[T.pos[b]] = -1; }
+  const seen = tConnected();
+  for (let b = 0; b < T.pos.length; b++) if (T.alive[b] && !seen[T.pos[b]]) { removed.push(b); T.alive[b] = 0; T.occ[T.pos[b]] = 0; T.locked[T.pos[b]] = 0; T.idAt[T.pos[b]] = -1; }
+  T.parkLock.fill(0);
+  for (const b of removed) T.falling.push({ x: TX(T.pos[b]), z: TZ(T.pos[b]), v: 0 });
+  T.lost += removed.length; T.cuts++; T.from.set(T.pos); T.pivot.fill(-1); T.stalls = 0;
+}
+
+// drawing: ball, two bent arms pointing at linked neighbours, teal bars for the rest
+const TRI = (() => {
+  const g = new THREE.Group(); world.add(g); g.visible = false;
+  const mk = (geo, col, n) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: col }), n); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); g.add(m); return m; };
+  const arm = new THREE.CylinderGeometry(0.045, 0.045, 0.44, 8); arm.rotateX(Math.PI / 2); arm.translate(0, 0, 0.26);
+  const tip = new THREE.CylinderGeometry(0.075, 0.075, 0.05, 12); tip.rotateX(Math.PI / 2); tip.translate(0, 0, 0.47);
+  const hinge = new THREE.BoxGeometry(0.1, 0.06, 0.08); hinge.translate(0, 0, 0.2);
+  const bar = new THREE.CylinderGeometry(0.03, 0.03, 1, 6); bar.rotateX(Math.PI / 2);
+  return { group: g, ball: mk(new THREE.SphereGeometry(0.2, 16, 12), 0xffffff, 400), arms: mk(arm, 0x3d424b, 800),
+           tips: mk(tip, 0xc9ccd2, 800), hinges: mk(hinge, 0xc4741f, 800), bars: mk(bar, 0x14a89b, 2400),
+           falls: mk(new THREE.SphereGeometry(0.2, 10, 8), 0xd94848, 400) };
+})();
+const ZUP = new THREE.Vector3(0, 0, 1), tq = new THREE.Quaternion(), tv = new THREE.Vector3(), tw = new THREE.Vector3();
+const tPos = n => new THREE.Vector3(TX(n), TY, TZ(n));
+function tBotPos(b, s) {
+  const to = tPos(T.pos[b]);
+  if (T.from[b] === T.pos[b]) return to;
+  const from = tPos(T.from[b]);
+  if (T.pivot[b] < 0) return from.lerp(to, s);
+  // roll 60 degrees around the shared neighbour
+  const c = tPos(T.pivot[b]), a0 = from.clone().sub(c), a1 = to.clone().sub(c);
+  const ang = Math.atan2(a0.x * a1.z - a0.z * a1.x, a0.x * a1.x + a0.z * a1.z) * s;
+  return new THREE.Vector3(c.x + a0.x * Math.cos(ang) - a0.z * Math.sin(ang), TY, c.z + a0.x * Math.sin(ang) + a0.z * Math.cos(ang));
+}
+function triDraw(s) {
+  const P2 = new Map(); let n = 0, na = 0, nbars = 0;
+  for (let b = 0; b < T.pos.length; b++) if (T.alive[b]) P2.set(b, tBotPos(b, s));
+  const armTo = new Map();     // which two neighbours each bot points its arms at
+  for (const [b] of P2) {
+    const p = T.pos[b], linked = TNB[p].filter(m => T.occ[m] && T.from[T.idAt[m]] === m && T.from[b] === p);
+    // spread the two arms as far apart as possible (straight through, else 120, else 60 degrees)
+    let best = linked.slice(0, 2), bestAng = -1;
+    for (let x = 0; x < linked.length; x++) for (let y = x + 1; y < linked.length; y++) {
+      const u = tPos(linked[x]).sub(tPos(p)), w = tPos(linked[y]).sub(tPos(p)), ang = u.angleTo(w);
+      if (ang > bestAng + 1e-6) { bestAng = ang; best = [linked[x], linked[y]]; }
+    }
+    armTo.set(b, best);
+  }
+  for (const [b, p] of P2) {
+    const cell = T.pos[b];
+    const colour = T.from[b] !== cell ? C.pivot : T.locked[cell] ? C.locked : C.free;
+    m4.compose(p, tq.identity(), one); TRI.ball.setMatrixAt(n, m4); TRI.ball.setColorAt(n, tint.copy(colour).lerp(CHARCOAL, 0.45)); instToBot[n] = b; n++;
+    const targets = armTo.get(b), dirs = targets.map(m => tPos(m).sub(tPos(cell)).normalize());
+    while (dirs.length < 2) dirs.push(dirs.length ? dirs[0].clone().negate() : new THREE.Vector3(0, 0, dirs.length ? -1 : 1));
+    for (const d of dirs) {
+      tq.setFromUnitVectors(ZUP, d); m4.compose(p, tq, one);
+      TRI.arms.setMatrixAt(na, m4); TRI.tips.setMatrixAt(na, m4); TRI.hinges.setMatrixAt(na, m4); na++;
+    }
+  }
+  // links that aren't an arm-to-arm pair are drawn as port bars
+  for (const [b] of P2) {
+    const p = T.pos[b];
+    if (T.from[b] !== p) continue;
+    for (const m of TNB[p]) {
+      const o = T.idAt[m]; if (o < 0 || o <= b || T.from[o] !== m) continue;
+      const armPair = armTo.get(b).includes(m) && armTo.get(o).includes(p);
+      if (armPair) continue;
+      tv.copy(tPos(p)).add(tPos(m)).multiplyScalar(0.5); tw.copy(tPos(m)).sub(tPos(p)).normalize();
+      tq.setFromUnitVectors(ZUP, tw); m4.compose(tv, tq, v.set(1, 1, 0.62)); TRI.bars.setMatrixAt(nbars++, m4);
+    }
+  }
+  let f = 0; for (const c of T.falling) { v.set(c.x, TY, c.z); m4.compose(v, tq.identity(), one); TRI.falls.setMatrixAt(f++, m4); }
+  TRI.ball.count = n; TRI.arms.count = TRI.tips.count = TRI.hinges.count = na; TRI.bars.count = nbars; TRI.falls.count = f;
+  for (const m of [TRI.ball, TRI.arms, TRI.tips, TRI.hinges, TRI.bars, TRI.falls]) m.instanceMatrix.needsUpdate = true;
+  if (TRI.ball.instanceColor) TRI.ball.instanceColor.needsUpdate = true;
+  linkCount = 0; for (const [b] of P2) for (const m of TNB[T.pos[b]]) if (T.occ[m]) linkCount++;
+  linkCount /= 2;
+}
+function triGhost() {
+  const pts = []; for (let n = 0; n < TN; n++) if (T.target[n] && !T.occ[n]) pts.push(TX(n), TY, TZ(n));
+  ghostGeo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+}
+function triStats() {
+  let alive = 0, filled = 0; for (let b = 0; b < T.pos.length; b++) alive += T.alive[b];
+  for (let n = 0; n < TN; n++) if (T.target[n] && T.occ[n]) filled++;
+  const conn = tAllAttached();
+  $("sStep").textContent = T.step; $("sBots").textContent = alive; $("sLinks").textContent = Math.round(linkCount);
+  $("sFill").textContent = Math.round(100 * filled / T.need) + "%";
+  $("sConn").textContent = conn ? "yes" : "NO"; $("sConn").className = conn ? "" : "bad";
+  $("sOver").textContent = "–"; $("sOver").className = ""; $("sLost").textContent = T.lost; $("sSites").textContent = "–";
+  let title, text;
+  if (filled === T.need) { title = T.cuts ? "Repaired" : "Built"; text = tParked() ? "Spares are parked. Knock a hole in the span and watch it fill back in." : "Leftover bots heading back to park."; }
+  else if (T.stalls > 25) { title = "Stuck"; text = "Nobody can get any closer from here."; }
+  else { title = T.cuts ? "Repairing" : "Building"; text = "A truss bridge: two towers and a span made of triangles. Triangles can't fold, so the span needs no support pillars underneath."; }
+  $("status").classList.toggle("stuck", title === "Stuck");
+  $("statusTitle").textContent = title; $("statusText").textContent = text;
+}
+function triReset() { T = triNew(); acc = 0; triGhost(); triDraw(1); triStats(); }
+
 // ------------------------------------------------------------------ UI + loop
 let V1 = false, playing = true, speed = 12, acc = 0, last = performance.now(), linkCount = 0;
 const $ = id => document.getElementById(id);
@@ -1040,28 +1246,40 @@ function reset() {
 }
 $("shape").addEventListener("change", reset);
 $("lookCube").addEventListener("click", () => setLook(false));
+let TRI_MODE = false;
 const NOTES = {
+  tri: "Kuan's triangle cell: bots on a grid of triangles, arms bent to dock tip to tip with their neighbours. Any extra links plug into side ports (teal). Only the truss bridge for now.",
   arms: "Like Kuan's v1: each bot points its two arms one way, and a link is an arm tip plugged into the side of the next bot. Bots that just touch aren't attached.",
   faces: "Simplest version: any two bots touching are attached.",
 };
 function setModel(m) {
-  MODEL = m;
+  MODEL = m === "tri" ? MODEL : m;
+  TRI_MODE = m === "tri";
   $("modelArms").setAttribute("aria-pressed", String(m === "arms")); $("modelFaces").setAttribute("aria-pressed", String(m === "faces"));
+  $("modelTri").setAttribute("aria-pressed", String(m === "tri"));
   $("modelNote").textContent = NOTES[m];
-  reset(); setLook(botLook);
+  for (const id of ["shape", "text", "buildText", "lookCube", "lookBot", "v1"]) $(id).disabled = TRI_MODE;
+  TRI.group.visible = TRI_MODE;
+  if (TRI_MODE) {
+    cubes.visible = false; BOT.group.visible = false; links.count = 0; falls.count = 0; grid.position.z = 0;
+    controls.target.set(2, 0, 3); camera.position.set(6, -34, 12); controls.update();
+    triReset();
+  } else { reset(); setLook(botLook); }
 }
 $("modelArms").addEventListener("click", () => setModel("arms"));
 $("modelFaces").addEventListener("click", () => setModel("faces"));
+$("modelTri").addEventListener("click", () => setModel("tri"));
 $("modelNote").textContent = NOTES[MODEL];
 $("lookBot").addEventListener("click", () => setLook(true));
 const buildText = () => { $("shape").value = "text"; reset(); };
 $("buildText").addEventListener("click", buildText);
 $("text").addEventListener("keydown", e => { if (e.key === "Enter") buildText(); });
-$("reset").addEventListener("click", reset);
+$("reset").addEventListener("click", () => TRI_MODE ? triReset() : reset());
 $("play").addEventListener("click", () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; });
 $("speed").addEventListener("input", e => { speed = +e.target.value; $("speedVal").textContent = speed; });
 $("v1").addEventListener("change", e => { V1 = e.target.checked; reset(); });   // replan supports
 $("cut").addEventListener("click", () => {
+  if (TRI_MODE) { triCut(n => T.target[n] && tjOf(n) >= 6 && tiOf(n) >= 28 && tiOf(n) < 34); triGhost(); triDraw(1); triStats(); return; }
   const [x0, x1, y0, y1, z0, z1] = S.def.cut;
   cutCells((x, y, z) => S.target[idx(x, y, z)] && x >= x0 && x < x1 && y >= y0 && y < y1 && z >= z0 && z < z1);
   S.stalls = 0; updateGhost(); linkCount = updateLinks(); draw(1); setStats();
@@ -1075,6 +1293,13 @@ renderer.domElement.addEventListener("pointerup", e => {
   const r = renderer.domElement.getBoundingClientRect();
   ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
   ray.setFromCamera(ndc, camera);
+  if (TRI_MODE) {
+    const th = ray.intersectObject(TRI.ball)[0];
+    if (!th) return;
+    const c = T.pos[instToBot[th.instanceId]], cx = TX(c), cz = TZ(c);
+    triCut(n => (TX(n) - cx) ** 2 + (TZ(n) - cz) ** 2 <= 2.4); triGhost(); triDraw(1); triStats();
+    return;
+  }
   const hit = ray.intersectObject(botLook ? BOT.ball : cubes)[0];
   if (!hit) return;
   const b = instToBot[hit.instanceId], i = S.pos[b], cx = xOf(i), cy = yOf(i), cz = zOf(i);
@@ -1093,6 +1318,15 @@ new MutationObserver(readColours).observe(document.documentElement, { attributes
 const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
 function frame(now) {
   const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (TRI_MODE) {
+    if (playing) { acc += dt * speed; if (acc >= 1) { acc = reduced ? 0 : acc % 1; triTick(); triGhost(); triStats(); } }
+    for (const c of T.falling) { c.v -= 30 * dt; c.z += c.v * dt; }
+    T.falling = T.falling.filter(c => c.z > -8);
+    triDraw(playing ? Math.min(acc, 1) : 1);
+    controls.update(); renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+    return;
+  }
   if (playing) {
     acc += dt * speed;
     if (acc >= 1) {

@@ -137,6 +137,7 @@ input[type="range"] { width: 100%; accent-color: var(--locked); }
         <dt>One connected piece</dt><dd id="sConn">yes</dd>
         <dt>Longest overhang</dt><dd id="sOver">0 bots</dd>
         <dt>Bots lost to cuts</dt><dd id="sLost">0</dd>
+        <dt>Work sites right now</dt><dd id="sSites">1</dd>
       </dl>
     </div>
 
@@ -518,6 +519,39 @@ function distanceField(goal) {
   return dist;
 }
 
+// Share out the work. Group the open goal cells into sites (cells within two
+// steps of each other belong to the same site), give each site its own
+// distance map, and hand out the free bots in proportion to how many cells
+// each site still needs, nearest bots first. Returns bot -> its distance map.
+function shareOutWork(goal, bots) {
+  const site = new Int32Array(N).fill(-1), sites = [];
+  for (let i = 0; i < N; i++) {
+    if (!goal[i] || site[i] >= 0) continue;
+    const id = sites.length, cells = [i]; site[i] = id;
+    for (let h = 0; h < cells.length; h++) {
+      const c = cells[h], x = xOf(c), y = yOf(c), z = zOf(c);
+      for (let a = x - 2; a <= x + 2; a++) for (let b = y - 2; b <= y + 2; b++) for (let e = z - 2; e <= z + 2; e++) {
+        if (!inG(a, b, e)) continue;
+        const j = idx(a, b, e);
+        if (goal[j] && site[j] < 0) { site[j] = id; cells.push(j); }
+      }
+    }
+    sites.push(cells);
+  }
+  S.sites = sites.length;
+  if (sites.length <= 1) { const d = distanceField(goal); return () => d; }
+  const fields = sites.map(cells => { const g = new Uint8Array(N); for (const c of cells) g[c] = 1; return distanceField(g); });
+  const total = sites.reduce((n, c) => n + c.length, 0);
+  const quota = sites.map(c => Math.max(1, Math.round(bots.length * c.length / total)));
+  const pairs = [];
+  for (const b of bots) for (let k = 0; k < sites.length; k++) if (fields[k][S.pos[b]] < BIG) pairs.push([fields[k][S.pos[b]], b, k]);
+  pairs.sort((u, v) => u[0] - v[0]);
+  const pick = new Map();
+  for (const [, b, k] of pairs) if (!pick.has(b) && quota[k] > 0) { pick.set(b, k); quota[k]--; }
+  const nearest = distanceField(goal);
+  return b => pick.has(b) ? fields[pick.get(b)] : nearest;
+}
+
 function done() { for (let i = 0; i < N; i++) if (S.target[i] && !S.occ[i]) return false; return true; }
 // Locked shape bots and parked spares both stay put.
 const fixedAt = i => S.locked[i] === 1 || S.parkLock[i] === 1;
@@ -543,14 +577,14 @@ function tick() {
   else if (parked()) { S.step++; S.stalls = 0; return 0; }
   else goal = parkingGoal();
   if (building) S.parkLock.fill(0);           // shape needs work: every spare helps
-  const dist = distanceField(goal);
   const busy = Uint8Array.from(S.occ);
   const order = [];
   for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !fixedAt(S.pos[b])) order.push(b);
+  const fieldOf = building ? shareOutWork(goal, order) : (() => { const d = distanceField(goal); return () => d; })();
   for (let k = order.length - 1; k > 0; k--) { const r = (Math.random() * (k + 1)) | 0; [order[k], order[r]] = [order[r], order[k]]; }
   let moves = 0;
   for (const b of order) {
-    const p = S.pos[b], here = dist[p], opts = [];
+    const dist = fieldOf(b), p = S.pos[b], here = dist[p], opts = [];
     for (const m of legalMoves(p)) {
       if (fixedAt(m.c) || busy[m.c] || busy[m.via] || S.keepOut[m.c] || S.keepOut[m.via]) continue;
       if (dist[m.c] < here) opts.push([dist[m.c] + Math.random() * 0.1, m]);
@@ -730,6 +764,7 @@ function setStats() {
   $("sConn").textContent = conn ? "yes" : "NO"; $("sConn").className = conn ? "" : "bad";
   $("sOver").textContent = over + (over === 1 ? " bot" : " bots"); $("sOver").className = V1 && over > 1 ? "bad" : "";
   $("sLost").textContent = S.lost;
+  $("sSites").textContent = filled === S.need ? "–" : (S.sites || 1);
   const st = $("status"); let title, text;
   const complete = filled === S.need;
   if (complete) {

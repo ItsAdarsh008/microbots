@@ -97,7 +97,7 @@ input[type="text"] {
   <div class="stage" id="stage">
     <div class="look" role="group" aria-label="How bots are drawn">
       <button id="lookCube" type="button" aria-pressed="true">Cubes</button>
-      <button id="lookBot" type="button" aria-pressed="false">Microbot v1</button>
+      <button id="lookBot" type="button" aria-pressed="false">Kuan's v1 bot</button>
     </div>
     <div class="status" id="status"><h2 id="statusTitle">Building</h2><p id="statusText"></p></div>
     <div class="hint">drag to spin · scroll to zoom · click a bot to knock a hole in it</div>
@@ -824,7 +824,7 @@ function pose(b, s) {
 
 function updateGhost() {
   const pts = [];
-  for (let i = 0; i < N; i++) if (S.target[i] && !S.occ[i]) pts.push(xOf(i), yOf(i), zOf(i));
+  for (let i = 0; i < N; i++) if (S.target[i] && !S.occ[i]) pts.push(xOf(i), yOf(i), Z(zOf(i)));
   ghostGeo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
 }
 function updateLinks() {
@@ -837,9 +837,9 @@ function updateLinks() {
       if (!inG(a, c, e)) continue;
       const j = idx(a, c, e), o = S.idAt[j];
       if (o < 0 || S.kind[o]) continue;
-      v.set(x + d[0] / 2, y + d[1] / 2, z + d[2] / 2);
-      // cubes: a short latch in the gap; microbot: a port-to-port bar between balls
-      const along = botLook ? (d[2] ? 0.12 : 0.44) : 0.3, across = botLook ? 0.07 : 0.16;
+      v.set(x + d[0] / 2, y + d[1] / 2, Z(z + d[2] / 2));
+      // cubes: a short latch in the gap; microbot: a ring where two connectors meet
+      const along = botLook ? 0.1 : 0.3, across = botLook ? 0.42 : 0.16;
       const sc = new THREE.Vector3(d[0] ? along : across, d[1] ? along : across, d[2] ? along : across);
       m4.compose(v, q.identity(), sc); links.setMatrixAt(n++, m4);
     }
@@ -855,19 +855,29 @@ function updateLinks() {
 const BOT = (() => {
   const g = new THREE.Group(), parts = [];
   const add = (geo, colour) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: colour }), MAXB); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); g.add(m); parts.push(m); return m; };
-  const ball = add(new THREE.SphereGeometry(0.29, 18, 12), 0xffffff);
-  const rod = new THREE.CylinderGeometry(0.065, 0.065, 0.8, 10); rod.rotateX(Math.PI / 2); add(rod, 0x3d424b);
+  // sizes in units of 28 mm: ball 30 mm, tube 6 mm, tips 10 mm, 81 mm tip to tip
+  const mm = v => v / 28;
+  const ball = add(new THREE.SphereGeometry(mm(15), 20, 14), 0xffffff);
+  const rod = new THREE.CylinderGeometry(mm(3), mm(3), mm(77), 10); rod.rotateX(Math.PI / 2); add(rod, 0x3d424b);
   for (const zs of [1, -1]) {
-    const hinge = new THREE.BoxGeometry(0.2, 0.09, 0.13); hinge.translate(0, 0, zs * 0.31); add(hinge, 0xc4741f);
-    const tip = new THREE.CylinderGeometry(0.1, 0.1, 0.08, 14); tip.rotateX(Math.PI / 2); tip.translate(0, 0, zs * 0.45); add(tip, 0xc9ccd2);
+    const hinge = new THREE.BoxGeometry(mm(10), mm(5), mm(7)); hinge.translate(0, 0, zs * mm(17)); add(hinge, 0xc4741f);
+    const tip = new THREE.CylinderGeometry(mm(5), mm(5), mm(3.5), 16); tip.rotateX(Math.PI / 2); tip.translate(0, 0, zs * mm(38.75)); add(tip, 0xc9ccd2);
   }
   world.add(g); g.visible = false;
   return { group: g, ball, parts };
 })();
 const CHARCOAL = new THREE.Color(0x26282d), tint = new THREE.Color();
 let botLook = false;
+// In the microbot view, one grid step sideways is 28 mm (balls docked port to
+// port) and one step up is 81 mm (arm tip to arm tip), as in Kuan's 2x2x2 block.
+const ZS = 81 / 28;
+const Z = z => botLook ? z * ZS : z;
 function setLook(bot) {
   botLook = bot; cubes.visible = !bot; BOT.group.visible = bot;
+  grid.position.z = bot ? -(ZS - 1) / 2 : 0;            // floor where the bottom tips stand
+  controls.target.set(5, 0, bot ? 13 : 5);
+  camera.position.set(16, bot ? -64 : -50, bot ? 52 : 34); controls.update();
+  updateGhost();
   $("lookCube").setAttribute("aria-pressed", String(!bot)); $("lookBot").setAttribute("aria-pressed", String(bot));
   linkCount = updateLinks(); draw(playing ? 0 : 1);
 }
@@ -877,6 +887,7 @@ function draw(s) {
   for (let b = 0; b < S.pos.length; b++) {
     if (!S.alive[b]) continue;
     const [p, r] = pose(b, s);
+    p.z = Z(p.z);
     m4.compose(p, r, one);
     const colour = S.kind[b] === 2 ? C.pivot : S.locked[S.pos[b]] ? (S.support[S.pos[b]] ? C.support : C.locked) : C.free;
     if (botLook) {
@@ -890,7 +901,7 @@ function draw(s) {
   const coloured = botLook ? BOT.ball : cubes;
   if (coloured.instanceColor) coloured.instanceColor.needsUpdate = true;
   let f = 0;
-  for (const c of S.falling) { v.set(c.x, c.y, c.z); m4.compose(v, q.identity(), one); falls.setMatrixAt(f++, m4); }
+  for (const c of S.falling) { v.set(c.x, c.y, Z(c.z)); m4.compose(v, q.identity(), one); falls.setMatrixAt(f++, m4); }
   falls.count = f; falls.instanceMatrix.needsUpdate = true;
 }
 const instToBot = new Int32Array(MAXB);

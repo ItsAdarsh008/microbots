@@ -1,0 +1,614 @@
+<title>Linking Sandbox</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a full-height 3D stage with an instrument panel beside it (below it on phones). */
+:root {
+  --bg: #eef0f4;
+  --panel: #ffffff;
+  --stage: #f6f7fa;
+  --fg: #1d2230;
+  --muted: #5d6475;
+  --line: #d9dde6;
+  --locked: #7b5cd6;
+  --free: #a3aab8;
+  --pivot: #e8932b;
+  --link: #14a89b;
+  --cut: #d94848;
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12151c; --panel: #1a1e27; --stage: #151922; --fg: #e6e8ee; --muted: #9aa2b3;
+    --line: #2c3240; --free: #7d8597; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12151c; --panel: #1a1e27; --stage: #151922; --fg: #e6e8ee; --muted: #9aa2b3;
+  --line: #2c3240; --free: #7d8597; color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--sans); }
+.app { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 100%; }
+.stage { position: relative; background: var(--stage); min-width: 0; min-height: 0; }
+.stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+.status {
+  position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 14px; right: 16px;
+  display: flex; flex-direction: column; gap: 4px; pointer-events: none;
+}
+.status h2 { margin: 0; font-size: 17px; font-weight: 600; text-wrap: balance; }
+.status p { margin: 0; font-size: 13px; color: var(--muted); max-width: 52ch; }
+.status.stuck h2 { color: var(--cut); }
+.hint {
+  position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); bottom: 14px;
+  font-size: 12px; color: var(--muted); pointer-events: none;
+}
+.panel {
+  background: var(--panel); border-left: 1px solid var(--line); overflow-y: auto;
+  padding-block: 20px; padding-left: 20px; padding-right: max(20px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 20px;
+}
+.panel header h1 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.panel header p { margin: 6px 0 0; font-size: 13px; color: var(--muted); line-height: 1.45; }
+.group { display: flex; flex-direction: column; gap: 8px; }
+.label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+select, button {
+  font: inherit; font-size: 14px; color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+}
+button { cursor: pointer; font-weight: 500; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--locked); outline-offset: 2px; }
+button.primary { background: var(--locked); border-color: var(--locked); color: #fff; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row > * { flex: 1 1 auto; }
+input[type="range"] { width: 100%; accent-color: var(--locked); }
+.toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; cursor: pointer; }
+.toggle input { margin-top: 3px; accent-color: var(--cut); width: 16px; height: 16px; flex: none; }
+.toggle small { display: block; color: var(--muted); font-size: 12px; line-height: 1.4; margin-top: 2px; }
+.stats { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; margin: 0; font-size: 13px; }
+.stats dt { color: var(--muted); }
+.stats dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; text-align: right; }
+.stats dd.bad { color: var(--cut); }
+.legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 13px; }
+.legend span { display: flex; align-items: center; gap: 8px; }
+.legend i { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+.foot { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: auto; }
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 62vh auto; height: auto; }
+  .panel { border-left: 0; border-top: 1px solid var(--line); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+}
+</style>
+
+<div class="app">
+  <div class="stage" id="stage">
+    <div class="status" id="status"><h2 id="statusTitle">Building</h2><p id="statusText"></p></div>
+    <div class="hint">Drag to orbit · scroll to zoom · click a bot to cut a hole</div>
+  </div>
+  <aside class="panel">
+    <header>
+      <h1>Linking Sandbox</h1>
+      <p>Cube bots that stay linked face to face while they move. They can only slide along a surface or pivot over an edge, and no move may leave a bot without a chain of links to the floor.</p>
+    </header>
+
+    <div class="group">
+      <label class="label" for="shape">Shape</label>
+      <select id="shape">
+        <option value="bridge">Bridge (10-cell span)</option>
+        <option value="short">Short bridge (2-cell span)</option>
+        <option value="arch">Arch</option>
+        <option value="wall">Wall, one bot thick</option>
+        <option value="tower">Hollow tower</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <span class="label">Run</span>
+      <div class="row">
+        <button id="play" class="primary" type="button">Pause</button>
+        <button id="reset" type="button">Restart</button>
+        <button id="cut" type="button">Cut the middle</button>
+      </div>
+      <label class="label" for="speed">Speed <span id="speedVal">8</span> steps/s</label>
+      <input id="speed" type="range" min="1" max="30" value="8">
+    </div>
+
+    <div class="group">
+      <span class="label">Physics</span>
+      <label class="toggle" for="v1">
+        <input id="v1" type="checkbox">
+        <span>Microbot v1 strength limit<small>A connector peels if more than one bot sticks out sideways with nothing underneath (from the v1 design note, assuming 3 N per connector). Turn it on and restart the long bridge. Sometimes spare bots stack up under the deck as scaffolding and finish it; sometimes they get stuck. Teaching them to do it every time is the job for a trained policy. The short bridge never needs scaffolding.</small></span>
+      </label>
+    </div>
+
+    <div class="group">
+      <span class="label">Now</span>
+      <dl class="stats">
+        <dt>Step</dt><dd id="sStep">0</dd>
+        <dt>Bots</dt><dd id="sBots">0</dd>
+        <dt>Links</dt><dd id="sLinks">0</dd>
+        <dt>Shape filled</dt><dd id="sFill">0%</dd>
+        <dt>One connected piece</dt><dd id="sConn">yes</dd>
+        <dt>Longest overhang</dt><dd id="sOver">0 bots</dd>
+        <dt>Bots lost to cuts</dt><dd id="sLost">0</dd>
+      </dl>
+    </div>
+
+    <div class="group">
+      <span class="label">Colours</span>
+      <div class="legend">
+        <span><i style="background:var(--locked)"></i>Locked in shape</span>
+        <span><i style="background:var(--free)"></i>Free / spare</span>
+        <span><i style="background:var(--pivot)"></i>Pivoting</span>
+        <span><i style="background:var(--link)"></i>Link</span>
+        <span><i style="background:var(--cut)"></i>Cut, falling</span>
+      </div>
+    </div>
+
+    <p class="foot">Not local yet: the crawl direction and the "will anything fall?" check look at the whole grid. Code: <code>linking/</code> in the microbots repo.</p>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+"use strict";
+// ------------------------------------------------------------------ grid
+const NX = 26, NY = 16, NZ = 12, N = NX * NY * NZ, LAYER = NX * NY;
+const idx = (x, y, z) => x + NX * (y + NY * z);
+const xOf = i => i % NX, yOf = i => ((i / NX) | 0) % NY, zOf = i => (i / LAYER) | 0;
+const inG = (x, y, z) => x >= 0 && x < NX && y >= 0 && y < NY && z >= 0 && z < NZ;
+const FACES = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+const ONE_MOVE = [];
+for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = -1; dz <= 1; dz++) {
+  const m = Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+  if (m >= 1 && m <= 2) ONE_MOVE.push([dx, dy, dz]);
+}
+const SIDEWAYS = 0.3;
+
+// ------------------------------------------------------------------ shapes
+function box(t, x0, x1, y0, y1, z0, z1, v = 1) {
+  for (let x = x0; x < x1; x++) for (let y = y0; y < y1; y++) for (let z = z0; z < z1; z++) t[idx(x, y, z)] = v;
+}
+const SHAPES = {
+  bridge: { spares: 40, make(t) { box(t, 11, 13, 6, 9, 0, 5); box(t, 23, 25, 6, 9, 0, 5); box(t, 11, 25, 6, 9, 5, 6); },
+            cut: [15, 21, 0, NY, 0, NZ], text: "Two legs and a deck spanning 10 cells. The deck grows out from both legs and meets in the middle." },
+  short:  { spares: 30, make(t) { box(t, 13, 15, 6, 9, 0, 5); box(t, 17, 19, 6, 9, 0, 5); box(t, 13, 19, 6, 9, 5, 6); },
+            cut: [15, 17, 0, NY, 0, NZ], text: "The same bridge with a 2-cell span: each deck bot sticks out at most one bot from a leg." },
+  arch:   { spares: 30, make(t) { box(t, 12, 14, 6, 9, 0, 7); box(t, 20, 22, 6, 9, 0, 7); box(t, 12, 22, 6, 9, 7, 9); },
+            cut: [15, 19, 0, NY, 0, NZ], text: "Two legs and a two-layer bridge." },
+  wall:   { spares: 40, make(t) { box(t, 13, 22, 7, 8, 0, 9); },
+            cut: [13, 22, 0, NY, 5, NZ], text: "A thin wall, one bot thick: the surface test." },
+  tower:  { spares: 40, make(t) { box(t, 14, 20, 5, 11, 0, 8); box(t, 15, 19, 6, 10, 0, 8, 0); },
+            cut: [14, 20, 0, 6, 3, NZ], text: "Four thin walls around a hollow core." },
+};
+
+// ------------------------------------------------------------------ state
+let S = null;
+function newSwarm(name) {
+  const def = SHAPES[name];
+  const target = new Uint8Array(N); def.make(target);
+  let need = 0; for (let i = 0; i < N; i++) need += target[i];
+  const occ = new Uint8Array(N), locked = new Uint8Array(N), idAt = new Int32Array(N).fill(-1);
+  const pos = [];
+  let n = need + def.spares;
+  outer: for (let z = 0; z < NZ; z++) for (let x = 1; x < 9; x++) for (let y = 3; y < 13; y++) {
+    if (n === 0) break outer;
+    const i = idx(x, y, z); occ[i] = 1; idAt[i] = pos.length; pos.push(i); n--;
+  }
+  const park = new Uint8Array(N);
+  for (let x = 1; x < 9; x++) for (let y = 3; y < 13; y++) park[idx(x, y, 0)] = target[idx(x, y, 0)] ? 0 : 1;
+  const nb = pos.length;
+  return {
+    name, def, target, need, occ, locked, idAt, park,
+    pos: Int32Array.from(pos), from: Int32Array.from(pos), via: Int32Array.from(pos),
+    kind: new Uint8Array(nb), alive: new Uint8Array(nb).fill(1),
+    step: 0, lost: 0, stalls: 0, cuts: 0, falling: [],
+  };
+}
+
+// ------------------------------------------------------------------ rules
+function solid(x, y, z) {
+  if (z === -1) return x >= 0 && x < NX && y >= 0 && y < NY;
+  return inG(x, y, z) && S.occ[idx(x, y, z)] === 1;
+}
+function legalMoves(p) {
+  const px = xOf(p), py = yOf(p), pz = zOf(p), out = [], seen = new Set();
+  for (const d of FACES) {
+    const sx = px + d[0], sy = py + d[1], sz = pz + d[2];
+    if (!inG(sx, sy, sz) || S.occ[idx(sx, sy, sz)]) continue;
+    for (const e of FACES) {
+      if (d[0] * e[0] + d[1] * e[1] + d[2] * e[2] !== 0) continue;   // e at right angles to d
+      if (!solid(px + e[0], py + e[1], pz + e[2])) continue;          // nothing to push against
+      const ux = sx + e[0], uy = sy + e[1], uz = sz + e[2];
+      let c, via, kind;
+      if (solid(ux, uy, uz)) { c = idx(sx, sy, sz); via = c; kind = 1; }        // slide
+      else if (inG(ux, uy, uz)) { c = idx(ux, uy, uz); via = idx(sx, sy, sz); kind = 2; } // pivot
+      else continue;
+      if (!seen.has(c)) { seen.add(c); out.push({ c, via, kind }); }
+    }
+  }
+  return out;
+}
+// Everything linked to the floor? Flood from every bot on the bottom layer.
+const mark = new Int32Array(N); let stamp = 0; const queue = new Int32Array(N);
+function linkedToFloor() {
+  stamp++; let head = 0, tail = 0;
+  for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && zOf(S.pos[b]) === 0) { mark[S.pos[b]] = stamp; queue[tail++] = S.pos[b]; }
+  while (head < tail) {
+    const i = queue[head++], x = xOf(i), y = yOf(i), z = zOf(i);
+    for (const d of FACES) {
+      const a = x + d[0], b = y + d[1], c = z + d[2];
+      if (!inG(a, b, c)) continue;
+      const j = idx(a, b, c);
+      if (S.occ[j] && mark[j] !== stamp) { mark[j] = stamp; queue[tail++] = j; }
+    }
+  }
+  return tail;
+}
+function aliveCount() { let n = 0; for (let b = 0; b < S.alive.length; b++) n += S.alive[b]; return n; }
+function isConnected() { return linkedToFloor() === aliveCount(); }
+
+// v1 strength limit: a bot with nothing under it must touch a bot that has something under it.
+const under = i => zOf(i) === 0 || S.occ[i - LAYER] === 1;
+function overhangOK() {
+  for (let b = 0; b < S.pos.length; b++) {
+    if (!S.alive[b]) continue;
+    const i = S.pos[b];
+    if (under(i)) continue;
+    const x = xOf(i), y = yOf(i), z = zOf(i); let ok = false;
+    for (let k = 0; k < 4 && !ok; k++) {
+      const d = FACES[k], a = x + d[0], c = y + d[1];
+      if (inG(a, c, z)) { const j = idx(a, c, z); ok = S.occ[j] && under(j); }
+    }
+    if (!ok) return false;
+  }
+  return true;
+}
+function longestOverhang() {
+  let worst = 0;
+  for (let b = 0; b < S.pos.length; b++) {
+    if (!S.alive[b] || under(S.pos[b])) continue;
+    // sideways steps through unsupported bots to the nearest supported one
+    stamp++; let head = 0, tail = 0; const dist = new Map();
+    queue[tail++] = S.pos[b]; mark[S.pos[b]] = stamp; dist.set(S.pos[b], 0); let found = 0;
+    while (head < tail && !found) {
+      const i = queue[head++], x = xOf(i), y = yOf(i), z = zOf(i);
+      for (let k = 0; k < 4; k++) {
+        const d = FACES[k], a = x + d[0], c = y + d[1];
+        if (!inG(a, c, z)) continue;
+        const j = idx(a, c, z);
+        if (!S.occ[j] || mark[j] === stamp) continue;
+        mark[j] = stamp; dist.set(j, dist.get(i) + 1);
+        if (under(j)) { found = dist.get(j); break; }
+        queue[tail++] = j;
+      }
+    }
+    worst = Math.max(worst, found || 99);
+  }
+  return worst;
+}
+
+function goalCells() {
+  const goal = new Uint8Array(N);
+  let layer = -1;
+  for (let z = 0; z < NZ && layer < 0; z++) for (let i = z * LAYER; i < (z + 1) * LAYER; i++) if (S.target[i] && !S.occ[i]) { layer = z; break; }
+  if (layer < 0) return null;
+  let any = false;
+  for (let i = layer * LAYER; i < (layer + 1) * LAYER; i++) {
+    if (!S.target[i] || S.occ[i]) continue;
+    goal[i] = 1;
+  }
+  // keep cells that touch something, if any do
+  const touch = new Uint8Array(N);
+  for (let i = layer * LAYER; i < (layer + 1) * LAYER; i++) {
+    if (!goal[i]) continue;
+    if (layer === 0) { touch[i] = 1; any = true; continue; }
+    const x = xOf(i), y = yOf(i), z = zOf(i);
+    for (const d of FACES) if (solid(x + d[0], y + d[1], z + d[2])) { touch[i] = 1; any = true; break; }
+  }
+  return { goal: any ? touch : goal, layer };
+}
+
+const BIG = 1e6;
+function distanceField(goal) {
+  const dist = new Int32Array(N).fill(BIG);
+  const fixedNear = i => {
+    const x = xOf(i), y = yOf(i), z = zOf(i);
+    if (z === 0) return true;
+    for (const d of FACES) { const a = x + d[0], b = y + d[1], c = z + d[2]; if (inG(a, b, c) && S.locked[idx(a, b, c)]) return true; }
+    return false;
+  };
+  const botNear = i => {
+    const x = xOf(i), y = yOf(i), z = zOf(i);
+    if (z === 0) return true;
+    for (const d of FACES) { const a = x + d[0], b = y + d[1], c = z + d[2]; if (inG(a, b, c) && S.occ[idx(a, b, c)]) return true; }
+    return false;
+  };
+  const buckets = [[]];
+  for (let i = 0; i < N; i++) if (goal[i]) { dist[i] = 0; buckets[0].push(i); }
+  // pass 1: only along fixed surfaces
+  for (let k = 0; k < buckets.length; k++) {
+    for (const i of buckets[k]) {
+      const x = xOf(i), y = yOf(i), z = zOf(i);
+      for (const d of ONE_MOVE) {
+        const a = x + d[0], b = y + d[1], c = z + d[2];
+        if (!inG(a, b, c)) continue;
+        const j = idx(a, b, c);
+        if (dist[j] !== BIG || S.locked[j] || !fixedNear(j)) continue;
+        dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
+      }
+    }
+  }
+  // pass 2: bots resting on free bots get paths down onto the fixed surfaces
+  for (let k = 0; k < buckets.length + 1 && k < 400; k++) {
+    for (const i of (buckets[k] || [])) {
+      const x = xOf(i), y = yOf(i), z = zOf(i);
+      for (const d of ONE_MOVE) {
+        const a = x + d[0], b = y + d[1], c = z + d[2];
+        if (!inG(a, b, c)) continue;
+        const j = idx(a, b, c);
+        if (dist[j] !== BIG || S.locked[j] || !botNear(j)) continue;
+        dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
+      }
+    }
+  }
+  return dist;
+}
+
+function done() { for (let i = 0; i < N; i++) if (S.target[i] && !S.occ[i]) return false; return true; }
+function parked() {
+  for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !S.locked[S.pos[b]] && !S.park[S.pos[b]]) return false;
+  return true;
+}
+
+function tick() {
+  S.kind.fill(0); S.from.set(S.pos); S.via.set(S.pos);
+  const building = !done();
+  let goal;
+  if (building) { const g = goalCells(); goal = g.goal; }
+  else if (parked()) { S.step++; S.stalls = 0; return 0; }
+  else { goal = new Uint8Array(N); for (let i = 0; i < N; i++) goal[i] = S.park[i] && !S.occ[i] ? 1 : 0; }
+  const dist = distanceField(goal);
+  const busy = Uint8Array.from(S.occ);
+  const order = [];
+  for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !S.locked[S.pos[b]]) order.push(b);
+  for (let k = order.length - 1; k > 0; k--) { const r = (Math.random() * (k + 1)) | 0; [order[k], order[r]] = [order[r], order[k]]; }
+  let moves = 0;
+  for (const b of order) {
+    const p = S.pos[b], here = dist[p], opts = [];
+    for (const m of legalMoves(p)) {
+      if (S.locked[m.c] || busy[m.c] || busy[m.via]) continue;
+      if (dist[m.c] < here) opts.push([dist[m.c] + Math.random() * 0.1, m]);
+      else if (dist[m.c] === here && Math.random() < SIDEWAYS) opts.push([dist[m.c] + 0.5, m]);
+    }
+    opts.sort((a, c) => a[0] - c[0]);
+    for (const [, m] of opts) {
+      S.occ[p] = 0; S.occ[m.c] = 1; S.pos[b] = m.c;
+      if (isConnected() && (!V1 || overhangOK())) {
+        S.idAt[p] = -1; S.idAt[m.c] = b; S.kind[b] = m.kind; S.via[b] = m.via;
+        busy[m.c] = 1; busy[m.via] = 1; moves++;
+        if (building && goal[m.c]) { S.locked[m.c] = 1; goal[m.c] = 0; }
+        break;
+      }
+      S.occ[m.c] = 0; S.occ[p] = 1; S.pos[b] = p;
+    }
+  }
+  if (building) {
+    let top = NZ - 1;
+    outer: for (let z = 0; z < NZ; z++) for (let i = z * LAYER; i < (z + 1) * LAYER; i++) if (S.target[i] && !S.occ[i]) { top = z; break outer; }
+    for (let b = 0; b < S.pos.length; b++) { const i = S.pos[b]; if (S.alive[b] && S.target[i] && zOf(i) <= top) S.locked[i] = 1; }
+  }
+  S.stalls = moves === 0 ? S.stalls + 1 : 0;
+  S.step++;
+  return moves;
+}
+
+// Remove bots near a cell, then anything no longer linked to the floor.
+function cutCells(test) {
+  const removed = [];
+  for (let b = 0; b < S.pos.length; b++) {
+    if (!S.alive[b]) continue;
+    const i = S.pos[b];
+    if (test(xOf(i), yOf(i), zOf(i))) removed.push(b);
+  }
+  for (const b of removed) { S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; }
+  linkedToFloor();
+  for (let b = 0; b < S.pos.length; b++) {
+    if (S.alive[b] && mark[S.pos[b]] !== stamp) { removed.push(b); S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; }
+  }
+  for (const b of removed) S.falling.push({ x: xOf(S.pos[b]), y: yOf(S.pos[b]), z: zOf(S.pos[b]), v: 0 });
+  S.lost += removed.length; S.cuts++;
+  S.kind.fill(0); S.from.set(S.pos); S.via.set(S.pos);
+  return removed.length;
+}
+
+// ------------------------------------------------------------------ rendering
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const stage = document.getElementById("stage");
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+stage.appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 500);
+camera.up.set(0, 0, 1);
+camera.position.set(10, -30, 20);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, 3); controls.enableDamping = true; controls.update();
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a0, 0.75));
+const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-8, -14, 22); scene.add(sun);
+const world = new THREE.Group(); world.position.set(-NX / 2 + 0.5, -NY / 2 + 0.5, 0.5); scene.add(world);
+
+let grid = null;
+function buildFloor() {
+  if (grid) world.remove(grid);
+  grid = new THREE.Group();
+  const mat = new THREE.LineBasicMaterial({ color: new THREE.Color(css("--line")) });
+  const pts = [];
+  for (let x = 0; x <= NX; x++) pts.push(x - .5, -.5, -.5, x - .5, NY - .5, -.5);
+  for (let y = 0; y <= NY; y++) pts.push(-.5, y - .5, -.5, NX - .5, y - .5, -.5);
+  const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+  grid.add(new THREE.LineSegments(g, mat)); world.add(grid);
+}
+
+const CUBE = 0.8, MAXB = 400;
+const cubeGeo = new THREE.BoxGeometry(CUBE, CUBE, CUBE);
+const cubes = new THREE.InstancedMesh(cubeGeo, new THREE.MeshLambertMaterial(), MAXB);
+cubes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); world.add(cubes);
+const falls = new THREE.InstancedMesh(cubeGeo, new THREE.MeshLambertMaterial(), MAXB); world.add(falls);
+const linkGeo = new THREE.BoxGeometry(1, 1, 1);
+const links = new THREE.InstancedMesh(linkGeo, new THREE.MeshBasicMaterial(), MAXB * 3); world.add(links);
+const ghostGeo = new THREE.BufferGeometry();
+const ghost = new THREE.Points(ghostGeo, new THREE.PointsMaterial({ size: 0.16, transparent: true, opacity: 0.45 })); world.add(ghost);
+
+const C = {};
+function readColours() {
+  for (const k of ["locked", "free", "pivot", "link", "cut"]) C[k] = new THREE.Color(css("--" + k));
+  links.material.color = C.link; ghost.material.color = C.locked;
+  falls.material.color = C.cut; buildFloor();
+}
+
+const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), v = new THREE.Vector3(), one = new THREE.Vector3(1, 1, 1);
+const P = i => new THREE.Vector3(xOf(i), yOf(i), zOf(i));
+function pose(b, s) {
+  const k = S.kind[b];
+  if (k === 1) return [P(S.from[b]).lerp(P(S.pos[b]), s), new THREE.Quaternion()];
+  if (k === 2) {
+    const a = P(S.from[b]), e = P(S.pos[b]), hinge = a.clone().add(e).multiplyScalar(0.5);
+    const v0 = a.sub(hinge), vh = P(S.via[b]).sub(hinge);
+    const axis = new THREE.Vector3().crossVectors(v0, vh).normalize();
+    const rot = new THREE.Quaternion().setFromAxisAngle(axis, s * Math.PI);
+    return [hinge.add(v0.applyQuaternion(rot)), rot];
+  }
+  return [P(S.pos[b]), new THREE.Quaternion()];
+}
+
+function updateGhost() {
+  const pts = [];
+  for (let i = 0; i < N; i++) if (S.target[i] && !S.occ[i]) pts.push(xOf(i), yOf(i), zOf(i));
+  ghostGeo.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+}
+function updateLinks() {
+  let n = 0;
+  for (let b = 0; b < S.pos.length; b++) {
+    if (!S.alive[b] || S.kind[b]) continue;
+    const i = S.pos[b], x = xOf(i), y = yOf(i), z = zOf(i);
+    for (let k = 0; k < 6; k += 2) {
+      const d = FACES[k], a = x + d[0], c = y + d[1], e = z + d[2];
+      if (!inG(a, c, e)) continue;
+      const j = idx(a, c, e), o = S.idAt[j];
+      if (o < 0 || S.kind[o]) continue;
+      v.set(x + d[0] / 2, y + d[1] / 2, z + d[2] / 2);
+      const sc = new THREE.Vector3(d[0] ? 0.3 : 0.16, d[1] ? 0.3 : 0.16, d[2] ? 0.3 : 0.16);
+      m4.compose(v, q.identity(), sc); links.setMatrixAt(n++, m4);
+    }
+  }
+  links.count = n; links.instanceMatrix.needsUpdate = true;
+  return n;
+}
+
+function draw(s) {
+  let n = 0;
+  for (let b = 0; b < S.pos.length; b++) {
+    if (!S.alive[b]) continue;
+    const [p, r] = pose(b, s);
+    m4.compose(p, r, one); cubes.setMatrixAt(n, m4);
+    cubes.setColorAt(n, S.kind[b] === 2 ? C.pivot : S.locked[S.pos[b]] ? C.locked : C.free);
+    instToBot[n] = b; n++;
+  }
+  cubes.count = n; cubes.instanceMatrix.needsUpdate = true;
+  if (cubes.instanceColor) cubes.instanceColor.needsUpdate = true;
+  let f = 0;
+  for (const c of S.falling) { v.set(c.x, c.y, c.z); m4.compose(v, q.identity(), one); falls.setMatrixAt(f++, m4); }
+  falls.count = f; falls.instanceMatrix.needsUpdate = true;
+}
+const instToBot = new Int32Array(MAXB);
+
+// ------------------------------------------------------------------ UI + loop
+let V1 = false, playing = true, speed = 8, acc = 0, last = performance.now(), linkCount = 0;
+const $ = id => document.getElementById(id);
+function setStats() {
+  const alive = aliveCount();
+  let filled = 0; for (let i = 0; i < N; i++) if (S.target[i] && S.occ[i]) filled++;
+  const conn = linkedToFloor() === alive;
+  const over = longestOverhang();
+  $("sStep").textContent = S.step; $("sBots").textContent = alive; $("sLinks").textContent = linkCount;
+  $("sFill").textContent = Math.round(100 * filled / S.need) + "%";
+  $("sConn").textContent = conn ? "yes" : "NO"; $("sConn").className = conn ? "" : "bad";
+  $("sOver").textContent = over + (over === 1 ? " bot" : " bots"); $("sOver").className = V1 && over > 1 ? "bad" : "";
+  $("sLost").textContent = S.lost;
+  const st = $("status"); let title, text;
+  const complete = filled === S.need;
+  if (complete) {
+    title = S.cuts ? "Repaired" : "Built";
+    if (parked()) text = "Spares are parked on the floor. Click any bot, or Cut the middle, to damage it.";
+    else if (S.stalls > 25 && V1) text = "Some spares can't climb down: the deck needs them underneath as scaffolding, or it would overhang more than one bot.";
+    else if (S.stalls > 25) text = "Some spares are boxed in and can't reach the parking area.";
+    else text = "Spare bots are climbing back down to park.";
+  }
+  else if (S.stalls > 25) {
+    title = "Stuck";
+    text = V1 ? "The next cell would leave more than one bot sticking out sideways, which v1's connectors can't hold. A long span needs scaffolding or a different design." : "No bot can make progress from here.";
+  } else { title = S.cuts ? "Repairing" : "Building"; text = S.def.text; }
+  st.classList.toggle("stuck", title === "Stuck");
+  $("statusTitle").textContent = title; $("statusText").textContent = text;
+}
+
+function reset() {
+  S = newSwarm($("shape").value); acc = 0; updateGhost(); linkCount = updateLinks(); draw(1); setStats();
+}
+$("shape").addEventListener("change", reset);
+$("reset").addEventListener("click", reset);
+$("play").addEventListener("click", () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; });
+$("speed").addEventListener("input", e => { speed = +e.target.value; $("speedVal").textContent = speed; });
+$("v1").addEventListener("change", e => { V1 = e.target.checked; S.stalls = 0; setStats(); });
+$("cut").addEventListener("click", () => {
+  const [x0, x1, y0, y1, z0, z1] = S.def.cut;
+  cutCells((x, y, z) => S.target[idx(x, y, z)] && x >= x0 && x < x1 && y >= y0 && y < y1 && z >= z0 && z < z1);
+  S.stalls = 0; updateGhost(); linkCount = updateLinks(); draw(1); setStats();
+});
+
+// click (not drag) on a bot cuts a ball of radius 1.6 around it
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null;
+renderer.domElement.addEventListener("pointerdown", e => { down = [e.clientX, e.clientY]; });
+renderer.domElement.addEventListener("pointerup", e => {
+  if (!down || Math.hypot(e.clientX - down[0], e.clientY - down[1]) > 5) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  const hit = ray.intersectObject(cubes)[0];
+  if (!hit) return;
+  const b = instToBot[hit.instanceId], i = S.pos[b], cx = xOf(i), cy = yOf(i), cz = zOf(i);
+  cutCells((x, y, z) => (x - cx) ** 2 + (y - cy) ** 2 + (z - cz) ** 2 <= 2.6);
+  S.stalls = 0; updateGhost(); linkCount = updateLinks(); draw(1); setStats();
+});
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false); camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColours);
+new MutationObserver(readColours).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+function frame(now) {
+  const dt = Math.min((now - last) / 1000, 0.1); last = now;
+  if (playing) {
+    acc += dt * speed;
+    if (acc >= 1) {
+      acc = reduced ? 0 : acc % 1;
+      tick(); updateGhost(); linkCount = updateLinks(); setStats();
+    }
+  }
+  for (const c of S.falling) { c.v -= 30 * dt; c.z += c.v * dt; }
+  S.falling = S.falling.filter(c => c.z > -8);
+  draw(playing ? Math.min(acc, 1) * Math.min(acc, 1) * (3 - 2 * Math.min(acc, 1)) : 1);
+  controls.update(); renderer.render(scene, camera);
+  requestAnimationFrame(frame);
+}
+readColours(); reset(); resize(); requestAnimationFrame(frame);
+</script>

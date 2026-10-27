@@ -110,7 +110,7 @@ input[type="text"] {
   <aside class="panel">
     <header>
       <h1>Linking Sandbox</h1>
-      <p>Bots that never let go of each other. Click one to knock a hole.</p>
+      <p>Bots that never let go of each other, so click one to knock a hole and watch them fix it.</p>
     </header>
 
     <div class="group">
@@ -147,12 +147,12 @@ input[type="text"] {
     <div class="group" id="gridOptions">
       <span class="label">Bots attach by</span>
       <div class="row" role="group" aria-label="How bots attach">
-        <button id="modelArms" type="button" aria-pressed="true">Arms</button>
-        <button id="modelFaces" type="button" aria-pressed="false">Any touch</button>
+        <button id="modelArms" type="button" aria-pressed="true">Arms (Kuan's bot)</button>
+        <button id="modelFaces" type="button" aria-pressed="false">Any touch (cubes)</button>
       </div>
       <label class="toggle" for="v1">
         <input id="v1" type="checkbox">
-        <span>Real connector strength<small>Max one bot sticking out sideways. Adds blue pillars where needed.</small></span>
+        <span>Real connector strength (IRL Physics)<small>Only one bot can stick out sideways, so blue pillars get added where needed.</small></span>
       </label>
     </div>
 
@@ -274,13 +274,13 @@ function textShape(t) {
 
 const SHAPES = {
   bridge: { spares: 90, make(t) { box(t, 18, 21, 13, 18, 0, 7); box(t, 41, 44, 13, 18, 0, 7); box(t, 18, 44, 13, 18, 7, 8); },
-            cut: [27, 35, 0, NY, 7, NZ], text: "Two towers, 20-bot gap." },
+            cut: [27, 35, 0, NY, 7, NZ], text: "Two towers with a 20-bot gap." },
   arch:   { spares: 90, make(t) { fill(t, (x, y, z) => { const r = Math.hypot(x - 31, z); return y >= 12 && y < 19 && r >= 9 && r < 12.2; }); },
             cut: [28, 35, 0, NY, 0, NZ], text: "Each layer steps in, like a stone arch." },
   dome:   { spares: 90, make(t) { fill(t, (x, y, z) => { const r = Math.hypot(x - 31, y - 16, z); return r >= 7.6 && r < 9.2; }); },
-            cut: [28, 35, 0, NY, 5, NZ], text: "Hollow. The flat top is the hard part." },
+            cut: [28, 35, 0, NY, 5, NZ], text: "A hollow dome where the flat top is the hard part." },
   pyramid: { spares: 90, make(t) { fill(t, (x, y, z) => { const h = 7 - z; return h >= 0 && Math.abs(x - 31) <= h && Math.abs(y - 16) <= h; }); },
-            cut: [27, 36, 0, NY, 3, NZ], text: "Solid. Nothing overhangs." },
+            cut: [27, 36, 0, NY, 3, NZ], text: "A solid pyramid with nothing overhanging." },
   spiral: { spares: 90, make(t) {
               box(t, 30, 33, 15, 18, 0, 16);                       // central column
               fill(t, (x, y, z) => {                               // one step per layer, turning 45 degrees each time
@@ -296,10 +296,10 @@ const SHAPES = {
               ((x >= 20 && x < 24) || segDist(x, z, 23, 8, 33, 16) < 1.9 || segDist(x, z, 23, 8, 33, 0) < 1.9)); },
             cut: [26, 34, 0, NY, 9, NZ], text: "The top arm leans out over nothing." },
   table:  { spares: 90, make(t) { for (const [x, y] of [[22, 10], [38, 10], [22, 20], [38, 20]]) box(t, x, x + 2, y, y + 2, 0, 7); box(t, 22, 40, 10, 22, 7, 8); },
-            cut: [27, 35, 12, 20, 7, NZ], text: "Four legs, 18 by 12 top." },
+            cut: [27, 35, 12, 20, 7, NZ], text: "Four legs with an 18 by 12 top." },
   text:   { spares: 90, make: textShape, cut: [27, 37, 0, NY, 4, NZ], text: "" },
   short:  { spares: 50, make(t) { box(t, 26, 29, 13, 18, 0, 7); box(t, 31, 34, 13, 18, 0, 7); box(t, 26, 34, 13, 18, 7, 8); },
-            cut: [29, 31, 0, NY, 7, NZ], text: "Gap of 2. Nothing sticks out far." },
+            cut: [29, 31, 0, NY, 7, NZ], text: "A 2-bot gap, so nothing sticks out far." },
 };
 
 // ------------------------------------------------------------------ state
@@ -1258,11 +1258,11 @@ function setStats() {
   else if (S.stalls > 25) {
     title = "Stuck";
     text = V1 && MODEL === "arms"
-      ? "Arms + real strength jams near the end. Known bug."
+      ? "Arms plus real strength jams near the end (a known bug)."
       : V1 ? "Next piece would stick out too far." : "Nobody can get closer.";
   } else {
     title = S.cuts ? "Repairing" : "Building"; text = S.def.text;
-    if (V1 && S.nSupport) text += ` ${S.nSupport} pillar bots.`;
+    if (V1 && S.nSupport) text = text.replace(/\.$/, ` (plus ${S.nSupport} pillar bots).`);
   }
   st.classList.toggle("stuck", title === "Stuck");
   $("statusTitle").textContent = title; $("statusText").textContent = text;

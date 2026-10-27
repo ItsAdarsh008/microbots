@@ -86,6 +86,8 @@ input[type="text"] {
 .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; font-size: 13px; }
 .legend span { display: flex; align-items: center; gap: 8px; }
 .legend i { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+.note { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+.row button[aria-pressed="true"] { background: var(--locked); border-color: var(--locked); color: #fff; }
 .foot { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: auto; }
 @media (max-width: 760px) {
   .app { grid-template-columns: minmax(0, 1fr); grid-template-rows: 62vh auto; height: auto; }
@@ -136,6 +138,15 @@ input[type="text"] {
       </div>
       <label class="label" for="speed">Speed <span id="speedVal">12</span> steps/s</label>
       <input id="speed" type="range" min="1" max="40" value="12">
+    </div>
+
+    <div class="group">
+      <span class="label">How bots attach</span>
+      <div class="row" role="group" aria-label="How bots attach">
+        <button id="modelArms" type="button" aria-pressed="true">With their arms</button>
+        <button id="modelFaces" type="button" aria-pressed="false">Any touching face</button>
+      </div>
+      <p class="note" id="modelNote"></p>
     </div>
 
     <div class="group">
@@ -192,6 +203,23 @@ for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (let dz = 
   if (m >= 1 && m <= 2) ONE_MOVE.push([dx, dy, dz]);
 }
 const SIDEWAYS = 0.3;
+
+// How bots attach. "faces": any two bots that touch are linked (the simple
+// cube model). "arms": modelled on Kuan's microbot v1. Each bot points its two
+// arms along one axis (x, y or z); a link is one bot's arm tip docked into a
+// side port of the next bot (ports sit around the ball's middle, so the held
+// bot's arms must point the other way). Change these when the real numbers
+// are in.
+const ARMS = {
+  stepMM: 55.5,        // one grid step: tip docked in a port, centre to centre (15 mm ball radius + 40.5 mm arm)
+  ballMM: 30,          // ball diameter
+  tipToTipMM: 81,      // both arms straight, tip to tip
+  tipToTip: false,     // two tips docking would put bots 81 mm apart, which is off this grid
+  portToPort: false,   // balls docking side by side would be ~28 mm apart, also off this grid
+  floor: true,         // any bot on the bottom layer counts as attached to the floor
+};
+let MODEL = "arms";      // "arms" or "faces"
+
 
 // ------------------------------------------------------------------ shapes
 function box(t, x0, x1, y0, y1, z0, z1, v = 1) {
@@ -345,11 +373,13 @@ function newSwarm(name) {
   }
   let need = 0; for (let i = 0; i < N; i++) need += target[i];
   const occ = new Uint8Array(N), locked = new Uint8Array(N), idAt = new Int32Array(N).fill(-1);
+  const axisAt = new Int8Array(N).fill(-1);          // arm direction of the bot in each cell (0 x, 1 y, 2 z)
   const pos = [];
   let n = need + def.spares;
   outer: for (let z = 0; z < NZ; z++) for (let x = 1; x < 14; x++) for (let y = 2; y < 30; y++) {
     if (n === 0) break outer;
     const i = idx(x, y, z); occ[i] = 1; idAt[i] = pos.length; pos.push(i); n--;
+    axisAt[i] = (x + y + z) % 2 ? 0 : 2;     // checkerboard: every bot in the pile is held by a neighbour or holds one
   }
   // Parking pad: floor slots filled in a fixed order, the column farthest from
   // the shape first, each column from the middle out, so arriving bots never
@@ -359,9 +389,10 @@ function newSwarm(name) {
   slots.sort((a, b) => xOf(a) - xOf(b) || Math.abs(yOf(a) - 15.5) - Math.abs(yOf(b) - 15.5));
   const nb = pos.length;
   return {
-    name, def, target, need, occ, locked, idAt, slots, support, nSupport, keepOut, parkLock: new Uint8Array(N),
+    name, def, target, need, occ, locked, idAt, axisAt, slots, support, nSupport, keepOut, parkLock: new Uint8Array(N),
     pos: Int32Array.from(pos), from: Int32Array.from(pos), via: Int32Array.from(pos),
     kind: new Uint8Array(nb), alive: new Uint8Array(nb).fill(1),
+    axis: Int8Array.from(pos.map(i => axisAt[i])), fromAxis: Int8Array.from(pos.map(i => axisAt[i])),
     step: 0, lost: 0, stalls: 0, cuts: 0, falling: [],
   };
 }
@@ -389,18 +420,40 @@ function legalMoves(p) {
   }
   return out;
 }
+// Are the bots in cells i and j (neighbours along FACES[k]) linked?
+function joined(i, j, k) {
+  if (MODEL === "faces") return true;
+  const ax = k >> 1, ai = S.axisAt[i], aj = S.axisAt[j];
+  if (ai === ax && aj !== ax) return true;             // i's arm tip in j's side port
+  if (aj === ax && ai !== ax) return true;             // j's arm tip in i's side port
+  if (ai === ax && aj === ax) return ARMS.tipToTip;    // tip meets tip
+  return ARMS.portToPort;                              // ball beside ball
+}
+const onFloor = i => zOf(i) === 0 && (MODEL === "faces" || ARMS.floor);
+// Linked neighbour cells of i.
+function linkedNeighbours(i) {
+  const x = xOf(i), y = yOf(i), z = zOf(i), out = [];
+  for (let k = 0; k < 6; k++) {
+    const d = FACES[k], a = x + d[0], b = y + d[1], c = z + d[2];
+    if (!inG(a, b, c)) continue;
+    const j = idx(a, b, c);
+    if (S.occ[j] && joined(i, j, k)) out.push(j);
+  }
+  return out;
+}
+
 // Everything linked to the floor? Flood from every bot on the bottom layer.
 const mark = new Int32Array(N); let stamp = 0; const queue = new Int32Array(N);
 function linkedToFloor() {
   stamp++; let head = 0, tail = 0;
-  for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && zOf(S.pos[b]) === 0) { mark[S.pos[b]] = stamp; queue[tail++] = S.pos[b]; }
+  for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && onFloor(S.pos[b])) { mark[S.pos[b]] = stamp; queue[tail++] = S.pos[b]; }
   while (head < tail) {
     const i = queue[head++], x = xOf(i), y = yOf(i), z = zOf(i);
-    for (const d of FACES) {
-      const a = x + d[0], b = y + d[1], c = z + d[2];
+    for (let k = 0; k < 6; k++) {
+      const d = FACES[k], a = x + d[0], b = y + d[1], c = z + d[2];
       if (!inG(a, b, c)) continue;
       const j = idx(a, b, c);
-      if (S.occ[j] && mark[j] !== stamp) { mark[j] = stamp; queue[tail++] = j; }
+      if (S.occ[j] && mark[j] !== stamp && joined(i, j, k)) { mark[j] = stamp; queue[tail++] = j; }
     }
   }
   return tail;
@@ -410,36 +463,32 @@ function linkedToFloor() {
 // it left behind can come loose. If all of p's old neighbours are still joined
 // to each other inside the 3x3x3 block around p (the floor joins anything on
 // the bottom layer), nothing can have come loose; otherwise check everything.
-const local = new Int32Array(27);
-function safeToLeave(p) {
-  const x = xOf(p), y = yOf(p), z = zOf(p), nb = [];
-  for (const d of FACES) { const a = x + d[0], b = y + d[1], c = z + d[2]; if (inG(a, b, c) && S.occ[idx(a, b, c)]) nb.push(idx(a, b, c)); }
-  // A bot touching only one thing (a bot, or the floor) holds nobody up.
-  if (nb.length + (z === 0 ? 1 : 0) <= 1) return true;
-  const inCube = j => Math.abs(xOf(j) - x) <= 1 && Math.abs(yOf(j) - y) <= 1 && Math.abs(zOf(j) - z) <= 1;
-  stamp++; const q = [nb[0]]; mark[nb[0]] = stamp; let floorDone = false;
+// Fast check for a bot that just moved from p to c (S.occ and S.axisAt already
+// show the move). Everything was attached before, so the move is safe if the
+// bots that p was linked to, plus the bot at c, are still joined to each other
+// inside the 5x5x5 block around p (the floor joins anything on the bottom
+// layer). If that can't be shown locally, check the whole structure.
+function safeMove(p, c, before) {
+  const x = xOf(p), y = yOf(p), z = zOf(p);
+  const need = [...before, c];
+  const needFloor = onFloor(p);
+  const R2 = 2;
+  const inCube = j => Math.abs(xOf(j) - x) <= R2 && Math.abs(yOf(j) - y) <= R2 && Math.abs(zOf(j) - z) <= R2;
+  stamp++; const q = [need[0]]; mark[need[0]] = stamp; let floorDone = false;
   for (let h = 0; h < q.length; h++) {
     const i = q[h];
-    if (zOf(i) === 0 && !floorDone) {               // the floor joins every bottom-layer cell
+    if (onFloor(i) && !floorDone) {                 // the floor joins every bottom-layer bot in the block
       floorDone = true;
-      for (let a = x - 1; a <= x + 1; a++) for (let b = y - 1; b <= y + 1; b++) {
+      for (let a = x - R2; a <= x + R2; a++) for (let b = y - R2; b <= y + R2; b++) {
         if (!inG(a, b, 0)) continue;
         const j = idx(a, b, 0);
         if (S.occ[j] && mark[j] !== stamp) { mark[j] = stamp; q.push(j); }
       }
     }
-    const a0 = xOf(i), b0 = yOf(i), c0 = zOf(i);
-    for (const d of FACES) {
-      const a = a0 + d[0], b = b0 + d[1], c = c0 + d[2];
-      if (!inG(a, b, c)) continue;
-      const j = idx(a, b, c);
-      if (S.occ[j] && mark[j] !== stamp && inCube(j)) { mark[j] = stamp; q.push(j); }
-    }
+    for (const j of linkedNeighbours(i)) if (mark[j] !== stamp && inCube(j)) { mark[j] = stamp; q.push(j); }
   }
-  // On the bottom layer the floor was one of p's neighbours too: it must still be reached.
-  const floorOk = z !== 0 || floorDone;
-  if (floorOk && nb.every(j => mark[j] === stamp)) return true;
-  return isConnected();                             // not sure locally: check everything
+  if ((!needFloor || floorDone) && need.every(j => mark[j] === stamp)) return true;
+  return isConnected();
 }
 // v1 limit, checked only where this move can change anything: within two
 // cells of where the bot left (p) and where it arrived (c).
@@ -670,7 +719,7 @@ function parkingGoal() {
 }
 
 function tick() {
-  S.kind.fill(0); S.from.set(S.pos); S.via.set(S.pos);
+  S.kind.fill(0); S.from.set(S.pos); S.via.set(S.pos); S.fromAxis.set(S.axis);
   const building = !done();
   let goal;
   let holes = [];
@@ -706,15 +755,27 @@ function tick() {
       else if (S.stalls > 3 && Math.random() < 0.3) opts.push([BIG + Math.random(), m]);
     }
     opts.sort((a, c) => a[0] - c[0]);
+    const before = linkedNeighbours(p), myAxis = S.axisAt[p];
+    S.fromAxis[b] = myAxis;
+    let moved = false;
     for (const [, m] of opts) {
-      S.occ[p] = 0; S.occ[m.c] = 1; S.pos[b] = m.c;
-      if (safeToLeave(p) && (!V1 || overhangNear(p, m.c))) {
-        S.idAt[p] = -1; S.idAt[m.c] = b; S.kind[b] = m.kind; S.via[b] = m.via;
-        busy[m.c] = 1; busy[m.via] = 1; moves++;
-        if (goal[m.c]) { (building ? S.locked : S.parkLock)[m.c] = 1; goal[m.c] = 0; }
-        break;
+      S.occ[p] = 0; S.axisAt[p] = -1; S.occ[m.c] = 1; S.pos[b] = m.c;
+      if (!V1 || overhangNear(p, m.c)) {
+        // pick an arm direction at the new spot that keeps everyone attached,
+        // trying the current one first (no turning needed)
+        for (const ax of MODEL === "faces" ? [myAxis] : [myAxis, (myAxis + 1) % 3, (myAxis + 2) % 3]) {
+          S.axisAt[m.c] = ax;
+          if (!onFloor(m.c) && linkedNeighbours(m.c).length === 0) continue;   // attached to nothing
+          if (safeMove(p, m.c, before)) {
+            S.idAt[p] = -1; S.idAt[m.c] = b; S.kind[b] = m.kind; S.via[b] = m.via; S.axis[b] = ax;
+            busy[m.c] = 1; busy[m.via] = 1; moves++; moved = true;
+            if (goal[m.c]) { (building ? S.locked : S.parkLock)[m.c] = 1; goal[m.c] = 0; }
+            break;
+          }
+        }
+        if (moved) break;
       }
-      S.occ[m.c] = 0; S.occ[p] = 1; S.pos[b] = p;
+      S.axisAt[m.c] = -1; S.occ[m.c] = 0; S.occ[p] = 1; S.axisAt[p] = myAxis; S.pos[b] = p;
     }
   }
   if (building) {
@@ -735,9 +796,9 @@ function cutCells(test) {
     const i = S.pos[b];
     if (test(xOf(i), yOf(i), zOf(i))) removed.push(b);
   }
-  for (const b of removed) { S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; }
+  for (const b of removed) { S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; S.axisAt[S.pos[b]] = -1; }
   S.parkLock.fill(0);
-  const drop = b => { removed.push(b); S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; };
+  const drop = b => { removed.push(b); S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; S.axisAt[S.pos[b]] = -1; };
   // Keep dropping until nothing changes: pieces no longer linked to the floor
   // fall, and (with the v1 limit on) so does any bot left sticking out too far.
   for (let changed = true; changed;) {
@@ -757,7 +818,7 @@ function cutCells(test) {
   }
   for (const b of removed) S.falling.push({ x: xOf(S.pos[b]), y: yOf(S.pos[b]), z: zOf(S.pos[b]), v: 0 });
   S.lost += removed.length; S.cuts++;
-  S.kind.fill(0); S.from.set(S.pos); S.via.set(S.pos);
+  S.kind.fill(0); S.from.set(S.pos); S.via.set(S.pos); S.fromAxis.set(S.axis);
   return removed.length;
 }
 
@@ -829,6 +890,7 @@ function updateGhost() {
 }
 function updateLinks() {
   let n = 0;
+  if (!S) return 0;
   for (let b = 0; b < S.pos.length; b++) {
     if (!S.alive[b] || S.kind[b]) continue;
     const i = S.pos[b], x = xOf(i), y = yOf(i), z = zOf(i);
@@ -836,10 +898,12 @@ function updateLinks() {
       const d = FACES[k], a = x + d[0], c = y + d[1], e = z + d[2];
       if (!inG(a, c, e)) continue;
       const j = idx(a, c, e), o = S.idAt[j];
-      if (o < 0 || S.kind[o]) continue;
-      v.set(x + d[0] / 2, y + d[1] / 2, Z(z + d[2] / 2));
-      // cubes: a short latch in the gap; microbot: a ring where two connectors meet
-      const along = botLook ? 0.1 : 0.3, across = botLook ? 0.42 : 0.16;
+      if (o < 0 || S.kind[o] || !joined(i, j, k)) continue;
+      // where the link sits: mid-gap, or for arms, at the held bot's port
+      let t = 0.5;
+      if (MODEL === "arms" && botLook) t = S.axisAt[i] === (k >> 1) ? 1 - BALL_R : BALL_R;
+      v.set(x + d[0] * t, y + d[1] * t, Z(z + d[2] * t));
+      const along = botLook ? 0.08 : 0.3, across = botLook ? (MODEL === "arms" ? 0.2 : 0.42) : 0.16;
       const sc = new THREE.Vector3(d[0] ? along : across, d[1] ? along : across, d[2] ? along : across);
       m4.compose(v, q.identity(), sc); links.setMatrixAt(n++, m4);
     }
@@ -871,12 +935,21 @@ let botLook = false;
 // In the microbot view, one grid step sideways is 28 mm (balls docked port to
 // port) and one step up is 81 mm (arm tip to arm tip), as in Kuan's 2x2x2 block.
 const ZS = 81 / 28;
-const Z = z => botLook ? z * ZS : z;
+// faces model: the 2x2x2 block (28 mm sideways, 81 mm up). arms model: one
+// step is a tip docked in a port (ARMS.stepMM), the same in every direction.
+const Z = z => botLook && MODEL === "faces" ? z * ZS : z;
+const BALL_R = ARMS.ballMM / 2 / ARMS.stepMM;
+const BOT_SCALE = () => MODEL === "arms" ? 28 / ARMS.stepMM : 1;
+// turn a bot whose arms point along z so they point along axis 0 (x), 1 (y) or 2 (z)
+const AXIS_Q = [new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2),
+                new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2),
+                new THREE.Quaternion()];
 function setLook(bot) {
   botLook = bot; cubes.visible = !bot; BOT.group.visible = bot;
-  grid.position.z = bot ? -(ZS - 1) / 2 : 0;            // floor where the bottom tips stand
-  controls.target.set(5, 0, bot ? 13 : 5);
-  camera.position.set(16, bot ? -64 : -50, bot ? 52 : 34); controls.update();
+  grid.position.z = bot && MODEL === "faces" ? -(ZS - 1) / 2 : 0;   // floor where the bottom tips stand
+  const tall = bot && MODEL === "faces";
+  controls.target.set(5, 0, tall ? 13 : 5);
+  camera.position.set(16, tall ? -64 : -50, tall ? 52 : 34); controls.update();
   updateGhost();
   $("lookCube").setAttribute("aria-pressed", String(!bot)); $("lookBot").setAttribute("aria-pressed", String(bot));
   linkCount = updateLinks(); draw(playing ? 0 : 1);
@@ -888,7 +961,11 @@ function draw(s) {
     if (!S.alive[b]) continue;
     const [p, r] = pose(b, s);
     p.z = Z(p.z);
-    m4.compose(p, r, one);
+    if (botLook && MODEL === "arms") {
+      // arms point along the bot's axis, turning smoothly if it changed this step
+      const turn = AXIS_Q[S.fromAxis[b]].clone().slerp(AXIS_Q[S.axis[b]], s);
+      const k = BOT_SCALE(); m4.compose(p, r.multiply(turn), v.set(k, k, k));
+    } else m4.compose(p, r, one);
     const colour = S.kind[b] === 2 ? C.pivot : S.locked[S.pos[b]] ? (S.support[S.pos[b]] ? C.support : C.locked) : C.free;
     if (botLook) {
       for (const part of BOT.parts) part.setMatrixAt(n, m4);
@@ -931,7 +1008,9 @@ function setStats() {
   }
   else if (S.stalls > 25) {
     title = "Stuck";
-    text = V1 ? "The next piece would stick out too far for the connectors to hold." : "Nobody can get any closer from here.";
+    text = V1 && MODEL === "arms"
+      ? "Known problem: with arms and real connector strength both on, the bots under the build end up each holding the next one, and nobody can let go first. Next thing to fix."
+      : V1 ? "The next piece would stick out too far for the connectors to hold." : "Nobody can get any closer from here.";
   } else {
     title = S.cuts ? "Repairing" : "Building"; text = S.def.text;
     if (V1 && S.nSupport) text += ` Needs ${S.nSupport} bots of support pillars (blue) to hold up.`;
@@ -946,6 +1025,19 @@ function reset() {
 }
 $("shape").addEventListener("change", reset);
 $("lookCube").addEventListener("click", () => setLook(false));
+const NOTES = {
+  arms: "Like Kuan's v1: each bot points its two arms one way, and a link is an arm tip plugged into the side of the next bot. Bots that just touch aren't attached.",
+  faces: "Simplest version: any two bots touching are attached.",
+};
+function setModel(m) {
+  MODEL = m;
+  $("modelArms").setAttribute("aria-pressed", String(m === "arms")); $("modelFaces").setAttribute("aria-pressed", String(m === "faces"));
+  $("modelNote").textContent = NOTES[m];
+  reset(); setLook(botLook);
+}
+$("modelArms").addEventListener("click", () => setModel("arms"));
+$("modelFaces").addEventListener("click", () => setModel("faces"));
+$("modelNote").textContent = NOTES[MODEL];
 $("lookBot").addEventListener("click", () => setLook(true));
 const buildText = () => { $("shape").value = "text"; reset(); };
 $("buildText").addEventListener("click", buildText);

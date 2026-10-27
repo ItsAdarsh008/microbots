@@ -102,7 +102,7 @@ input[type="text"] {
   <div class="stage" id="stage">
     <div class="look" role="group" aria-label="How bots are drawn">
       <button id="lookCube" type="button" aria-pressed="true">Cubes</button>
-      <button id="lookBot" type="button" aria-pressed="false">Kuan's v1 bot</button>
+      <button id="lookBot" type="button" aria-pressed="false">Real render</button>
     </div>
     <div class="status" id="status"><h2 id="statusTitle">Building</h2><p id="statusText"></p></div>
     <div class="hint">drag to spin · scroll to zoom · click a bot to knock a hole in it</div>
@@ -127,7 +127,7 @@ input[type="text"] {
         <option value="truss">Truss bridge (triangles)</option>
         <option value="text">Type something</option>
       </select>
-      <div class="row" id="textRow">
+      <div class="row" id="textRow" hidden>
         <input id="text" type="text" value="123" maxlength="10" aria-label="Text to build" spellcheck="false">
         <button id="buildText" type="button">Build text</button>
       </div>
@@ -145,11 +145,7 @@ input[type="text"] {
     </div>
 
     <div class="group" id="gridOptions">
-      <span class="label">Bots attach by</span>
-      <div class="row" role="group" aria-label="How bots attach">
-        <button id="modelArms" type="button" aria-pressed="true">Arms (Kuan's bot)</button>
-        <button id="modelFaces" type="button" aria-pressed="false">Any touch (cubes)</button>
-      </div>
+      <span class="label">Physics</span>
       <label class="toggle" for="v1">
         <input id="v1" type="checkbox">
         <span>Real connector strength (IRL Physics)<small>Only one bot can stick out sideways, so blue pillars get added where needed.</small></span>
@@ -958,7 +954,12 @@ const BOT_SCALE = () => MODEL === "arms" ? 28 / ARMS.stepMM : 1;
 const AXIS_Q = [new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2),
                 new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), -Math.PI / 2),
                 new THREE.Quaternion()];
+// The view decides the linking rules: cubes link by touching; the real
+// render is Kuan's bot, which can only link with its arms. Changing the rules
+// restarts the shape.
 function setLook(bot) {
+  const model = bot ? "arms" : "faces";
+  if (model !== MODEL) { MODEL = model; reset(); }
   botLook = bot; cubes.visible = !bot; BOT.group.visible = bot;
   grid.position.z = bot && MODEL === "faces" ? -(ZS - 1) / 2 : 0;   // floor where the bottom tips stand
   const tall = bot && MODEL === "faces";
@@ -1277,7 +1278,7 @@ function reset() {
 function pickShape() {
   const truss = $("shape").value === "truss";
   $("gridOptions").hidden = truss;
-  $("textRow").hidden = truss;
+  $("textRow").hidden = $("shape").value !== "text";   // only for "Type something"
   if (truss !== TRI_MODE) setModel(truss ? "tri" : MODEL);
   else if (truss) triReset(); else reset();
 }
@@ -1287,7 +1288,6 @@ let TRI_MODE = false;
 function setModel(m) {
   MODEL = m === "tri" ? MODEL : m;
   TRI_MODE = m === "tri";
-  $("modelArms").setAttribute("aria-pressed", String(MODEL === "arms")); $("modelFaces").setAttribute("aria-pressed", String(MODEL === "faces"));
   document.querySelector(".look").hidden = TRI_MODE;     // the truss is always drawn as bots
   TRI.group.visible = TRI_MODE;
   if (TRI_MODE) {
@@ -1296,8 +1296,6 @@ function setModel(m) {
     triReset();
   } else { reset(); setLook(botLook); }
 }
-$("modelArms").addEventListener("click", () => setModel("arms"));
-$("modelFaces").addEventListener("click", () => setModel("faces"));
 $("lookBot").addEventListener("click", () => setLook(true));
 const buildText = () => { $("shape").value = "text"; pickShape(); };
 $("buildText").addEventListener("click", buildText);
@@ -1368,5 +1366,5 @@ function frame(now) {
   controls.update(); renderer.render(scene, camera);
   requestAnimationFrame(frame);
 }
-readColours(); reset(); resize(); requestAnimationFrame(frame);
+readColours(); reset(); resize(); setLook(true); requestAnimationFrame(frame);
 </script>

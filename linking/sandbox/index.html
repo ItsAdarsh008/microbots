@@ -66,6 +66,10 @@ button.primary { background: var(--locked); border-color: var(--locked); color: 
 .row { display: flex; gap: 8px; flex-wrap: wrap; }
 .row > * { flex: 1 1 auto; }
 input[type="range"] { width: 100%; accent-color: var(--locked); }
+input[type="text"] {
+  font: inherit; font-family: var(--mono); font-size: 15px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; min-width: 0; flex: 3 1 120px;
+}
 .toggle { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; cursor: pointer; }
 .toggle input { margin-top: 3px; accent-color: var(--cut); width: 16px; height: 16px; flex: none; }
 .toggle small { display: block; color: var(--muted); font-size: 12px; line-height: 1.4; margin-top: 2px; }
@@ -105,7 +109,12 @@ input[type="range"] { width: 100%; accent-color: var(--locked); }
         <option value="k">Letter K</option>
         <option value="table">Table</option>
         <option value="short">Short bridge (2-cell gap)</option>
+        <option value="text">Your text</option>
       </select>
+      <div class="row">
+        <input id="text" type="text" value="123" maxlength="10" aria-label="Text to build" spellcheck="false">
+        <button id="buildText" type="button">Build text</button>
+      </div>
     </div>
 
     <div class="group">
@@ -186,6 +195,47 @@ function segDist(px, pz, ax, az, bx, bz) {
   const vx = bx - ax, vz = bz - az, t = Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / (vx * vx + vz * vz)));
   return Math.hypot(px - ax - t * vx, pz - az - t * vz);
 }
+// Type text, get 3D letters: draw it on a hidden canvas, sample one cell per
+// pixel block, stand the letters up 3 bots deep. Parts that wouldn't touch the
+// floor (the dot in "%", say) get a support column down to the floor.
+function textShape(t) {
+  const raw = (document.getElementById("text").value || "").toUpperCase().replace(/\s+/g, " ").trim() || "123";
+  const PX = 12, W = 34, X0 = 15, Y0 = 14, DEPTH = 3, FONT = '"Arial Black", "Arial Bold", Arial, sans-serif';
+  const c = document.createElement("canvas"), g = c.getContext("2d", { willReadFrequently: true });
+  g.font = `900 100px ${FONT}`;
+  const capRatio = (g.measureText("H").actualBoundingBoxAscent || 72) / 100;
+  let h = 15, size, width;
+  for (; h >= 5; h--) {                               // tallest letters that still fit the width
+    size = h * PX / capRatio; g.font = `900 ${size}px ${FONT}`;
+    width = g.measureText(raw).width;
+    if (width <= W * PX) break;
+  }
+  h = Math.max(h, 5);
+  c.width = W * PX; c.height = h * PX;
+  g.font = `900 ${size}px ${FONT}`; g.fillStyle = "#000"; g.textBaseline = "alphabetic";
+  g.fillText(raw, (W * PX - g.measureText(raw).width) / 2, h * PX);
+  const px = g.getImageData(0, 0, c.width, c.height).data;
+  for (let cx = 0; cx < W; cx++) for (let r = 0; r < h; r++) {
+    const sx = Math.floor((cx + 0.5) * PX), sy = Math.floor((r + 0.5) * PX);
+    if (px[(sy * c.width + sx) * 4 + 3] < 110) continue;
+    for (let d = 0; d < DEPTH; d++) t[idx(X0 + cx, Y0 + d, h - 1 - r)] = 1;
+  }
+  // anything not linked to the floor gets a support column under it
+  const linked = new Uint8Array(N), q = [];
+  for (let i = 0; i < LAYER; i++) if (t[i]) { linked[i] = 1; q.push(i); }
+  for (let k = 0; k < q.length; k++) {
+    const i = q[k], x = xOf(i), y = yOf(i), z = zOf(i);
+    for (const d of FACES) { const a = x + d[0], b = y + d[1], e = z + d[2]; if (inG(a, b, e)) { const j = idx(a, b, e); if (t[j] && !linked[j]) { linked[j] = 1; q.push(j); } } }
+  }
+  const extra = new Uint8Array(N);
+  for (let i = 0; i < N; i++) if (t[i] && !linked[i] && (zOf(i) === 0 || !t[i - LAYER])) {
+    for (let j = i - LAYER; j >= 0 && !t[j]; j -= LAYER) extra[j] = 1;
+  }
+  SHAPES.text.text = `"${raw}" in 3D letters, ${h} bots tall and ${DEPTH} deep.`;
+  SHAPES.text.cut = [X0 + 11, X0 + 23, 0, NY, Math.floor(h / 2), NZ];
+  return extra;
+}
+
 const SHAPES = {
   bridge: { spares: 90, make(t) { box(t, 18, 21, 13, 18, 0, 7); box(t, 41, 44, 13, 18, 0, 7); box(t, 18, 44, 13, 18, 7, 8); },
             cut: [27, 35, 0, NY, 7, NZ], text: "Two towers and a deck spanning 20 cells. The deck grows out from both towers and meets in the middle." },
@@ -211,6 +261,7 @@ const SHAPES = {
             cut: [26, 34, 0, NY, 9, NZ], text: "The letter K, standing up, 4 bots deep. The upper arm leans out over empty space." },
   table:  { spares: 90, make(t) { for (const [x, y] of [[22, 10], [38, 10], [22, 20], [38, 20]]) box(t, x, x + 2, y, y + 2, 0, 7); box(t, 22, 40, 10, 22, 7, 8); },
             cut: [27, 35, 12, 20, 7, NZ], text: "Four legs and a 18 by 12 tabletop." },
+  text:   { spares: 90, make: textShape, cut: [27, 37, 0, NY, 4, NZ], text: "" },
   short:  { spares: 50, make(t) { box(t, 26, 29, 13, 18, 0, 7); box(t, 31, 34, 13, 18, 0, 7); box(t, 26, 34, 13, 18, 7, 8); },
             cut: [29, 31, 0, NY, 7, NZ], text: "Two towers with a 2-cell gap: no deck bot sticks out more than one from a tower." },
 };
@@ -253,8 +304,12 @@ function planSupports(target) {
 
 function newSwarm(name) {
   const def = SHAPES[name];
-  const target = new Uint8Array(N); def.make(target);
+  const target = new Uint8Array(N);
+  const extra = def.make(target);                   // some shapes bring their own supports
+  if (extra) for (let i = 0; i < N; i++) if (extra[i]) target[i] = 2;
+  for (let i = 0; i < N; i++) if (target[i]) target[i] = 1;
   const support = V1 ? planSupports(target) : new Uint8Array(N);
+  if (extra) for (let i = 0; i < N; i++) if (extra[i]) support[i] = 1;
   let nSupport = 0;
   for (let i = 0; i < N; i++) if (support[i]) { target[i] = 1; nSupport++; }
   // Keep out of any space the finished shape will enclose (the inside of the
@@ -790,6 +845,9 @@ function reset() {
   S = newSwarm($("shape").value); acc = 0; updateGhost(); linkCount = updateLinks(); draw(1); setStats();
 }
 $("shape").addEventListener("change", reset);
+const buildText = () => { $("shape").value = "text"; reset(); };
+$("buildText").addEventListener("click", buildText);
+$("text").addEventListener("keydown", e => { if (e.key === "Enter") buildText(); });
 $("reset").addEventListener("click", reset);
 $("play").addEventListener("click", () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; });
 $("speed").addEventListener("input", e => { speed = +e.target.value; $("speedVal").textContent = speed; });

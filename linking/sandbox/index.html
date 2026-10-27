@@ -938,13 +938,14 @@ const BOT = (() => {
   // sizes in units of 28 mm: ball 30 mm, tube 6 mm, tips 10 mm, 81 mm tip to tip
   const mm = v => v / 28;
   const ball = add(new THREE.SphereGeometry(mm(15), 20, 14), 0xffffff);
-  const rod = new THREE.CylinderGeometry(mm(3), mm(3), mm(77), 10); rod.rotateX(Math.PI / 2); add(rod, 0x3d424b);
-  for (const zs of [1, -1]) {
-    const hinge = new THREE.BoxGeometry(mm(10), mm(5), mm(7)); hinge.translate(0, 0, zs * mm(17)); add(hinge, 0xc4741f);
-    const tip = new THREE.CylinderGeometry(mm(5), mm(5), mm(3.5), 16); tip.rotateX(Math.PI / 2); tip.translate(0, 0, zs * mm(38.75)); add(tip, 0xc9ccd2);
-  }
+  // one arm, pointing along +z from the ball's centre; drawn twice per bot
+  const armParts = [];
+  const addArm = (geo, colour) => { const m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: colour }), 2 * MAXB); m.instanceMatrix.setUsage(THREE.DynamicDrawUsage); g.add(m); armParts.push(m); };
+  const rod = new THREE.CylinderGeometry(mm(3), mm(3), mm(24), 10); rod.rotateX(Math.PI / 2); rod.translate(0, 0, mm(26)); addArm(rod, 0x3d424b);
+  const hinge = new THREE.BoxGeometry(mm(10), mm(5), mm(7)); hinge.translate(0, 0, mm(17)); addArm(hinge, 0xc4741f);
+  const tip = new THREE.CylinderGeometry(mm(5), mm(5), mm(3.5), 16); tip.rotateX(Math.PI / 2); tip.translate(0, 0, mm(38.75)); addArm(tip, 0xc9ccd2);
   world.add(g); g.visible = false;
-  return { group: g, ball, parts };
+  return { group: g, ball, parts, armParts };
 })();
 const CHARCOAL = new THREE.Color(0x26282d), tint = new THREE.Color();
 let botLook = false;
@@ -977,20 +978,24 @@ function draw(s) {
     if (!S.alive[b]) continue;
     const [p, r] = pose(b, s);
     p.z = Z(p.z);
-    if (botLook && MODEL === "arms") {
-      // arms point along the bot's axis, turning smoothly if it changed this step
-      const turn = AXIS_Q[S.fromAxis[b]].clone().slerp(AXIS_Q[S.axis[b]], s);
-      const k = BOT_SCALE(); m4.compose(p, r.multiply(turn), v.set(k, k, k));
-    } else m4.compose(p, r, one);
+    const k = botLook ? BOT_SCALE() : 1;
+    m4.compose(p, r, v.set(k, k, k));
     const colour = S.kind[b] === 2 ? C.pivot : S.locked[S.pos[b]] ? (S.support[S.pos[b]] ? C.support : C.locked) : C.free;
     if (botLook) {
-      for (const part of BOT.parts) part.setMatrixAt(n, m4);
+      BOT.ball.setMatrixAt(n, m4);
       BOT.ball.setColorAt(n, tint.copy(colour).lerp(CHARCOAL, 0.45));
+      const dirs = armDirs(b);
+      for (let a = 0; a < 2; a++) {
+        q.setFromUnitVectors(ZUP3, dirs[a]).premultiply(r);
+        m4.compose(p, q, v.set(k, k, k));
+        for (const part of BOT.armParts) part.setMatrixAt(2 * n + a, m4);
+      }
     } else { cubes.setMatrixAt(n, m4); cubes.setColorAt(n, colour); }
     instToBot[n] = b; n++;
   }
   const mesh = botLook ? BOT.parts : [cubes];
   for (const part of mesh) { part.count = n; part.instanceMatrix.needsUpdate = true; }
+  if (botLook) for (const part of BOT.armParts) { part.count = 2 * n; part.instanceMatrix.needsUpdate = true; }
   const coloured = botLook ? BOT.ball : cubes;
   if (coloured.instanceColor) coloured.instanceColor.needsUpdate = true;
   let f = 0;
@@ -998,6 +1003,32 @@ function draw(s) {
   falls.count = f; falls.instanceMatrix.needsUpdate = true;
 }
 const instToBot = new Int32Array(MAXB);
+const ZUP3 = new THREE.Vector3(0, 0, 1);
+// Where a bot's two arms point, for drawing. In the arms model both arms lie
+// along the bot's axis. An arm with a bot to hold at its end points there; an
+// arm with nothing to hold folds over to rest against another neighbour (the
+// turret and hinge let it reach about 100 degrees from its end of the ball),
+// so it doesn't stick out into the air. Resting isn't a link. (Faces model:
+// the 2x2x2 block, arms straight up and down.)
+function armDirs(b) {
+  const c = S.pos[b], ax = S.axis[b], out = [];
+  if (MODEL === "faces") return [new THREE.Vector3(0, 0, 1), new THREE.Vector3(0, 0, -1)];
+  const x = xOf(c), y = yOf(c), z = zOf(c);
+  const occAt = k => { const d = FACES[k], a = x + d[0], e = y + d[1], f = z + d[2]; return inG(a, e, f) && S.occ[idx(a, e, f)] === 1; };
+  const own = [2 * ax, 2 * ax + 1];             // arm A along +axis, arm B along -axis
+  const used = [];
+  for (let a = 0; a < 2; a++) {
+    let k = own[a];
+    if (!occAt(k)) {
+      // free arm: rest against a neighbour it can reach (anything but straight back through the ball)
+      const back = own[1 - a];
+      for (let kk = 0; kk < 6; kk++) if (kk !== back && kk !== own[a] && !used.includes(kk) && occAt(kk)) { k = kk; break; }
+    }
+    used.push(k);
+    out.push(new THREE.Vector3(FACES[k][0], FACES[k][1], FACES[k][2]));
+  }
+  return out;
+}
 
 
 // ================================================================== triangle truss mode

@@ -83,3 +83,4 @@ The NPA work answers **where** bots should be: a shape that regrows after cuts. 
 - [`sandbox/index.html`](sandbox/index.html): the in-browser sandbox (one file)
 - [`sandbox/tests/`](sandbox/tests/): headless runs that produce the step counts
 - `git log -- linking/`: one commit per change, with test results in the message
+- [`AGENT_TRACE.md`](AGENT_TRACE.md): the AI coding session that built all this (requests, commands, results), cleaned up

@@ -16,6 +16,7 @@
   --pivot: #e8932b;
   --link: #14a89b;
   --cut: #d94848;
+  --support: #3b86d1;
   --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
@@ -119,7 +120,7 @@ input[type="range"] { width: 100%; accent-color: var(--locked); }
       <span class="label">Physics</span>
       <label class="toggle" for="v1">
         <input id="v1" type="checkbox">
-        <span>Microbot v1 strength limit<small>A connector peels if more than one bot sticks out sideways with nothing underneath (from the v1 design note, assuming 3 N per connector). Turn it on and restart the long bridge. Sometimes spare bots stack up under the deck as scaffolding and finish it; sometimes they get stuck. Teaching them to do it every time is the job for a trained policy. The short bridge never needs scaffolding.</small></span>
+        <span>Microbot v1 strength limit<small>A connector peels if more than one bot sticks out sideways with nothing underneath (from the v1 design note, assuming 3 N per connector). Turning it on restarts the shape with support columns (blue) planned under anything that would stick out too far. The short bridge needs none; the long one needs piers.</small></span>
       </label>
     </div>
 
@@ -144,6 +145,7 @@ input[type="range"] { width: 100%; accent-color: var(--locked); }
         <span><i style="background:var(--pivot)"></i>Pivoting</span>
         <span><i style="background:var(--link)"></i>Link</span>
         <span><i style="background:var(--cut)"></i>Cut, falling</span>
+        <span><i style="background:var(--support)"></i>Planned support</span>
       </div>
     </div>
 
@@ -173,8 +175,8 @@ function box(t, x0, x1, y0, y1, z0, z1, v = 1) {
   for (let x = x0; x < x1; x++) for (let y = y0; y < y1; y++) for (let z = z0; z < z1; z++) t[idx(x, y, z)] = v;
 }
 const SHAPES = {
-  bridge: { spares: 40, make(t) { box(t, 11, 13, 6, 9, 0, 5); box(t, 23, 25, 6, 9, 0, 5); box(t, 11, 25, 6, 9, 5, 6); },
-            cut: [15, 21, 0, NY, 0, NZ], text: "Two legs and a deck spanning 10 cells. The deck grows out from both legs and meets in the middle." },
+  bridge: { spares: 45, make(t) { box(t, 11, 13, 6, 9, 0, 5); box(t, 23, 25, 6, 9, 0, 5); box(t, 11, 25, 6, 9, 5, 6); },
+            cut: [15, 21, 0, NY, 5, NZ], text: "Two legs and a deck spanning 10 cells. The deck grows out from both legs and meets in the middle." },
   short:  { spares: 30, make(t) { box(t, 13, 15, 6, 9, 0, 5); box(t, 17, 19, 6, 9, 0, 5); box(t, 13, 19, 6, 9, 5, 6); },
             cut: [15, 17, 0, NY, 0, NZ], text: "The same bridge with a 2-cell span: each deck bot sticks out at most one bot from a leg." },
   arch:   { spares: 30, make(t) { box(t, 12, 14, 6, 9, 0, 7); box(t, 20, 22, 6, 9, 0, 7); box(t, 12, 22, 6, 9, 7, 9); },
@@ -187,9 +189,46 @@ const SHAPES = {
 
 // ------------------------------------------------------------------ state
 let S = null;
+// Support planner. Under the v1 strength limit, a bot with nothing underneath
+// must touch a bot that has something underneath. Find the target cells that
+// would break that in the finished shape, and add support columns under them
+// (worst one first) until none do. Supports become part of the target.
+function planSupports(target) {
+  const support = new Uint8Array(N), all = Uint8Array.from(target);
+  const held = i => zOf(i) === 0 || all[i - LAYER] === 1;
+  for (let guard = 0; guard < 200; guard++) {
+    let worst = -1, worstD = 1;
+    for (let i = 0; i < N; i++) {
+      if (!all[i] || held(i)) continue;
+      // sideways distance, through the shape's own layer, to a held cell
+      const z = zOf(i), seen = new Map([[i, 0]]), q = [i]; let d = 99;
+      for (let h = 0; h < q.length && d === 99; h++) {
+        const c = q[h], x = xOf(c), y = yOf(c);
+        for (let k = 0; k < 4; k++) {
+          const a = x + FACES[k][0], b = y + FACES[k][1];
+          if (!inG(a, b, z)) continue;
+          const j = idx(a, b, z);
+          if (!all[j] || seen.has(j)) continue;
+          seen.set(j, seen.get(c) + 1);
+          if (held(j)) { d = seen.get(j); break; }
+          q.push(j);
+        }
+      }
+      if (d > worstD) { worstD = d; worst = i; }
+    }
+    if (worst < 0) break;
+    // a column from just under the worst cell down to the floor (or the shape)
+    for (let j = worst - LAYER; j >= 0 && !all[j]; j -= LAYER) { all[j] = 1; support[j] = 1; }
+  }
+  return support;
+}
+
 function newSwarm(name) {
   const def = SHAPES[name];
   const target = new Uint8Array(N); def.make(target);
+  const support = V1 ? planSupports(target) : new Uint8Array(N);
+  let nSupport = 0;
+  for (let i = 0; i < N; i++) if (support[i]) { target[i] = 1; nSupport++; }
   let need = 0; for (let i = 0; i < N; i++) need += target[i];
   const occ = new Uint8Array(N), locked = new Uint8Array(N), idAt = new Int32Array(N).fill(-1);
   const pos = [];
@@ -206,7 +245,7 @@ function newSwarm(name) {
   slots.sort((a, b) => xOf(a) - xOf(b) || Math.abs(yOf(a) - 7.5) - Math.abs(yOf(b) - 7.5));
   const nb = pos.length;
   return {
-    name, def, target, need, occ, locked, idAt, slots, parkLock: new Uint8Array(N),
+    name, def, target, need, occ, locked, idAt, slots, support, nSupport, parkLock: new Uint8Array(N),
     pos: Int32Array.from(pos), from: Int32Array.from(pos), via: Int32Array.from(pos),
     kind: new Uint8Array(nb), alive: new Uint8Array(nb).fill(1),
     step: 0, lost: 0, stalls: 0, cuts: 0, falling: [],
@@ -331,6 +370,17 @@ function distanceField(goal) {
     for (const d of FACES) { const a = x + d[0], b = y + d[1], c = z + d[2]; if (inG(a, b, c) && S.occ[idx(a, b, c)]) return true; }
     return false;
   };
+  // Under the v1 limit, a cell with nothing under it is only usable if it
+  // touches a bot that does have something under it.
+  const holdable = i => {
+    if (!V1 || zOf(i) === 0 || S.occ[i - LAYER]) return true;
+    const x = xOf(i), y = yOf(i), z = zOf(i);
+    for (let k = 0; k < 4; k++) {
+      const a = x + FACES[k][0], b = y + FACES[k][1];
+      if (inG(a, b, z)) { const j = idx(a, b, z); if (S.occ[j] && under(j)) return true; }
+    }
+    return false;
+  };
   const buckets = [[]];
   for (let i = 0; i < N; i++) if (goal[i]) { dist[i] = 0; buckets[0].push(i); }
   // pass 1: only along fixed surfaces
@@ -341,7 +391,7 @@ function distanceField(goal) {
         const a = x + d[0], b = y + d[1], c = z + d[2];
         if (!inG(a, b, c)) continue;
         const j = idx(a, b, c);
-        if (dist[j] !== BIG || fixedAt(j) || !fixedNear(j)) continue;
+        if (dist[j] !== BIG || fixedAt(j) || !fixedNear(j) || !holdable(j)) continue;
         dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
       }
     }
@@ -354,7 +404,7 @@ function distanceField(goal) {
         const a = x + d[0], b = y + d[1], c = z + d[2];
         if (!inG(a, b, c)) continue;
         const j = idx(a, b, c);
-        if (dist[j] !== BIG || fixedAt(j) || !botNear(j)) continue;
+        if (dist[j] !== BIG || fixedAt(j) || !botNear(j) || !holdable(j)) continue;
         dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
       }
     }
@@ -399,6 +449,9 @@ function tick() {
       if (fixedAt(m.c) || busy[m.c] || busy[m.via]) continue;
       if (dist[m.c] < here) opts.push([dist[m.c] + Math.random() * 0.1, m]);
       else if (dist[m.c] === here && Math.random() < SIDEWAYS) opts.push([dist[m.c] + 0.5, m]);
+      // Unjam: after a few steps with no progress, a bot may step backwards
+      // too (still within the rules), so a knot of bots can come apart.
+      else if (S.stalls > 3 && Math.random() < 0.3) opts.push([BIG + Math.random(), m]);
     }
     opts.sort((a, c) => a[0] - c[0]);
     for (const [, m] of opts) {
@@ -432,9 +485,23 @@ function cutCells(test) {
   }
   for (const b of removed) { S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; }
   S.parkLock.fill(0);
-  linkedToFloor();
-  for (let b = 0; b < S.pos.length; b++) {
-    if (S.alive[b] && mark[S.pos[b]] !== stamp) { removed.push(b); S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; }
+  const drop = b => { removed.push(b); S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; };
+  // Keep dropping until nothing changes: pieces no longer linked to the floor
+  // fall, and (with the v1 limit on) so does any bot left sticking out too far.
+  for (let changed = true; changed;) {
+    changed = false;
+    linkedToFloor();
+    for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && mark[S.pos[b]] !== stamp) { drop(b); changed = true; }
+    if (!V1) continue;
+    for (let b = 0; b < S.pos.length; b++) {
+      if (!S.alive[b] || under(S.pos[b])) continue;
+      const i = S.pos[b], x = xOf(i), y = yOf(i), z = zOf(i); let held = false;
+      for (let k = 0; k < 4 && !held; k++) {
+        const a = x + FACES[k][0], c = y + FACES[k][1];
+        if (inG(a, c, z)) { const j = idx(a, c, z); held = S.occ[j] === 1 && under(j); }
+      }
+      if (!held) { drop(b); changed = true; }
+    }
   }
   for (const b of removed) S.falling.push({ x: xOf(S.pos[b]), y: yOf(S.pos[b]), z: zOf(S.pos[b]), v: 0 });
   S.lost += removed.length; S.cuts++;
@@ -483,7 +550,7 @@ const ghost = new THREE.Points(ghostGeo, new THREE.PointsMaterial({ size: 0.16, 
 
 const C = {};
 function readColours() {
-  for (const k of ["locked", "free", "pivot", "link", "cut"]) C[k] = new THREE.Color(css("--" + k));
+  for (const k of ["locked", "free", "pivot", "link", "cut", "support"]) C[k] = new THREE.Color(css("--" + k));
   links.material.color = C.link; ghost.material.color = C.locked;
   falls.material.color = C.cut; buildFloor();
 }
@@ -533,7 +600,7 @@ function draw(s) {
     if (!S.alive[b]) continue;
     const [p, r] = pose(b, s);
     m4.compose(p, r, one); cubes.setMatrixAt(n, m4);
-    cubes.setColorAt(n, S.kind[b] === 2 ? C.pivot : S.locked[S.pos[b]] ? C.locked : C.free);
+    cubes.setColorAt(n, S.kind[b] === 2 ? C.pivot : S.locked[S.pos[b]] ? (S.support[S.pos[b]] ? C.support : C.locked) : C.free);
     instToBot[n] = b; n++;
   }
   cubes.count = n; cubes.instanceMatrix.needsUpdate = true;
@@ -569,7 +636,11 @@ function setStats() {
   else if (S.stalls > 25) {
     title = "Stuck";
     text = V1 ? "The next cell would leave more than one bot sticking out sideways, which v1's connectors can't hold. A long span needs scaffolding or a different design." : "No bot can make progress from here.";
-  } else { title = S.cuts ? "Repairing" : "Building"; text = S.def.text; }
+  } else {
+    title = S.cuts ? "Repairing" : "Building"; text = S.def.text;
+    if (V1 && S.nSupport) text += ` With the strength limit on, ${S.nSupport} support bots (blue) are planned under the parts that would stick out, and built first.`;
+    else if (V1) text += " With the strength limit on, this shape needs no supports.";
+  }
   st.classList.toggle("stuck", title === "Stuck");
   $("statusTitle").textContent = title; $("statusText").textContent = text;
 }
@@ -581,7 +652,7 @@ $("shape").addEventListener("change", reset);
 $("reset").addEventListener("click", reset);
 $("play").addEventListener("click", () => { playing = !playing; $("play").textContent = playing ? "Pause" : "Play"; });
 $("speed").addEventListener("input", e => { speed = +e.target.value; $("speedVal").textContent = speed; });
-$("v1").addEventListener("change", e => { V1 = e.target.checked; S.stalls = 0; setStats(); });
+$("v1").addEventListener("change", e => { V1 = e.target.checked; reset(); });   // replan supports
 $("cut").addEventListener("click", () => {
   const [x0, x1, y0, y1, z0, z1] = S.def.cut;
   cutCells((x, y, z) => S.target[idx(x, y, z)] && x >= x0 && x < x1 && y >= y0 && y < y1 && z >= z0 && z < z1);

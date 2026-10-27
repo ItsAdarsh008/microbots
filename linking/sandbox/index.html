@@ -97,11 +97,14 @@ input[type="range"] { width: 100%; accent-color: var(--locked); }
     <div class="group">
       <label class="label" for="shape">Shape</label>
       <select id="shape">
-        <option value="bridge">Bridge (10-cell span)</option>
-        <option value="short">Short bridge (2-cell span)</option>
-        <option value="arch">Arch</option>
-        <option value="wall">Wall, one bot thick</option>
-        <option value="tower">Hollow tower</option>
+        <option value="bridge">Long bridge (20-cell span)</option>
+        <option value="arch">Curved arch</option>
+        <option value="dome">Dome</option>
+        <option value="pyramid">Stepped pyramid</option>
+        <option value="spiral">Spiral staircase</option>
+        <option value="k">Letter K</option>
+        <option value="table">Table</option>
+        <option value="short">Short bridge (2-cell gap)</option>
       </select>
     </div>
 
@@ -112,8 +115,8 @@ input[type="range"] { width: 100%; accent-color: var(--locked); }
         <button id="reset" type="button">Restart</button>
         <button id="cut" type="button">Cut the middle</button>
       </div>
-      <label class="label" for="speed">Speed <span id="speedVal">8</span> steps/s</label>
-      <input id="speed" type="range" min="1" max="30" value="8">
+      <label class="label" for="speed">Speed <span id="speedVal">12</span> steps/s</label>
+      <input id="speed" type="range" min="1" max="40" value="12">
     </div>
 
     <div class="group">
@@ -158,7 +161,7 @@ input[type="range"] { width: 100%; accent-color: var(--locked); }
 <script>
 "use strict";
 // ------------------------------------------------------------------ grid
-const NX = 26, NY = 16, NZ = 12, N = NX * NY * NZ, LAYER = NX * NY;
+const NX = 50, NY = 32, NZ = 20, N = NX * NY * NZ, LAYER = NX * NY;
 const idx = (x, y, z) => x + NX * (y + NY * z);
 const xOf = i => i % NX, yOf = i => ((i / NX) | 0) % NY, zOf = i => (i / LAYER) | 0;
 const inG = (x, y, z) => x >= 0 && x < NX && y >= 0 && y < NY && z >= 0 && z < NZ;
@@ -174,17 +177,41 @@ const SIDEWAYS = 0.3;
 function box(t, x0, x1, y0, y1, z0, z1, v = 1) {
   for (let x = x0; x < x1; x++) for (let y = y0; y < y1; y++) for (let z = z0; z < z1; z++) t[idx(x, y, z)] = v;
 }
+function fill(t, test) {
+  for (let x = 0; x < NX; x++) for (let y = 0; y < NY; y++) for (let z = 0; z < NZ; z++) if (test(x, y, z)) t[idx(x, y, z)] = 1;
+}
+// distance from point (px, pz) to the segment (ax, az)-(bx, bz)
+function segDist(px, pz, ax, az, bx, bz) {
+  const vx = bx - ax, vz = bz - az, t = Math.max(0, Math.min(1, ((px - ax) * vx + (pz - az) * vz) / (vx * vx + vz * vz)));
+  return Math.hypot(px - ax - t * vx, pz - az - t * vz);
+}
 const SHAPES = {
-  bridge: { spares: 45, make(t) { box(t, 11, 13, 6, 9, 0, 5); box(t, 23, 25, 6, 9, 0, 5); box(t, 11, 25, 6, 9, 5, 6); },
-            cut: [15, 21, 0, NY, 5, NZ], text: "Two legs and a deck spanning 10 cells. The deck grows out from both legs and meets in the middle." },
-  short:  { spares: 30, make(t) { box(t, 13, 15, 6, 9, 0, 5); box(t, 17, 19, 6, 9, 0, 5); box(t, 13, 19, 6, 9, 5, 6); },
-            cut: [15, 17, 0, NY, 0, NZ], text: "The same bridge with a 2-cell span: each deck bot sticks out at most one bot from a leg." },
-  arch:   { spares: 30, make(t) { box(t, 12, 14, 6, 9, 0, 7); box(t, 20, 22, 6, 9, 0, 7); box(t, 12, 22, 6, 9, 7, 9); },
-            cut: [15, 19, 0, NY, 0, NZ], text: "Two legs and a two-layer bridge." },
-  wall:   { spares: 40, make(t) { box(t, 13, 22, 7, 8, 0, 9); },
-            cut: [13, 22, 0, NY, 5, NZ], text: "A thin wall, one bot thick: the surface test." },
-  tower:  { spares: 40, make(t) { box(t, 14, 20, 5, 11, 0, 8); box(t, 15, 19, 6, 10, 0, 8, 0); },
-            cut: [14, 20, 0, 6, 3, NZ], text: "Four thin walls around a hollow core." },
+  bridge: { spares: 90, make(t) { box(t, 18, 21, 13, 18, 0, 7); box(t, 41, 44, 13, 18, 0, 7); box(t, 18, 44, 13, 18, 7, 8); },
+            cut: [27, 35, 0, NY, 7, NZ], text: "Two towers and a deck spanning 20 cells. The deck grows out from both towers and meets in the middle." },
+  arch:   { spares: 90, make(t) { fill(t, (x, y, z) => { const r = Math.hypot(x - 31, z); return y >= 12 && y < 19 && r >= 9 && r < 12.2; }); },
+            cut: [28, 35, 0, NY, 0, NZ], text: "A curved stone-style arch. Each layer steps inward, so most of it holds itself up." },
+  dome:   { spares: 90, make(t) { fill(t, (x, y, z) => { const r = Math.hypot(x - 31, y - 16, z); return r >= 7.6 && r < 9.2; }); },
+            cut: [28, 35, 0, NY, 5, NZ], text: "A hollow half-sphere, one to two bots thick. The flat top is the hard part." },
+  pyramid: { spares: 90, make(t) { fill(t, (x, y, z) => { const h = 7 - z; return h >= 0 && Math.abs(x - 31) <= h && Math.abs(y - 16) <= h; }); },
+            cut: [27, 36, 0, NY, 3, NZ], text: "A solid stepped pyramid, 15 bots wide at the base and 8 layers tall." },
+  spiral: { spares: 90, make(t) {
+              box(t, 30, 33, 15, 18, 0, 16);                       // central column
+              fill(t, (x, y, z) => {                               // one step per layer, turning 45 degrees each time
+                if (z >= 16) return false;
+                const dx = x - 31, dy = y - 16, r = Math.hypot(dx, dy);
+                if (r < 1.5 || r > 6.5) return false;
+                let a = Math.atan2(dy, dx) - z * Math.PI / 4;
+                a = Math.atan2(Math.sin(a), Math.cos(a));
+                return Math.abs(a) < 0.45;
+              }); },
+            cut: [31, 38, 0, NY, 8, NZ], text: "A spiral staircase: a central column with a step sticking out at every level." },
+  k:      { spares: 90, make(t) { fill(t, (x, y, z) => y >= 14 && y < 18 && z < 17 &&
+              ((x >= 20 && x < 24) || segDist(x, z, 23, 8, 33, 16) < 1.9 || segDist(x, z, 23, 8, 33, 0) < 1.9)); },
+            cut: [26, 34, 0, NY, 9, NZ], text: "The letter K, standing up, 4 bots deep. The upper arm leans out over empty space." },
+  table:  { spares: 90, make(t) { for (const [x, y] of [[22, 10], [38, 10], [22, 20], [38, 20]]) box(t, x, x + 2, y, y + 2, 0, 7); box(t, 22, 40, 10, 22, 7, 8); },
+            cut: [27, 35, 12, 20, 7, NZ], text: "Four legs and a 18 by 12 tabletop." },
+  short:  { spares: 50, make(t) { box(t, 26, 29, 13, 18, 0, 7); box(t, 31, 34, 13, 18, 0, 7); box(t, 26, 34, 13, 18, 7, 8); },
+            cut: [29, 31, 0, NY, 7, NZ], text: "Two towers with a 2-cell gap: no deck bot sticks out more than one from a tower." },
 };
 
 // ------------------------------------------------------------------ state
@@ -196,7 +223,7 @@ let S = null;
 function planSupports(target) {
   const support = new Uint8Array(N), all = Uint8Array.from(target);
   const held = i => zOf(i) === 0 || all[i - LAYER] === 1;
-  for (let guard = 0; guard < 200; guard++) {
+  for (let guard = 0; guard < 1500; guard++) {
     let worst = -1, worstD = 1;
     for (let i = 0; i < N; i++) {
       if (!all[i] || held(i)) continue;
@@ -229,11 +256,32 @@ function newSwarm(name) {
   const support = V1 ? planSupports(target) : new Uint8Array(N);
   let nSupport = 0;
   for (let i = 0; i < N; i++) if (support[i]) { target[i] = 1; nSupport++; }
+  // Keep out of any space the finished shape will enclose (the inside of the
+  // dome), so bots don't get sealed in. Skipped when supports were planned,
+  // because some of those stand inside and must be built from in there.
+  const keepOut = new Uint8Array(N);
+  if (!nSupport) {
+    const outside = new Uint8Array(N), q = [];
+    for (let i = 0; i < N; i++) {
+      const x = xOf(i), y = yOf(i), z = zOf(i);
+      if (!target[i] && (x === 0 || y === 0 || x === NX - 1 || y === NY - 1 || z === NZ - 1)) { outside[i] = 1; q.push(i); }
+    }
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h], x = xOf(i), y = yOf(i), z = zOf(i);
+      for (const d of FACES) {
+        const a = x + d[0], c = y + d[1], e = z + d[2];
+        if (!inG(a, c, e)) continue;
+        const j = idx(a, c, e);
+        if (!target[j] && !outside[j]) { outside[j] = 1; q.push(j); }
+      }
+    }
+    for (let i = 0; i < N; i++) keepOut[i] = !target[i] && !outside[i] ? 1 : 0;
+  }
   let need = 0; for (let i = 0; i < N; i++) need += target[i];
   const occ = new Uint8Array(N), locked = new Uint8Array(N), idAt = new Int32Array(N).fill(-1);
   const pos = [];
   let n = need + def.spares;
-  outer: for (let z = 0; z < NZ; z++) for (let x = 1; x < 9; x++) for (let y = 3; y < 13; y++) {
+  outer: for (let z = 0; z < NZ; z++) for (let x = 1; x < 14; x++) for (let y = 2; y < 30; y++) {
     if (n === 0) break outer;
     const i = idx(x, y, z); occ[i] = 1; idAt[i] = pos.length; pos.push(i); n--;
   }
@@ -241,11 +289,11 @@ function newSwarm(name) {
   // the shape first, each column from the middle out, so arriving bots never
   // have to climb over bots that are already parked.
   const slots = [];
-  for (let x = 1; x < 9; x++) for (let y = 3; y < 13; y++) if (!target[idx(x, y, 0)]) slots.push(idx(x, y, 0));
-  slots.sort((a, b) => xOf(a) - xOf(b) || Math.abs(yOf(a) - 7.5) - Math.abs(yOf(b) - 7.5));
+  for (let x = 1; x < 14; x++) for (let y = 2; y < 30; y++) if (!target[idx(x, y, 0)]) slots.push(idx(x, y, 0));
+  slots.sort((a, b) => xOf(a) - xOf(b) || Math.abs(yOf(a) - 15.5) - Math.abs(yOf(b) - 15.5));
   const nb = pos.length;
   return {
-    name, def, target, need, occ, locked, idAt, slots, support, nSupport, parkLock: new Uint8Array(N),
+    name, def, target, need, occ, locked, idAt, slots, support, nSupport, keepOut, parkLock: new Uint8Array(N),
     pos: Int32Array.from(pos), from: Int32Array.from(pos), via: Int32Array.from(pos),
     kind: new Uint8Array(nb), alive: new Uint8Array(nb).fill(1),
     step: 0, lost: 0, stalls: 0, cuts: 0, falling: [],
@@ -290,6 +338,64 @@ function linkedToFloor() {
     }
   }
   return tail;
+}
+// Fast check for the bot that just left cell p (S.occ already shows the move).
+// Its new cell always touches the surface it pushed against, so only the bots
+// it left behind can come loose. If all of p's old neighbours are still joined
+// to each other inside the 3x3x3 block around p (the floor joins anything on
+// the bottom layer), nothing can have come loose; otherwise check everything.
+const local = new Int32Array(27);
+function safeToLeave(p) {
+  const x = xOf(p), y = yOf(p), z = zOf(p), nb = [];
+  for (const d of FACES) { const a = x + d[0], b = y + d[1], c = z + d[2]; if (inG(a, b, c) && S.occ[idx(a, b, c)]) nb.push(idx(a, b, c)); }
+  // A bot touching only one thing (a bot, or the floor) holds nobody up.
+  if (nb.length + (z === 0 ? 1 : 0) <= 1) return true;
+  const inCube = j => Math.abs(xOf(j) - x) <= 1 && Math.abs(yOf(j) - y) <= 1 && Math.abs(zOf(j) - z) <= 1;
+  stamp++; const q = [nb[0]]; mark[nb[0]] = stamp; let floorDone = false;
+  for (let h = 0; h < q.length; h++) {
+    const i = q[h];
+    if (zOf(i) === 0 && !floorDone) {               // the floor joins every bottom-layer cell
+      floorDone = true;
+      for (let a = x - 1; a <= x + 1; a++) for (let b = y - 1; b <= y + 1; b++) {
+        if (!inG(a, b, 0)) continue;
+        const j = idx(a, b, 0);
+        if (S.occ[j] && mark[j] !== stamp) { mark[j] = stamp; q.push(j); }
+      }
+    }
+    const a0 = xOf(i), b0 = yOf(i), c0 = zOf(i);
+    for (const d of FACES) {
+      const a = a0 + d[0], b = b0 + d[1], c = c0 + d[2];
+      if (!inG(a, b, c)) continue;
+      const j = idx(a, b, c);
+      if (S.occ[j] && mark[j] !== stamp && inCube(j)) { mark[j] = stamp; q.push(j); }
+    }
+  }
+  // On the bottom layer the floor was one of p's neighbours too: it must still be reached.
+  const floorOk = z !== 0 || floorDone;
+  if (floorOk && nb.every(j => mark[j] === stamp)) return true;
+  return isConnected();                             // not sure locally: check everything
+}
+// v1 limit, checked only where this move can change anything: within two
+// cells of where the bot left (p) and where it arrived (c).
+function overhangNear(p, c) {
+  const seen = new Set();
+  for (const centre of [p, c]) {
+    const x = xOf(centre), y = yOf(centre), z = zOf(centre);
+    for (let a = x - 2; a <= x + 2; a++) for (let b = y - 2; b <= y + 2; b++) for (let e = z - 2; e <= z + 2; e++) {
+      if (!inG(a, b, e)) continue;
+      const i = idx(a, b, e);
+      if (!S.occ[i] || seen.has(i)) continue;
+      seen.add(i);
+      if (under(i)) continue;
+      let ok = false;
+      for (let k = 0; k < 4 && !ok; k++) {
+        const a2 = a + FACES[k][0], b2 = b + FACES[k][1];
+        if (inG(a2, b2, e)) { const j = idx(a2, b2, e); ok = S.occ[j] === 1 && under(j); }
+      }
+      if (!ok) return false;
+    }
+  }
+  return true;
 }
 function aliveCount() { let n = 0; for (let b = 0; b < S.alive.length; b++) n += S.alive[b]; return n; }
 function isConnected() { return linkedToFloor() === aliveCount(); }
@@ -391,7 +497,7 @@ function distanceField(goal) {
         const a = x + d[0], b = y + d[1], c = z + d[2];
         if (!inG(a, b, c)) continue;
         const j = idx(a, b, c);
-        if (dist[j] !== BIG || fixedAt(j) || !fixedNear(j) || !holdable(j)) continue;
+        if (dist[j] !== BIG || fixedAt(j) || S.keepOut[j] || !fixedNear(j) || !holdable(j)) continue;
         dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
       }
     }
@@ -404,7 +510,7 @@ function distanceField(goal) {
         const a = x + d[0], b = y + d[1], c = z + d[2];
         if (!inG(a, b, c)) continue;
         const j = idx(a, b, c);
-        if (dist[j] !== BIG || fixedAt(j) || !botNear(j) || !holdable(j)) continue;
+        if (dist[j] !== BIG || fixedAt(j) || S.keepOut[j] || !botNear(j) || !holdable(j)) continue;
         dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
       }
     }
@@ -446,7 +552,7 @@ function tick() {
   for (const b of order) {
     const p = S.pos[b], here = dist[p], opts = [];
     for (const m of legalMoves(p)) {
-      if (fixedAt(m.c) || busy[m.c] || busy[m.via]) continue;
+      if (fixedAt(m.c) || busy[m.c] || busy[m.via] || S.keepOut[m.c] || S.keepOut[m.via]) continue;
       if (dist[m.c] < here) opts.push([dist[m.c] + Math.random() * 0.1, m]);
       else if (dist[m.c] === here && Math.random() < SIDEWAYS) opts.push([dist[m.c] + 0.5, m]);
       // Unjam: after a few steps with no progress, a bot may step backwards
@@ -456,7 +562,7 @@ function tick() {
     opts.sort((a, c) => a[0] - c[0]);
     for (const [, m] of opts) {
       S.occ[p] = 0; S.occ[m.c] = 1; S.pos[b] = m.c;
-      if (isConnected() && (!V1 || overhangOK())) {
+      if (safeToLeave(p) && (!V1 || overhangNear(p, m.c))) {
         S.idAt[p] = -1; S.idAt[m.c] = b; S.kind[b] = m.kind; S.via[b] = m.via;
         busy[m.c] = 1; busy[m.via] = 1; moves++;
         if (goal[m.c]) { (building ? S.locked : S.parkLock)[m.c] = 1; goal[m.c] = 0; }
@@ -519,9 +625,9 @@ stage.appendChild(renderer.domElement);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(40, 1, 0.1, 500);
 camera.up.set(0, 0, 1);
-camera.position.set(10, -30, 20);
+camera.position.set(16, -50, 34);
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0, 3); controls.enableDamping = true; controls.update();
+controls.target.set(5, 0, 5); controls.enableDamping = true; controls.update();
 scene.add(new THREE.HemisphereLight(0xffffff, 0x8890a0, 0.75));
 const sun = new THREE.DirectionalLight(0xffffff, 0.55); sun.position.set(-8, -14, 22); scene.add(sun);
 const world = new THREE.Group(); world.position.set(-NX / 2 + 0.5, -NY / 2 + 0.5, 0.5); scene.add(world);
@@ -538,7 +644,7 @@ function buildFloor() {
   grid.add(new THREE.LineSegments(g, mat)); world.add(grid);
 }
 
-const CUBE = 0.8, MAXB = 400;
+const CUBE = 0.8, MAXB = 2500;
 const cubeGeo = new THREE.BoxGeometry(CUBE, CUBE, CUBE);
 const cubes = new THREE.InstancedMesh(cubeGeo, new THREE.MeshLambertMaterial(), MAXB);
 cubes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); world.add(cubes);
@@ -612,7 +718,7 @@ function draw(s) {
 const instToBot = new Int32Array(MAXB);
 
 // ------------------------------------------------------------------ UI + loop
-let V1 = false, playing = true, speed = 8, acc = 0, last = performance.now(), linkCount = 0;
+let V1 = false, playing = true, speed = 12, acc = 0, last = performance.now(), linkCount = 0;
 const $ = id => document.getElementById(id);
 function setStats() {
   const alive = aliveCount();
@@ -629,7 +735,7 @@ function setStats() {
   if (complete) {
     title = S.cuts ? "Repaired" : "Built";
     if (parked()) text = "Spares are parked on the floor. Click any bot, or Cut the middle, to damage it.";
-    else if (S.stalls > 25 && V1) text = "Some spares can't climb down: the deck needs them underneath as scaffolding, or it would overhang more than one bot.";
+    else if (S.stalls > 25 && V1) text = "A few spares are hanging off the supports in a chain, each holding the next. Under the strength limit none of them can let go first.";
     else if (S.stalls > 25) text = "Some spares are boxed in and can't reach the parking area.";
     else text = "Spare bots are climbing back down to park.";
   }

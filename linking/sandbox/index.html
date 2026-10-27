@@ -31,6 +31,7 @@
   --line: #2c3240; --free: #7d8597; color-scheme: dark;
 }
 html, body { height: 100%; }
+[hidden] { display: none !important; }
 body { background: var(--bg); color: var(--fg); font-family: var(--sans); }
 .app { display: grid; grid-template-columns: minmax(0, 1fr) 320px; height: 100%; }
 .stage { position: relative; background: var(--stage); min-width: 0; min-height: 0; }
@@ -43,6 +44,8 @@ body { background: var(--bg); color: var(--fg); font-family: var(--sans); }
 .look button[aria-pressed="true"] { background: var(--locked); color: #fff; }
 .status {
   position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 62px; right: 16px;
+}
+.look[hidden] + .status { top: 14px;
   display: flex; flex-direction: column; gap: 4px; pointer-events: none;
 }
 .status h2 { margin: 0; font-size: 17px; font-weight: 600; text-wrap: balance; }
@@ -107,7 +110,7 @@ input[type="text"] {
   <aside class="panel">
     <header>
       <h1>Linking Sandbox</h1>
-      <p>Every bot has to stay attached to the rest while it moves. It can slide along a surface or flip over an edge, and that's it. If a move would leave anyone hanging with no connection to the ground, it doesn't happen.</p>
+      <p>Bots that never let go of each other. Click one to knock a hole.</p>
     </header>
 
     <div class="group">
@@ -121,9 +124,10 @@ input[type="text"] {
         <option value="k">Letter K</option>
         <option value="table">Table</option>
         <option value="short">Short bridge</option>
+        <option value="truss">Truss bridge (triangles)</option>
         <option value="text">Type something</option>
       </select>
-      <div class="row">
+      <div class="row" id="textRow">
         <input id="text" type="text" value="123" maxlength="10" aria-label="Text to build" spellcheck="false">
         <button id="buildText" type="button">Build text</button>
       </div>
@@ -140,21 +144,15 @@ input[type="text"] {
       <input id="speed" type="range" min="1" max="40" value="12">
     </div>
 
-    <div class="group">
-      <span class="label">How bots attach</span>
+    <div class="group" id="gridOptions">
+      <span class="label">Bots attach by</span>
       <div class="row" role="group" aria-label="How bots attach">
-        <button id="modelArms" type="button" aria-pressed="true">With their arms</button>
-        <button id="modelFaces" type="button" aria-pressed="false">Any touching face</button>
-        <button id="modelTri" type="button" aria-pressed="false">Triangles (truss bridge)</button>
+        <button id="modelArms" type="button" aria-pressed="true">Arms</button>
+        <button id="modelFaces" type="button" aria-pressed="false">Any touch</button>
       </div>
-      <p class="note" id="modelNote"></p>
-    </div>
-
-    <div class="group">
-      <span class="label">Physics</span>
       <label class="toggle" for="v1">
         <input id="v1" type="checkbox">
-        <span>Real connector strength<small>Kuan's v1 bot can only hold one other bot sticking straight out sideways before the connector peels (that's assuming about 3 N per magnet, still to be measured). With this on, the swarm adds blue support pillars anywhere that would overhang too far. The short bridge doesn't need any. The long one needs a lot.</small></span>
+        <span>Real connector strength<small>Max one bot sticking out sideways. Adds blue pillars where needed.</small></span>
       </label>
     </div>
 
@@ -176,7 +174,7 @@ input[type="text"] {
       <span class="label">Colours</span>
       <div class="legend">
         <span><i style="background:var(--locked)"></i>In place</span>
-        <span><i style="background:var(--free)"></i>On the move / spare</span>
+        <span><i style="background:var(--free)"></i>Moving / spare</span>
         <span><i style="background:var(--pivot)"></i>Flipping</span>
         <span><i style="background:var(--link)"></i>Link</span>
         <span><i style="background:var(--cut)"></i>Knocked off</span>
@@ -184,7 +182,6 @@ input[type="text"] {
       </div>
     </div>
 
-    <p class="foot">Heads up: right now each bot gets told which way to crawl, and whether it's safe to let go, by something that can see the whole build. Real bots only see their neighbours, so that part still needs to become local. Code's in <code>linking/</code> in the microbots repo.</p>
   </aside>
 </div>
 
@@ -270,20 +267,20 @@ function textShape(t) {
   for (let i = 0; i < N; i++) if (t[i] && !linked[i] && (zOf(i) === 0 || !t[i - LAYER])) {
     for (let j = i - LAYER; j >= 0 && !t[j]; j -= LAYER) extra[j] = 1;
   }
-  SHAPES.text.text = `Spelling out "${raw}", ${h} bots tall.`;
+  SHAPES.text.text = `"${raw}", ${h} bots tall.`;
   SHAPES.text.cut = [X0 + 11, X0 + 23, 0, NY, Math.floor(h / 2), NZ];
   return extra;
 }
 
 const SHAPES = {
   bridge: { spares: 90, make(t) { box(t, 18, 21, 13, 18, 0, 7); box(t, 41, 44, 13, 18, 0, 7); box(t, 18, 44, 13, 18, 7, 8); },
-            cut: [27, 35, 0, NY, 7, NZ], text: "Two towers and a 20-bot gap. The deck grows out from both sides and has to meet in the middle." },
+            cut: [27, 35, 0, NY, 7, NZ], text: "Two towers, 20-bot gap." },
   arch:   { spares: 90, make(t) { fill(t, (x, y, z) => { const r = Math.hypot(x - 31, z); return y >= 12 && y < 19 && r >= 9 && r < 12.2; }); },
-            cut: [28, 35, 0, NY, 0, NZ], text: "Built like a stone arch: each layer steps in a little, so it mostly holds itself up." },
+            cut: [28, 35, 0, NY, 0, NZ], text: "Each layer steps in, like a stone arch." },
   dome:   { spares: 90, make(t) { fill(t, (x, y, z) => { const r = Math.hypot(x - 31, y - 16, z); return r >= 7.6 && r < 9.2; }); },
-            cut: [28, 35, 0, NY, 5, NZ], text: "A hollow dome. Easy until the top, where it gets almost flat." },
+            cut: [28, 35, 0, NY, 5, NZ], text: "Hollow. The flat top is the hard part." },
   pyramid: { spares: 90, make(t) { fill(t, (x, y, z) => { const h = 7 - z; return h >= 0 && Math.abs(x - 31) <= h && Math.abs(y - 16) <= h; }); },
-            cut: [27, 36, 0, NY, 3, NZ], text: "Solid, 15 wide at the bottom, 8 layers up. Nothing overhangs, so it's the easy one." },
+            cut: [27, 36, 0, NY, 3, NZ], text: "Solid. Nothing overhangs." },
   spiral: { spares: 90, make(t) {
               box(t, 30, 33, 15, 18, 0, 16);                       // central column
               fill(t, (x, y, z) => {                               // one step per layer, turning 45 degrees each time
@@ -294,15 +291,15 @@ const SHAPES = {
                 a = Math.atan2(Math.sin(a), Math.cos(a));
                 return Math.abs(a) < 0.45;
               }); },
-            cut: [31, 38, 0, NY, 8, NZ], text: "A center post with a step sticking out every level, turning as it goes up." },
+            cut: [31, 38, 0, NY, 8, NZ], text: "A step sticks out at every level." },
   k:      { spares: 90, make(t) { fill(t, (x, y, z) => y >= 14 && y < 18 && z < 17 &&
               ((x >= 20 && x < 24) || segDist(x, z, 23, 8, 33, 16) < 1.9 || segDist(x, z, 23, 8, 33, 0) < 1.9)); },
-            cut: [26, 34, 0, NY, 9, NZ], text: "A K, 4 bots thick. The top arm leans out over nothing." },
+            cut: [26, 34, 0, NY, 9, NZ], text: "The top arm leans out over nothing." },
   table:  { spares: 90, make(t) { for (const [x, y] of [[22, 10], [38, 10], [22, 20], [38, 20]]) box(t, x, x + 2, y, y + 2, 0, 7); box(t, 22, 40, 10, 22, 7, 8); },
-            cut: [27, 35, 12, 20, 7, NZ], text: "Four legs and an 18 by 12 top." },
+            cut: [27, 35, 12, 20, 7, NZ], text: "Four legs, 18 by 12 top." },
   text:   { spares: 90, make: textShape, cut: [27, 37, 0, NY, 4, NZ], text: "" },
   short:  { spares: 50, make(t) { box(t, 26, 29, 13, 18, 0, 7); box(t, 31, 34, 13, 18, 0, 7); box(t, 26, 34, 13, 18, 7, 8); },
-            cut: [29, 31, 0, NY, 7, NZ], text: "Same idea, but the gap is only 2 wide, so nothing sticks out more than one bot." },
+            cut: [29, 31, 0, NY, 7, NZ], text: "Gap of 2. Nothing sticks out far." },
 };
 
 // ------------------------------------------------------------------ state
@@ -1227,9 +1224,9 @@ function triStats() {
   $("sConn").textContent = conn ? "yes" : "NO"; $("sConn").className = conn ? "" : "bad";
   $("sOver").textContent = "–"; $("sOver").className = ""; $("sLost").textContent = T.lost; $("sSites").textContent = "–";
   let title, text;
-  if (filled === T.need) { title = T.cuts ? "Repaired" : "Built"; text = tParked() ? "Spares are parked. Knock a hole in the span and watch it fill back in." : "Leftover bots heading back to park."; }
-  else if (T.stalls > 25) { title = "Stuck"; text = "Nobody can get any closer from here."; }
-  else { title = T.cuts ? "Repairing" : "Building"; text = "A truss bridge: two towers and a span made of triangles. Triangles can't fold, so the span needs no support pillars underneath."; }
+  if (filled === T.need) { title = T.cuts ? "Repaired" : "Built"; text = tParked() ? "Click a bot to break it." : "Spares heading back."; }
+  else if (T.stalls > 25) { title = "Stuck"; text = "Nobody can get closer."; }
+  else { title = T.cuts ? "Repairing" : "Building"; text = "Triangles can't fold, so no pillars needed."; }
   $("status").classList.toggle("stuck", title === "Stuck");
   $("statusTitle").textContent = title; $("statusText").textContent = text;
 }
@@ -1246,63 +1243,63 @@ function setStats() {
   $("sStep").textContent = S.step; $("sBots").textContent = alive; $("sLinks").textContent = linkCount;
   $("sFill").textContent = Math.round(100 * filled / S.need) + "%";
   $("sConn").textContent = conn ? "yes" : "NO"; $("sConn").className = conn ? "" : "bad";
-  $("sOver").textContent = over + (over === 1 ? " bot" : " bots"); $("sOver").className = V1 && over > 1 ? "bad" : "";
+  $("sOver").textContent = !V1 ? "–" : over + (over === 1 ? " bot" : " bots"); $("sOver").className = V1 && over > 1 ? "bad" : "";
   $("sLost").textContent = S.lost;
   $("sSites").textContent = filled === S.need ? "–" : (S.sites || 1);
   const st = $("status"); let title, text;
   const complete = filled === S.need;
   if (complete) {
     title = S.cuts ? "Repaired" : "Built";
-    if (parked()) text = "Spares are parked. Go ahead and break something.";
-    else if (S.stalls > 25 && V1) text = "A few spares are stuck hanging off a pillar, each one holding up the next. None of them can let go first.";
-    else if (S.stalls > 25) text = "A few spares got boxed in and can't make it back.";
-    else text = "Leftover bots heading back to park.";
+    if (parked()) text = "Click a bot to break it.";
+    else if (S.stalls > 25 && V1) text = "A few spares are stuck on a pillar.";
+    else if (S.stalls > 25) text = "A few spares are boxed in.";
+    else text = "Spares heading back.";
   }
   else if (S.stalls > 25) {
     title = "Stuck";
     text = V1 && MODEL === "arms"
-      ? "Known problem: with arms and real connector strength both on, the bots under the build end up each holding the next one, and nobody can let go first. Next thing to fix."
-      : V1 ? "The next piece would stick out too far for the connectors to hold." : "Nobody can get any closer from here.";
+      ? "Arms + real strength jams near the end. Known bug."
+      : V1 ? "Next piece would stick out too far." : "Nobody can get closer.";
   } else {
     title = S.cuts ? "Repairing" : "Building"; text = S.def.text;
-    if (V1 && S.nSupport) text += ` Needs ${S.nSupport} bots of support pillars (blue) to hold up.`;
-    else if (V1) text += " No pillars needed.";
+    if (V1 && S.nSupport) text += ` ${S.nSupport} pillar bots.`;
   }
   st.classList.toggle("stuck", title === "Stuck");
   $("statusTitle").textContent = title; $("statusText").textContent = text;
 }
 
 function reset() {
+  if ($("shape").value === "truss") return;
   S = newSwarm($("shape").value); acc = 0; updateGhost(); linkCount = updateLinks(); draw(1); setStats();
 }
-$("shape").addEventListener("change", reset);
+// Picking a shape: the truss bridge lives on its own triangle grid; every
+// other shape uses the square grid, where the "attach by" options apply.
+function pickShape() {
+  const truss = $("shape").value === "truss";
+  $("gridOptions").hidden = truss;
+  $("textRow").hidden = truss;
+  if (truss !== TRI_MODE) setModel(truss ? "tri" : MODEL);
+  else if (truss) triReset(); else reset();
+}
+$("shape").addEventListener("change", pickShape);
 $("lookCube").addEventListener("click", () => setLook(false));
 let TRI_MODE = false;
-const NOTES = {
-  tri: "Kuan's triangle cell: bots on a grid of triangles, arms bent to dock tip to tip with their neighbours. Any extra links plug into side ports (teal). Only the truss bridge for now.",
-  arms: "Like Kuan's v1: each bot points its two arms one way, and a link is an arm tip plugged into the side of the next bot. Bots that just touch aren't attached.",
-  faces: "Simplest version: any two bots touching are attached.",
-};
 function setModel(m) {
   MODEL = m === "tri" ? MODEL : m;
   TRI_MODE = m === "tri";
-  $("modelArms").setAttribute("aria-pressed", String(m === "arms")); $("modelFaces").setAttribute("aria-pressed", String(m === "faces"));
-  $("modelTri").setAttribute("aria-pressed", String(m === "tri"));
-  $("modelNote").textContent = NOTES[m];
-  for (const id of ["shape", "text", "buildText", "lookCube", "lookBot", "v1"]) $(id).disabled = TRI_MODE;
+  $("modelArms").setAttribute("aria-pressed", String(MODEL === "arms")); $("modelFaces").setAttribute("aria-pressed", String(MODEL === "faces"));
+  document.querySelector(".look").hidden = TRI_MODE;     // the truss is always drawn as bots
   TRI.group.visible = TRI_MODE;
   if (TRI_MODE) {
     cubes.visible = false; BOT.group.visible = false; links.count = 0; falls.count = 0; grid.position.z = 0;
-    controls.target.set(2, 0, 3); camera.position.set(6, -34, 12); controls.update();
+    controls.target.set(-3, 0.5, 3); camera.position.set(-3, -50, 15); controls.update();
     triReset();
   } else { reset(); setLook(botLook); }
 }
 $("modelArms").addEventListener("click", () => setModel("arms"));
 $("modelFaces").addEventListener("click", () => setModel("faces"));
-$("modelTri").addEventListener("click", () => setModel("tri"));
-$("modelNote").textContent = NOTES[MODEL];
 $("lookBot").addEventListener("click", () => setLook(true));
-const buildText = () => { $("shape").value = "text"; reset(); };
+const buildText = () => { $("shape").value = "text"; pickShape(); };
 $("buildText").addEventListener("click", buildText);
 $("text").addEventListener("keydown", e => { if (e.key === "Enter") buildText(); });
 $("reset").addEventListener("click", () => TRI_MODE ? triReset() : reset());

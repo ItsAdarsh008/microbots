@@ -198,11 +198,15 @@ function newSwarm(name) {
     if (n === 0) break outer;
     const i = idx(x, y, z); occ[i] = 1; idAt[i] = pos.length; pos.push(i); n--;
   }
-  const park = new Uint8Array(N);
-  for (let x = 1; x < 9; x++) for (let y = 3; y < 13; y++) park[idx(x, y, 0)] = target[idx(x, y, 0)] ? 0 : 1;
+  // Parking pad: floor slots filled in a fixed order, the column farthest from
+  // the shape first, each column from the middle out, so arriving bots never
+  // have to climb over bots that are already parked.
+  const slots = [];
+  for (let x = 1; x < 9; x++) for (let y = 3; y < 13; y++) if (!target[idx(x, y, 0)]) slots.push(idx(x, y, 0));
+  slots.sort((a, b) => xOf(a) - xOf(b) || Math.abs(yOf(a) - 7.5) - Math.abs(yOf(b) - 7.5));
   const nb = pos.length;
   return {
-    name, def, target, need, occ, locked, idAt, park,
+    name, def, target, need, occ, locked, idAt, slots, parkLock: new Uint8Array(N),
     pos: Int32Array.from(pos), from: Int32Array.from(pos), via: Int32Array.from(pos),
     kind: new Uint8Array(nb), alive: new Uint8Array(nb).fill(1),
     step: 0, lost: 0, stalls: 0, cuts: 0, falling: [],
@@ -318,7 +322,7 @@ function distanceField(goal) {
   const fixedNear = i => {
     const x = xOf(i), y = yOf(i), z = zOf(i);
     if (z === 0) return true;
-    for (const d of FACES) { const a = x + d[0], b = y + d[1], c = z + d[2]; if (inG(a, b, c) && S.locked[idx(a, b, c)]) return true; }
+    for (const d of FACES) { const a = x + d[0], b = y + d[1], c = z + d[2]; if (inG(a, b, c) && fixedAt(idx(a, b, c))) return true; }
     return false;
   };
   const botNear = i => {
@@ -337,7 +341,7 @@ function distanceField(goal) {
         const a = x + d[0], b = y + d[1], c = z + d[2];
         if (!inG(a, b, c)) continue;
         const j = idx(a, b, c);
-        if (dist[j] !== BIG || S.locked[j] || !fixedNear(j)) continue;
+        if (dist[j] !== BIG || fixedAt(j) || !fixedNear(j)) continue;
         dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
       }
     }
@@ -350,7 +354,7 @@ function distanceField(goal) {
         const a = x + d[0], b = y + d[1], c = z + d[2];
         if (!inG(a, b, c)) continue;
         const j = idx(a, b, c);
-        if (dist[j] !== BIG || S.locked[j] || !botNear(j)) continue;
+        if (dist[j] !== BIG || fixedAt(j) || !botNear(j)) continue;
         dist[j] = k + 1; (buckets[k + 1] ||= []).push(j);
       }
     }
@@ -359,9 +363,20 @@ function distanceField(goal) {
 }
 
 function done() { for (let i = 0; i < N; i++) if (S.target[i] && !S.occ[i]) return false; return true; }
+// Locked shape bots and parked spares both stay put.
+const fixedAt = i => S.locked[i] === 1 || S.parkLock[i] === 1;
 function parked() {
-  for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !S.locked[S.pos[b]] && !S.park[S.pos[b]]) return false;
+  for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !fixedAt(S.pos[b])) return false;
   return true;
+}
+// Next few empty slots in order. Spares already sitting on earlier slots park there.
+function parkingGoal() {
+  const goal = new Uint8Array(N); let wanted = 3, gapSeen = false;
+  for (const i of S.slots) {
+    if (S.occ[i]) { if (!gapSeen && !S.locked[i]) S.parkLock[i] = 1; continue; }
+    gapSeen = true; goal[i] = 1; if (--wanted === 0) break;
+  }
+  return goal;
 }
 
 function tick() {
@@ -370,17 +385,18 @@ function tick() {
   let goal;
   if (building) { const g = goalCells(); goal = g.goal; }
   else if (parked()) { S.step++; S.stalls = 0; return 0; }
-  else { goal = new Uint8Array(N); for (let i = 0; i < N; i++) goal[i] = S.park[i] && !S.occ[i] ? 1 : 0; }
+  else goal = parkingGoal();
+  if (building) S.parkLock.fill(0);           // shape needs work: every spare helps
   const dist = distanceField(goal);
   const busy = Uint8Array.from(S.occ);
   const order = [];
-  for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !S.locked[S.pos[b]]) order.push(b);
+  for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !fixedAt(S.pos[b])) order.push(b);
   for (let k = order.length - 1; k > 0; k--) { const r = (Math.random() * (k + 1)) | 0; [order[k], order[r]] = [order[r], order[k]]; }
   let moves = 0;
   for (const b of order) {
     const p = S.pos[b], here = dist[p], opts = [];
     for (const m of legalMoves(p)) {
-      if (S.locked[m.c] || busy[m.c] || busy[m.via]) continue;
+      if (fixedAt(m.c) || busy[m.c] || busy[m.via]) continue;
       if (dist[m.c] < here) opts.push([dist[m.c] + Math.random() * 0.1, m]);
       else if (dist[m.c] === here && Math.random() < SIDEWAYS) opts.push([dist[m.c] + 0.5, m]);
     }
@@ -390,7 +406,7 @@ function tick() {
       if (isConnected() && (!V1 || overhangOK())) {
         S.idAt[p] = -1; S.idAt[m.c] = b; S.kind[b] = m.kind; S.via[b] = m.via;
         busy[m.c] = 1; busy[m.via] = 1; moves++;
-        if (building && goal[m.c]) { S.locked[m.c] = 1; goal[m.c] = 0; }
+        if (goal[m.c]) { (building ? S.locked : S.parkLock)[m.c] = 1; goal[m.c] = 0; }
         break;
       }
       S.occ[m.c] = 0; S.occ[p] = 1; S.pos[b] = p;
@@ -415,6 +431,7 @@ function cutCells(test) {
     if (test(xOf(i), yOf(i), zOf(i))) removed.push(b);
   }
   for (const b of removed) { S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; }
+  S.parkLock.fill(0);
   linkedToFloor();
   for (let b = 0; b < S.pos.length; b++) {
     if (S.alive[b] && mark[S.pos[b]] !== stamp) { removed.push(b); S.alive[b] = 0; S.occ[S.pos[b]] = 0; S.locked[S.pos[b]] = 0; S.idAt[S.pos[b]] = -1; }

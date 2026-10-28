@@ -8,6 +8,40 @@ How to use this doc: read the Overview and timeline first, then work from the cu
 
 **Reminder:** nothing about the project gets posted until it's about 80% done, but keep warming up your X account every day in the meantime: substantive replies to people in the field and general "today I learned" posts. See *Going public* near the end.
 
+## Quick guide: get your own server
+
+Goal: a free always-on Oracle Cloud server at its own IP address, like Kuan's, to host the linking sandbox and a run tracker. It has no GPU; training runs on a GPU rented by the hour (RunPod RTX 4090, about $0.34/hr) or free Colab/Kaggle, and reports back to it. About 20 minutes.
+
+1. **Sign up** at [oracle.com/cloud/free](https://www.oracle.com/cloud/free/). Pick **Canada Southeast (Toronto)** as your home region; it can't be changed later. The card is for verification only; Always Free resources aren't charged.
+2. **Create the server:** menu → **Compute → Instances → Create instance**.
+   - Name: `microbots-server`
+   - Image: **Canonical Ubuntu 24.04**
+   - Shape: **Change shape → Ampere → VM.Standard.A1.Flex**, 2 OCPUs and 12 GB memory (the Always Free size)
+   - Networking: keep the defaults, with **Assign a public IPv4 address** on
+   - SSH keys: **Generate a key pair for me → Save private key**. Keep this file safe: it's the only way in.
+   - Click **Create**. If it says "Out of capacity", try another availability domain or try again later; free ARM servers run out often.
+3. **Copy the Public IP address** from the instance page. That number is your server's address.
+4. **Open the web port:** on the instance page, click the **subnet** → its **Security List** → **Add Ingress Rules**: source CIDR `0.0.0.0/0`, protocol TCP, destination port `80`.
+5. **Log in from PowerShell** (replace the file name and IP with yours):
+
+```powershell
+mkdir $env:USERPROFILE\.ssh -Force
+move $env:USERPROFILE\Downloads\ssh-key-*.key $env:USERPROFILE\.ssh\microbots.key
+icacls $env:USERPROFILE\.ssh\microbots.key /inheritance:r /grant:r "$($env:USERNAME):R"
+ssh -i $env:USERPROFILE\.ssh\microbots.key ubuntu@YOUR.PUBLIC.IP
+```
+
+Type `yes` the first time. A prompt like `ubuntu@microbots-server:~$` means you're in. (`icacls` locks the key file to your user; SSH refuses keys anyone else can read.)
+
+6. **Send Claude the IP.** Next comes a one-paste setup script: web server, the repo, the sandbox page at `http://YOUR.PUBLIC.IP/`, and a `/lab/` page that lists training runs.
+
+- [ ] Oracle account created
+- [ ] Server running, public IP noted
+- [ ] Port 80 open
+- [ ] Logged in over SSH from PowerShell
+
+Note: Oracle's docs now list the free ARM size as 2 OCPUs / 12 GB, down from 4 / 24 ([details](https://terminalbytes.com/oracle-cloud-free-tier-changes-2026)). Stay at 2 / 12 so you're never billed.
+
 ## Overview
 
 The goal is a self-healing, environment-aware 3D microbot swarm in about 12 weeks at roughly 8–10 hours a week, about 85–110 hours total. Every bot acts on its own local view, and a Jev decision layer turns commands into shapes.

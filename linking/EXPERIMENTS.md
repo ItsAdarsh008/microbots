@@ -73,9 +73,22 @@ Separate grid of triangles (6 neighbours at 60 degrees). Bots link to every occu
 | Parking with paths over loose bots | Spares made dangling chains under the span. Fixed: parking paths only along fixed bots. A couple of spares can still end up hanging under the span. |
 | Cut 12 bots from the span | Rebuilt in ~35 to 45 steps. |
 
+## 7. First trained policy (`linking/learn/`)
+
+One shared network (258 -> 128 -> 128 -> 19, 52,115 weights) sees only a 5x5x5 block, the shape map for that block, and a relayed "how far to the work" signal. Masked so only legal moves can be picked. Evaluated on unseen seeds; the tower was never in training.
+
+| Tried | Wall | Arch | Tower (unseen) |
+| --- | --- | --- | --- |
+| Imitation only, signal between touching bots | 5/5 (62-92 steps) | 2/5 | 3/5 |
+| + DAgger, 2 rounds | 5/5 (50-72) | 2/5 | 3/5 |
+| + DAgger, teacher's global distance map (diagnostic) | 5/5 | 5/5 | 5/5 |
+| **+ DAgger, signal relayed between bots up to 2 cells apart** | **5/5 (51-64)** | **5/5 (64-79)** | **5/5 (68-135)** |
+
+The diagnostic showed the network was big enough and the touching-only signal was the bottleneck. A Kilobot-style relay range of 2 cells fixed it while staying local. Teacher for comparison: 46-56, 64-70, 49-60 steps.
+
 ## Still open
 
 1. **Moves aren't real v1 moves.** Bots slide and pivot (or roll, on the triangle grid). v1 moves with two 3-joint arms. Needed: how does v1 actually get from one spot to the next?
 2. **Arm model + strength limit jams** near the end of every build.
-3. **Not local yet.** The crawl directions, the work sharing, the support planner and the "will anything fall" check all look at the whole build. Real bots only see their neighbours. This is where a learned policy (NPA-style) could come in.
+3. **Partly local now.** A trained policy with a local view builds the wall, arch and an unseen tower (section 7). Still global: the "will anything fall" check, the goal layer, and everything in the browser sandbox (work sharing, supports).
 4. **Numbers to confirm:** 3 N per connector, whether tip-to-tip docking is possible, and at what spacing.

@@ -4,7 +4,7 @@
 
 In Linking 1 the swarm builds bridges, domes and letters, but every decision comes from rules someone wrote by hand. That is the first thing a machine-learning person will ask about: *what architecture, what policy?* Right now the honest answer is "none, it's rules." This chapter explains what it takes to turn those rules into a **trained model**, using the same ideas as Neural Particle Automata (NPA), so you can talk about it clearly.
 
-No code to run yet. This is the plan and the vocabulary.
+The first version is built: see Part 7 for what happened, and `linking/learn/` for the code.
 
 ---
 
@@ -168,8 +168,21 @@ This is where something new could appear: for example, with the real-strength li
 | 1 | Port the simulation to Python/JAX, so thousands of builds can run in parallel | about a day |
 | 2 | Build the observation, action and mask from Part 3, and write them up | half a day |
 | 3 | Swap the global distance map for the local hop-count signal (Part 4) | half a day |
-| 4 | Imitation training on Colab; load the network back into the sandbox with a "Rules / Learned" switch | a few hours of training |
+| 4 | Imitation training (done on a laptop CPU, ~6 minutes; see Part 7); next, load it into the sandbox with a "Rules / Learned" switch | done for the Python simulation |
 | 5 | Reinforcement learning on the long bridge with real strength | 1 to 3 weeks, uncertain |
+
+---
+
+## Part 7: What happened when it was trained
+
+The plan above was carried out on the Python version of the simulation (wall, arch and tower), with one change: the action-slot network shown in Part 2.1 (52,115 weights).
+
+1. **Imitation alone** built the wall every time but finished the arch 2 times out of 5 and the unseen tower 3 times out of 5. The network agreed with the teacher on about 63% of decisions; the teacher is partly random, so that's close to the best possible.
+2. **DAgger** (let the student drive, have the teacher say what it would have done, retrain) made the wall as fast as the teacher but didn't fix the others.
+3. **A diagnostic**: giving the network the teacher's global map made it build everything, 15 out of 15. So the network wasn't too small. The problem was the work signal: passed only between touching bots, it takes long winding routes through the pile and points bots the wrong way.
+4. **The fix**: relay the signal between bots up to 2 cells apart, like the Kilobots' infrared. Still local. Result: **15 out of 15**, including the tower it had never seen.
+
+The lesson worth remembering: when a learned policy fails, test whether it's missing *information* or missing *capacity* before making the network bigger. Here one diagnostic run answered that.
 
 ---
 

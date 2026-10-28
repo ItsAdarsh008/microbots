@@ -33,3 +33,4 @@ How bots that must stay attached to each other can still move. Not tied to one p
 | # | Chapter | Code |
 | --- | --- | --- |
 | L1 | [Moving while attached](L1-linking.md) | `linking/` |
+| L2 | [From rules to a trained model](L2-from-rules-to-a-model.md) | `linking/learn/` |

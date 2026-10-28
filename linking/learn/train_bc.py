@@ -1,7 +1,7 @@
 """Stage 1 training: imitation (behaviour cloning).
 
 1. Run the hand-written rules (the teacher) on many builds and record, for
-   every free bot at every step, what it saw (258 numbers), which moves were
+   every free bot at every step, what it saw (262 numbers), which moves were
    legal, and which move it ended up making.
 2. Train one small shared network to predict that move from what the bot saw.
    Illegal moves are masked out, so it only ever chooses among legal ones.
@@ -9,7 +9,7 @@
     python linking/learn/train_bc.py                # record data, train, save policy.npz
     python linking/learn/train_bc.py --seeds 4      # quicker
 
-The network: 258 -> 128 -> 128 -> 19, ReLU, about 52,000 weights.
+The network: 262 -> 128 -> 128 -> 19, ReLU, about 52,600 weights.
 """
 
 import argparse

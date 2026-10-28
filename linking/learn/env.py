@@ -3,7 +3,7 @@
 Same world and rules as linking/lattice.py (cube bots, slides and pivots, no
 move may leave anything unattached). What's new:
 
-* observe(): what ONE bot can see, as 258 numbers (textbook L2, Part 3)
+* observe(): what ONE bot can see, as 262 numbers (textbook L2, Parts 3 and 7)
 * 19 action slots: stay, the 6 face cells (slides), the 12 edge cells (pivots)
 * work_signal(): a "how far to the work" value passed bot to bot, the
   Kilobot hop-count gradient, instead of the global distance map
@@ -25,7 +25,7 @@ import lattice as L  # noqa: E402
 GRID = L.GRID
 R = 2                        # the bot sees cells up to 2 away: a 5x5x5 block
 SIDE = 2 * R + 1
-OBS_SIZE = 2 * SIDE ** 3 + 7 + 1      # 125 occupied + 125 shape + 7 signal + 1 locked = 258
+OBS_SIZE = 2 * SIDE ** 3 + 7 + 1 + 4  # 125 occupied + 125 shape + 7 signal + 1 locked + 4 compass = 262
 
 # Action slots. Slot 0 = stay. Slots 1-6 = face cells. Slots 7-18 = edge cells.
 FACES = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
@@ -89,8 +89,26 @@ def padded(grid, fill):
     return np.pad(grid, R, constant_values=fill)
 
 
+def compass(goal_cells, cell):
+    """Direction to the nearest open part of the shape, from the map and the bot's own position.
+
+    Like the Kilobots: each bot is given the shape map and knows where it is,
+    so it can work this out alone. 3 numbers for the direction (unit length)
+    and 1 for closeness, 1/(1 + distance). All zero if nothing is open.
+    """
+    if len(goal_cells) == 0:
+        return np.zeros(4, dtype=np.float32)
+    d = goal_cells - np.asarray(cell)
+    n = np.abs(d).sum(axis=1)
+    k = int(np.argmin(n))
+    v = d[k].astype(np.float32)
+    length = float(np.linalg.norm(v))
+    unit = v / length if length > 0 else v
+    return np.array([unit[0], unit[1], unit[2], 1.0 / (1.0 + n[k])], dtype=np.float32)
+
+
 def observe(state, cell):
-    """258 numbers: what the bot in `cell` can see."""
+    """262 numbers: what the bot in `cell` can see (or work out from the map)."""
     x, y, z = cell
     occ_p, tgt_p, sig_p = state["occ_pad"], state["tgt_pad"], state["sig_pad"]
     block_occ = occ_p[x:x + SIDE, y:y + SIDE, z:z + SIDE].ravel()
@@ -99,7 +117,8 @@ def observe(state, cell):
     for dx, dy, dz in FACES:
         sig.append(sig_p[x + R + dx, y + R + dy, z + R + dz])
     locked = [1.0 if state["locked"][cell] else 0.0]
-    return np.concatenate([block_occ, block_tgt, np.array(sig), np.array(locked)]).astype(np.float32)
+    return np.concatenate([block_occ, block_tgt, np.array(sig), np.array(locked),
+                           compass(state["goal_cells"], cell)]).astype(np.float32)
 
 
 def frame_state(sw, goal, dist=None):
@@ -113,7 +132,7 @@ def frame_state(sw, goal, dist=None):
         hops = work_signal(sw.occ, goal, RADIO if SIGNAL == "radio" else 1)
     sig = signal_feature(hops).astype(np.float32)
     return {"occ_pad": occ_pad, "tgt_pad": tgt_pad, "sig_pad": padded(sig, 0.0),
-            "locked": sw.locked}
+            "locked": sw.locked, "goal_cells": np.argwhere(goal)}
 
 
 # ---------------------------------------------------------------- one tick

@@ -86,6 +86,8 @@ One shared network (258 -> 128 -> 128 -> 19, 52,115 weights) sees only a 5x5x5 b
 
 The diagnostic showed the network was big enough and the touching-only signal was the bottleneck. A Kilobot-style relay range of 2 cells fixed it while staying local. Teacher for comparison: 46-56, 64-70, 49-60 steps.
 
+**In the browser** (same weights, observation checked identical to Python on 30 bots) it first failed every build, 0/9: the build site is ~9 cells from the pile, beyond the relay, and the model had learned "drift +x" from the fixed training layout. **Fix:** a 4-number compass (direction and closeness to the nearest open shape cell, from the map and the bot's own position, as Kilobots had). Retrained: Python 15/15 (tower now as fast as the rules); browser 9/9 on the training shapes, **16/16 on eight bigger unseen shapes** (up to ~900 bots), and 10/10 in Real render (arm links, never trained on).
+
 ## Still open
 
 1. **Moves aren't real v1 moves.** Bots slide and pivot (or roll, on the triangle grid). v1 moves with two 3-joint arms. Needed: how does v1 actually get from one spot to the next?

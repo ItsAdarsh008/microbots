@@ -182,7 +182,10 @@ The plan above was carried out on the Python version of the simulation (wall, ar
 3. **A diagnostic**: giving the network the teacher's global map made it build everything, 15 out of 15. So the network wasn't too small. The problem was the work signal: passed only between touching bots, it takes long winding routes through the pile and points bots the wrong way.
 4. **The fix**: relay the signal between bots up to 2 cells apart, like the Kilobots' infrared. Still local. Result: **15 out of 15**, including the tower it had never seen.
 
-The lesson worth remembering: when a learned policy fails, test whether it's missing *information* or missing *capacity* before making the network bigger. Here one diagnostic run answered that.
+5. **In the browser it failed every build.** The browser puts the build site about 9 cells from the pile, too far for the 2-cell relay, and the model had quietly learned "drift in this direction" from the training layout, where every build was in the same spot. That's **overfitting to the layout**.
+6. **The fix**: a compass, 4 more inputs giving the direction to the nearest open part of the shape, worked out from the shape map and the bot's own position (the Kilobots had both). Now 262 inputs. Result: every training shape, plus eight bigger shapes it had never seen, up to about 900 bots, built every time.
+
+The lesson worth remembering: when a learned policy fails, test whether it's missing *information* or missing *capacity* before making the network bigger. Here one diagnostic run answered that. The second lesson: test in a setting that differs from training (here, a different layout) before trusting a result.
 
 ---
 

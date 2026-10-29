@@ -133,6 +133,8 @@ Step counts from `sandbox/tests/run_shapes.js` (one run each) and `learn/evaluat
 
 **Broken bots.** Click a bot with "Breaks its grip": it falls with 6% chance per step while off the floor. Each bot counts its own falls and retires to a reject pad after 2. Neighbours count failures per spot. Tests break 3 deck bots on a finished long bridge: usually 2–3 caught; one that falls only once and then parks on the floor is never used again, so it is never caught (harmless, but it's still out there).
 
+**Arch "Cut the middle".** The cut removed the whole crown (~182 bots, with only 90 spares), so the repair could never finish (stuck at ~88%, also before today). Narrowed to a 2-cell slice (~56 bots): repaired in 85–93 steps with cubes, 105–124 with arm links.
+
 **Training log.** `dagger.py` now writes `policy_log.json`; `plot_training.py` draws `media/linking_training.png`. Retrained on the local rules: Python wall/arch/tower 15/15 (arch 96–116 steps, rules 97–151).
 
 ## Still open

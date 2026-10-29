@@ -296,7 +296,7 @@ const SHAPES = {
   bridge: { spares: 90, make(t) { box(t, 18, 21, 13, 18, 0, 7); box(t, 41, 44, 13, 18, 0, 7); box(t, 18, 44, 13, 18, 7, 8); },
             cut: [27, 35, 0, NY, 7, NZ], text: "Two towers with a 20-bot gap." },
   arch:   { spares: 90, make(t) { fill(t, (x, y, z) => { const r = Math.hypot(x - 31, z); return y >= 12 && y < 19 && r >= 9 && r < 12.2; }); },
-            cut: [28, 35, 0, NY, 0, NZ], text: "Each layer steps in, like a stone arch." },
+            cut: [30, 32, 0, NY, 0, NZ], text: "Each layer steps in, like a stone arch." },
   dome:   { spares: 90, make(t) { fill(t, (x, y, z) => { const r = Math.hypot(x - 31, y - 16, z); return r >= 7.6 && r < 9.2; }); },
             cut: [28, 35, 0, NY, 5, NZ], text: "A hollow dome where the flat top is the hard part." },
   pyramid: { spares: 90, make(t) { fill(t, (x, y, z) => { const h = 7 - z; return h >= 0 && Math.abs(x - 31) <= h && Math.abs(y - 16) <= h; }); },

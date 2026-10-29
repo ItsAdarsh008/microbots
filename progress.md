@@ -85,6 +85,10 @@ One small neural network (52,627 weights), copied into every bot. Each bot feeds
 
 ## 10. Making it local, and catching broken bots (Oct 28)
 
+![Arch: built, cut, repaired](media/progress/arch_build_and_repair.gif)
+
+**The arch, as of today:** 902 bots build a curved stone-style arch where every layer steps in over the one below. Then a slice is cut out of the top and the spares climb back up and fill it. Every decision about which cell to fill next, and whether it's safe to let go, is now made locally.
+
 ![Training curve](media/linking_training.png)
 
 - **No global layer:** each shape cell decides for itself when it's ready to be filled.
@@ -93,6 +97,23 @@ One small neural network (52,627 weights), copied into every bot. Each bot feeds
 - **Broken bots:** click a bot to break its grip. It keeps falling off; after its second fall it works out it's broken and takes itself to a reject pad.
 
 ![Broken bot caught](media/progress/broken_bot_caught.png)
+
+---
+
+## Things nobody programmed (emergent behaviour)
+
+Some of the most interesting moments were behaviours that came out of simple rules without anyone writing them in. Some helped, some were problems that then had to be fixed.
+
+| What happened | Where | Helpful? |
+| --- | --- | --- |
+| **Scaffolding.** With real connector strength on and no plan for supports, spare bots sometimes piled up under the long bridge's deck and held it up while it was built, like scaffolding. Nobody told them to. It didn't happen every run (others got stuck around 93%), so a support planner was added to do on purpose what the swarm had stumbled into. | Sandbox, strength limit | Yes, and it inspired the support planner |
+| **Cantilevers that hold.** Cut out the middle of the arch's bridge, and each half stays up, sticking out over nothing, because every bot is still linked back to its leg. | Linking, Python arch repair | Yes (though v1's real connectors couldn't hold that) |
+| **Pillars with a pattern.** A simple arm rule (point both arms at something real, prefer vertical) made pillars alternate on their own between bots holding vertically and bots held sideways, and made decks run their arms along the deck. | Real render | Yes |
+| **One big blob.** Before the swarm learned to split its work, everyone headed for the nearest place that needed bots, so the whole swarm moved as one mass while the far side of the shape waited. | Sandbox, two build sites | No, fixed by sharing work out |
+| **Sealed in.** Bots crawled inside the dome to help, and the dome closed over them. | Sandbox, dome | No, fixed by keep-out zones (and later the readiness rule) |
+| **Knots and hanging chains.** Spares hung off pillars and off each other in chains under the deck, each one holding the next, so nobody could let go first. | Sandbox, strength limit and arm links | No, mostly fixed by letting bots swivel their arms and back off when stuck |
+| **Racing ahead.** Once each cell decided for itself when to fill, one leg of an arch could shoot up and grow the deck before the other leg existed, and then everyone had to walk back. | Python, readiness rule | No, fixed by waiting for nearby cells in the layer below |
+| **A learned shortcut.** The trained model quietly learned "drift this way", because every training build sat in the same spot. It failed every build in the browser, where the shape was somewhere else. | Trained model | No, fixed by giving bots a compass |
 
 ---
 

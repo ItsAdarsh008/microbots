@@ -1,0 +1,4 @@
+params 3650470 cfg {"name": "s1e_cond_global_n10", "cond": "map", "radius": null, "layers": 6, "d": 192, "heads": 6, "time": true, "n_train": 10, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128}
+it 500 loss 0.0357 gn 0.32 lr 3.0e-04 31s
+it 1000 loss 0.0104 gn 0.21 lr 3.0e-04 61s
+it 1500 loss 0.0084 gn 0.36 lr 3.0e-04 91s

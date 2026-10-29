@@ -92,3 +92,23 @@ What it shows:
 Hypotheses:
 - H10: with the map given at every particle, the task is mostly "go where the signed distance is negative and spread out", which a handful of shapes can teach; the dataset size matters for the *unconditional* task, where the model has to learn the shape distribution itself. Queued: unconditional with 100 shapes (expect copying: high overlap with training shapes against real validation shapes).
 - H11: a coarse global signal (bigger radius, or a beacon) is what a clock-free local swarm needs.
+
+## 2026-10-29 tick 4: unconditional with local-only communication (one seed)
+
+`s1_uncond_local_r25_L4`: no map, each particle sees only neighbours within 0.25, 4 message rounds, no global attention. Compare with `s1_uncond_global` (same data, global attention).
+
+| | global | local r=0.25 | real val shapes |
+| --- | --- | --- | --- |
+| samples that are one connected piece | 0.996 | **0.676** | 1.00 |
+| mean connected pieces | 1.00 | 1.41 | 1.00 |
+| holes per shape | 0.49 | 0.56 | 0.14 |
+| elongation (aniso; real 0.675) | 0.67 | **0.80** (W1 0.12) | 0.675 |
+| best overlap with a training shape | 0.848 | 0.799 | 0.852 |
+
+By eye (`results/s1_uncond_local_r25_L4/grid.png`): ragged blobs with detached bits and stray particles; the long thin bars and L-shapes of the real set are mostly missing.
+
+What it shows (one seed, so a hypothesis): when there is no map to tell particles where the shape is, a local-only denoiser cannot settle on one coherent global shape. A third of samples fragment and the shapes are rounder than real. This is the failure that Kamb and Ganguli's theory predicts for local denoisers (locally plausible pieces, wrong global structure), and it is what the Stage 1 ladder expected: a shape that nobody communicates cannot be agreed on by neighbours only.
+
+Hypotheses:
+- H12: connectivity of unconditional local samples rises with radius (queued: r=0.4).
+- H13: for a real swarm, the target must be broadcast in some form (map, code or coarse density); "noise to any shape" with purely local communication is not what a swarm can do. The cheap thing to test is how little needs broadcasting: a low-resolution map (queued next if H12 fails).

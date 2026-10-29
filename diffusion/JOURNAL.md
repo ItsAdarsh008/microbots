@@ -27,3 +27,27 @@ Hypotheses raised:
 - H3: the generative approach earns its keep on the *unconditional* task and on the hard-to-engineer cases, not on conditional shape filling where a 20-line classical rule is already close. Queued: unconditional global and local.
 - H4: held-out shape error falls with training-set size and saturates before 10^4 (queued: 100 and 1,000 shapes).
 - Replicate: seed 1 of the global run is queued before anything is claimed from the 1.24 vs 1.45 gap.
+
+## 2026-10-29 tick 1: local-denoiser ladder (single seed each, NOT replicated)
+
+Held-out-family w2 in spacings (classical baseline 1.31, global model 1.14, floor ~0.7):
+
+| run | val w2 | held-out family w2 | emoji w2 | connected shapes |
+| --- | --- | --- | --- | --- |
+| global, 6 layers | 1.24 | 1.14 | 1.40 | 1.00 |
+| local r=0.25, 2 rounds | 1.29 | 1.64 | 1.68 | 0.92 |
+| local r=0.25, 4 rounds | 1.27 | 1.63 | 1.65 | 0.95 |
+| local r=0.15, 4 rounds | 1.33 | 1.70 | 1.71 | 0.75 |
+| local r=0.25, 4 rounds, **no clock** | 1.65 | 1.86 | 1.90 | 0.07 |
+
+All wrong-map controls pass (error stays low against the map fed, about 3.2 against the other shape).
+
+What it shows:
+- Locality costs nothing on shapes like the training ones (1.27 to 1.33 vs 1.24) and costs about 0.5 spacings on unseen families and emoji, where it falls behind the no-learning baseline (1.63 vs 1.31).
+- More message rounds did not close the gap (2 rounds 1.64, 4 rounds 1.63). A smaller radius hurt (0.15: 1.70, connected shapes down to 0.75). So the limit looks like radius, not depth. Single seed; the 2-vs-4 difference is far inside what a seed could move.
+- Removing the clock hurts a lot: val w2 1.27 -> 1.65 and only 7% of shapes come out as one piece. The samples show the bodies form but stray particles stay scattered around them.
+
+Hypotheses:
+- H5: the strays are isolated particles that cannot tell how far along they are without `t` and with few neighbours. A larger radius should help (queued: r=0.4 with and without clock).
+- H6: the local gap on unseen shapes is a radius effect (queued: r=0.4 with clock, and a second seed of r=0.25).
+- H7 (design): if H5 holds, a broadcast clock is a real hardware requirement, and the cheap fix is a coarse global beacon rather than a clock.

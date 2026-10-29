@@ -71,3 +71,7 @@ LINK_SIGNAL=local python linking/learn/dagger.py --out policy_local.npz   # touc
 - **Parking, support pillars and the truss bridge still use rules.** The model builds; spares park by the rules afterwards. It hasn't been trained or tested with real connector strength.
 - **It copies the rules; it doesn't beat them.** Reinforcement learning (stage 2) is next, starting with the long bridge under real connector strength.
 - **The teacher's crawl map is global.** The network never sees it (it gets the relayed signal and the compass), but the rules it copies were steered by it.
+
+## What the research says about next steps
+
+[`LITERATURE_REVIEW.md`](LITERATURE_REVIEW.md): what the papers (mostly 2024 on) say about the next four steps: a random shape generator, the teacher with symmetry augmentation, memory and learned messages, and RL with real connector strength. It ends with a revised plan and a list of citations to double-check. The full research notes behind it are in [`literature_notes/`](literature_notes/).

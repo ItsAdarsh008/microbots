@@ -232,7 +232,7 @@ Two changes fixed most of it:
 - **Swivel:** a free bot may turn its arms to another axis without moving, as long as it stays linked to its holder and to every bot it holds. It picks the axis that links it to the most neighbours. More links means more ways to hand someone over, so fewer bots get stuck holding someone.
 - **Back off when jammed:** if nothing has been locked in for a while, hanging bots spend a few steps heading for the floor. The chains come apart from their free ends, and the bots try again.
 
-Result: arms plus real strength went from finishing 0 of 8 shapes to 7 of 8 every time. The big arch still jams in some runs.
+Result: arms plus real strength went from finishing 0 of 8 shapes to 7 of 8 every time. The big arch still jams in most runs (it finished 1 time in 8), with a tightly packed group of bots on top that can't let go of each other.
 
 ### 8.4 Broken bots: noticing repeated failure
 
@@ -250,6 +250,57 @@ The general idea, from fault-tolerant swarm robotics: **when the same work keeps
 ![Training curve](../media/linking_training.png)
 
 The blue line is the loss (lower means the network predicts the rules' move better). The orange dots show how often it picks the same move as the rules on decisions it never trained on. In the shaded DAgger rounds the loss jumps up, because new, harder data arrives: situations the network got itself into, which the rules never would. Agreement on the rules' own runs dips a little at the same time. What matters is that it builds, and it does: wall, arch and tower, every time.
+
+---
+
+## Part 9: What's still not realistic, and the plan for reinforcement learning
+
+### 9.1 Where the simulation still cheats
+
+Say these first when you show the work. It reads as rigour, not as a weakness.
+
+**Bots know things they couldn't know**
+
+1. **The compass.** It points to the nearest open shape cell *anywhere*. The shape map is fair (the Kilobots had it), but which far-away cells are open right now is live swarm state no bot could see. The trained model leans on this. Fix: only point at open cells the bot has heard about through the relayed signal.
+2. **Exact position.** Every bot knows its own coordinates perfectly. Real bots work it out from neighbours and get it slightly wrong.
+3. **A global "stuck" counter.** The unjam and jam-breaker rules switch on when nothing has been locked in *anywhere*. Every bot effectively knows the whole build has stalled.
+4. **Global planning in the hand-written rules:** the crawl map, sharing bots between build sites, the support-pillar planner, the dome's keep-out zone, and the parking order. The trained model skips the first two, but the rules it copied were steered by them.
+
+**Physics that's simplified**
+
+5. **Moves.** Bots slide and flip like cubes. The real v1 bot walks with two 3-joint arms.
+6. **Strength.** "Only one bot can stick out sideways" is a rule of thumb from an assumed 3 N per connector, not real forces.
+7. **Timing.** Every bot moves in lockstep, and messages (the relayed signal, asking up the holder chain) arrive instantly and never get lost.
+8. **Falling.** Bots that fall just disappear; a broken bot jumps straight to the floor.
+
+**Claims to word carefully**
+
+9. "Faster than the rules on the arch" comes from 5 runs on a small shape: suggestive, not proven.
+10. Most browser numbers are one run per shape, and runs vary (the arch with arms and real strength finished 1 time in 8).
+
+**Not cheating:** giving every bot the shape map, the safety guarantee (nothing ever drops), training on a CPU, and the model's inputs (exactly what Part 3 lists, nothing hidden).
+
+### 9.2 Reinforcement learning: the plan
+
+So far the model **copies** the rules, so at best it's as good as them. Reinforcement learning (RL) lets it try things and keeps whatever earns more reward, so it can find something nobody wrote down.
+
+**The test:** the long bridge with real connector strength. The hand-made planner adds 245 support bots. Can the model learn to put pillars down early, using fewer, without being told what a pillar is?
+
+**Steps:**
+
+1. **Fix the cheats that touch the model first** (9.1, items 1 and 3), so anything it learns is learned honestly. Retrain the copy-the-rules model on the fixed inputs.
+2. **Rewrite the simulation in JAX so it runs many builds at once.** RL needs thousands of full builds; the current Python version runs one at a time. This is the biggest job (a few days), and it's where a GPU (Colab, or Kuan's server) starts to matter.
+3. **Write the reward:** +1 per cell filled, a small penalty every step, a bonus for finishing, and possibly a penalty per support bot used.
+4. **Train with PPO, starting from the copied model.** PPO (Proximal Policy Optimization) is the standard, stable choice. Starting from the copy means it doesn't have to rediscover the basics. The safety mask stays on, so it can never drop a bot while it experiments.
+5. **Compare with the rules:** steps to finish, support bots used, how often it jams.
+
+**Time:** 1 to 3 weeks, and it might not beat the rules. That uncertainty is the point: if it does, it's a result worth showing.
+
+### 9.3 Questions to settle with Kuan before starting
+
+1. Run the batched simulation on his server, or on Colab?
+2. Plug the bridge into his NPA training code, or keep two pipelines and compare?
+3. Would giving each bot a few numbers of memory between steps (hidden state, as in NPA) help it notice repeated failures and plan ahead?
 
 ---
 
@@ -331,7 +382,7 @@ The bot counts its own falls. After two, it decides it's broken and takes itself
 | Imitation learning / behaviour cloning | Training a network to copy an existing set of decisions |
 | Cross-entropy | The usual loss for "pick one of these options" |
 | Reinforcement learning (RL) | Training by trial and error with rewards |
-| PPO | A common, stable RL algorithm |
+| PPO | Proximal Policy Optimization: a common, stable RL algorithm |
 | Hop-count gradient | A distance passed bot to bot, one more than the smallest neighbour's value |
 | NPA | Neural Particle Automata: one shared network in every particle, perceiving its neighbours |
 | Readiness rule | A shape cell opens for filling once the cells under it (and nearby in the layer below) are filled |

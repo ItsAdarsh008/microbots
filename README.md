@@ -1,6 +1,8 @@
 # microbots
 programmable matter, inspired by big hero 6. this repo holds all my work until the final goal. no central brain, hivemind only.
 
+**See [progress.md](progress.md)** for pictures and animations of every step so far, from the first random dots to linked 3D bots.
+
 ## For collaborators
 
 **Current status:** Phases 0–2 are built. Phase 0 is a 2D random walk in NumPy and JAX ([Chapter 0](textbook/00-random-walk.md)); Phase 1 is a 1,000-bot flock that uses only local rules ([Chapter 1](textbook/01-flocking.md)); Phase 2 recreates the 2014 Kilobot self-assembly algorithm, with 150 robots building a star, a wall or the letter K ([Chapter 2](textbook/02-self-assembly.md)). **Linking** (`linking/`) is a side track: 3D cube bots that stay attached while they slide and pivot over each other, build a wall, tower or arch, and repair it after damage ([Linking chapter](textbook/L1-linking.md), [discussion notes](linking/README.md)). Next: clear the Chapter 0–2 understanding gates, then Phase 3 (the self-healing neural cellular automaton, moving to 3D). Phases 0–2 are 2D; the swarm moves to 3D from Phase 3. See [ROADMAP.md](ROADMAP.md) for the full plan and per-phase checklists.

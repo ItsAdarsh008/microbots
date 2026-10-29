@@ -251,3 +251,34 @@ Hypotheses:
 - H21: the unconditional task is not hard in the way the plan assumed: even a model trained on 100 shapes samples plausible compact shapes without copying. The difficulty will appear when the generator contains shapes that cannot be produced by a smooth average (the v2 thin-branch data) or when the target is specified by something other than a map.
 - H22: a swarm that starts as a pile (where real bots start) is a different problem from one that starts as scattered noise: paths from a compact pile to a shape are shorter, but particles start overlapping. Pile-start runs (global and local r=0.4) are queued. They also use the same evaluation (the chance row becomes the pile itself).
 - H23 (design): flow-matching sampling takes 4 steps as well as 64 (earlier tick); combined with pile starts this is the first thing that looks like a feasible bot controller: 4 to 8 rounds of communication-and-move.
+
+## 2026-10-29 tick 9: rounds at r=0.4 replicated, coarse broadcast with a local model, first thin-shape (v2) results
+
+**Rounds at r=0.4 (2 seeds):** 2 rounds give held-out-family error 1.63 and 1.60, 4 rounds give 1.29 and 1.25. So at a large radius the number of message rounds matters (it did not at r=0.25). The collision spike I saw in the first 2-round run (0.14) did not replicate (second seed 0.04); it was seed noise.
+
+**Local model, 64-number broadcast (1 seed each; full-map references in the radius table):**
+
+| model | broadcast | familiar | held-out family | emoji | one piece | collisions |
+| --- | --- | --- | --- | --- | --- | --- |
+| global | 8 x 8 | 1.38 | 1.23 | 1.41 | 1.00 | 0.03 |
+| local r=0.40 | full map (2 seeds) | 1.30, 1.34 | 1.29, 1.25 | 1.51, 1.52 | 0.97 | 0.04 |
+| local r=0.40 | 8 x 8 | 1.36 | 1.38 | 1.59 | 0.91 | 0.05 |
+| local r=0.25 | 8 x 8 | 1.38 | 1.70 | 1.66 | 0.81 | 0.02 |
+
+A swarm of bots that each sense 0.4 around them and are told only an 8x8 occupancy grid (64 numbers) forms unseen held-out families at 1.38 against 1.31 for a no-learning baseline that gets the full-resolution map. That is one seed; a replicate is queued. It supports H20 for r=0.4 (broadcast cost drops from thousands of numbers to 64 at a price of about 0.1 in error and a few points of connected shapes); not for r=0.25.
+
+**Thin branching shapes (v2: tree in training, spider held out; arms 0.04 to 0.08 wide). One seed each; baselines recomputed on v2:**
+
+| | familiar | held-out family (stars, rings, spiders) | emoji | collisions (val) | one piece |
+| --- | --- | --- | --- | --- | --- |
+| no-learning baseline (full map) | 1.71 | 1.96 | 1.60 | 0.105 | n/a |
+| global | 1.41 | 1.47 | 1.42 | 0.047 | 0.99 |
+| local r=0.25 | 1.51 | 1.97 | 1.65 | 0.023 | 0.91 |
+
+- The global model's advantage over the baseline grows on thin shapes (held-out family 1.47 vs 1.96, 25% lower; on v1 data the margin was 1.13 vs 1.31, 14%). The baseline struggles with thin shapes; the global model does not.
+- Local r=0.25 only ties the baseline on held-out families (1.97 vs 1.96) and puts 22% of particles outside the shape there (inside 0.78). H19 (thin arms need a larger radius) is supported in direction by this one seed; r=0.4 and r=0.6 runs are queued/running.
+- Wrong-map control passes (1.38 against the map fed, 3.75 against the other shape).
+
+Hypotheses:
+- H24: on thin shapes the local models fail because arms are narrower than the sensing radius so few neighbours are on the shape, not because of the held-out family; test: report error by family (spider vs star vs ring) for the v2 held-out set (needs a per-family split in the evaluator; not yet built).
+- H25: a swarm needs the radius to scale with the thinnest feature it must form; for hardware, report required radius per shape class.

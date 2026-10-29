@@ -1,0 +1,5 @@
+params 3650470 cfg {"name": "s2_cond_global_g8", "cond": "map", "radius": null, "layers": 6, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "coarse": 8}
+it 500 loss 0.0409 gn 0.52 lr 3.0e-04 34s
+it 1000 loss 0.0119 gn 0.17 lr 3.0e-04 66s
+it 1500 loss 0.0100 gn 0.36 lr 3.0e-04 98s
+it 2000 loss 0.0095 gn 0.13 lr 3.0e-04 130s

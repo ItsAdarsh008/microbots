@@ -282,3 +282,42 @@ A swarm of bots that each sense 0.4 around them and are told only an 8x8 occupan
 Hypotheses:
 - H24: on thin shapes the local models fail because arms are narrower than the sensing radius so few neighbours are on the shape, not because of the held-out family; test: report error by family (spider vs star vs ring) for the v2 held-out set (needs a per-family split in the evaluator; not yet built).
 - H25: a swarm needs the radius to scale with the thinnest feature it must form; for hardware, report required radius per shape class.
+
+## 2026-10-29 tick 10: broadcast knee, noisy-clock training works, physical sampler, per-family errors
+
+(Compute: 5 A100 GPUs, two jobs at a time on each = 10 job slots. Earlier entries that say "runs going" count jobs.)
+
+**Broadcast, global model (held-out family; full-map references 1.14, 1.12):** 8x8 (64 numbers) 1.23 and 1.22 (2 seeds); 6x6 (36 numbers) 1.27 (1 seed); 4x4 (16 numbers) 1.58 (1 seed). The knee is between 16 and 36 numbers. Local r=0.60 with 8x8: 1.29 (full map 1.16), 98% one piece.
+
+**Noisy-clock training (`tnoise` 0.15; clock reading wrong, position right; 1 seed each).** Collisions under clock jitter 0.25 are 0.02 for global (the ordinary global model: 0.22) and 0.05 for local r=0.4 (ordinary: 0.11); nominal error is unchanged for global (1.28 / 1.17 / 1.38) and a little worse for local r=0.4 (1.32 / 1.33 / 1.53, 86% one piece vs 97%). H15 in its corrected form is supported: train with the failure you expect. Asynchronous updates still raise collisions to 0.09 (global) and 0.14 (local).
+
+**Physical sampler (`physical.py`, 1 model each, Gaussian start, 96 val shapes).**
+
+| variant | global w2 | collisions | local r=0.4 w2 | collisions |
+| --- | --- | --- | --- | --- |
+| 8 steps | 1.16 | 0.024 | 1.19 | 0.032 |
+| 32 steps | 1.18 | 0.025 | 1.23 | 0.038 |
+| 32 steps + hard-core spacing 0.7 | 1.17 | 0.000 | 1.23 | 0.000 |
+| 32 steps, speed cap 1 spacing per step | 1.38 | 0.025 | 1.40 | 0.037 |
+| 64 steps, speed cap 0.5 spacings per step | 1.39 | 0.026 | 1.41 | 0.038 |
+
+- A hard-core spacing rule applied after every step removes all collisions at no cost in error.
+- Mean path is 7.7 spacings per particle, but a cap that allows 32 spacings in total costs 0.2 in error: the cost comes from the tail of particles that start far away (a Gaussian start reaches about 30 spacings out). A pile start (queued results) should shorten that tail. Eight steps are as good as 64.
+
+**Per-family held-out error (32 steps, 1 seed per model; spacings):**
+
+| model | star | annulus | spider (thin, v2 only) |
+| --- | --- | --- | --- |
+| global (v1) | 0.90 | 1.27 | n/a |
+| local r=0.25 (v1) | 1.25 | 1.91 | n/a |
+| local r=0.40 (v1) | 1.07 | 1.43 | n/a |
+| global (v2) | 1.01 | 1.26 | 2.00 |
+| local r=0.25 (v2) | 1.25 | 1.96 | 2.77 |
+| local r=0.40 (v2) | 1.07 | 1.46 | 2.52 |
+
+- H24 supported in direction: thin spiders are the hardest family for every model (global 2.00, with 23% of particles outside the shape), and local models fall furthest behind there (2.52 to 2.77). Rings (annulus) are the next hardest and are where radius matters most (1.91 at r=0.25 vs 1.43 at r=0.4): a ring is a thin curved band, so a particle sees few neighbours on the shape.
+- The v2 headline number for local r=0.4 (1.69 held-out) averages these; stars are fine, spiders are not. The thin-arm limit is real even for the global model: the shape's 8 numbers per ... (not tested) are not the cause, since the map here is the full one.
+
+Hypotheses:
+- H26: thin arms narrower than a few spacings fail because the 256 particles cannot resolve them (spacing vs arm width), not because of the architecture; test by giving the spiders more particles (N = 512) at test time with the same model (it handled 512 in the robustness test) and by training v2 with N = 512 points where the data allows.
+- H27: a pile start shortens the long-travel tail and removes the speed-cap cost; pile runs are in progress.

@@ -57,3 +57,10 @@ it 27500 loss 0.0113 gn 0.11 lr 1.4e-05 1345s
 it 28000 loss 0.0112 gn 0.12 lr 1.2e-05 1376s
 it 28500 loss 0.0113 gn 0.09 lr 1.1e-05 1407s
 it 29000 loss 0.0112 gn 0.10 lr 9.8e-06 1438s
+it 29500 loss 0.0113 gn 0.07 lr 9.2e-06 1470s
+it 30000 loss 0.0112 gn 0.15 lr 9.0e-06 1501s
+val {"noise": {"w2": 9.742, "inside": 0.309, "cover": 0.566, "coll": 0.063, "nn": 1.705, "skill": 0.0}, "K64": {"w2": 3.1, "inside": 0.728, "cover": 0.766, "coll": 0.108, "nn": 0.728, "skill": 0.682}}
+ood_family {"noise": {"w2": 7.081, "inside": 0.343, "cover": 0.594, "coll": 0.076, "nn": 1.496, "skill": 0.0}, "K64": {"w2": 3.16, "inside": 0.668, "cover": 0.619, "coll": 0.131, "nn": 0.641, "skill": 0.554}}
+emoji {"noise": {"w2": 8.77, "inside": 0.311, "cover": 0.548, "coll": 0.066, "nn": 1.66, "skill": 0.0}, "K64": {"w2": 3.516, "inside": 0.673, "cover": 0.695, "coll": 0.101, "nn": 0.72, "skill": 0.599}}
+stats connected {'gen': 0.99609375, 'real': 1.0} best_iou_train {'gen': 0.8504137992858887, 'real': 0.8523240089416504}
+done

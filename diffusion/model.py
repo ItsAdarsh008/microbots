@@ -16,8 +16,14 @@ import torch.nn.functional as F
 R = 64
 
 
-def make_maps(occ, sdf):
-    """occ, sdf: (B, R, R) -> (B, 6, R, R): sdf, d sdf/dx, d sdf/dy, occ, occ blurred at 2 and 4 px."""
+def make_maps(occ, sdf, coarse=0):
+    """occ, sdf: (B, R, R) -> (B, 6, R, R): sdf, d sdf/dx, d sdf/dy, occ, occ blurred at 2 and 4 px.
+    coarse=g>0: the swarm is only told a g x g occupancy grid (g*g numbers, smoothly upsampled); the
+    signed distance is replaced by a smooth proxy of that coarse occupancy."""
+    if coarse:
+        occ = F.interpolate(F.adaptive_avg_pool2d(occ[:, None], coarse), size=(R, R), mode="bilinear",
+                            align_corners=False)[:, 0]
+        sdf = (0.5 - occ) * 0.5
     px = 2.0 / R
     gy, gx = torch.gradient(sdf, spacing=px, dim=(1, 2))
 
@@ -61,7 +67,8 @@ class Block(nn.Module):
 
     def forward(s, x, temb, bias, mask):
         B, N, D = x.shape
-        a1, b1, a2, b2 = s.ada(temb)[:, None].chunk(4, -1)
+        m = s.ada(temb)
+        a1, b1, a2, b2 = (m[:, None] if m.dim() == 2 else m).chunk(4, -1)
         y = s.n1(x) * (1 + a1) + b1
         q, k, v = s.qkv(y).view(B, N, 3, s.h, D // s.h).permute(2, 0, 3, 1, 4)
         att = (q @ k.transpose(-1, -2)) / math.sqrt(D // s.h) + bias
@@ -92,7 +99,7 @@ class Denoiser(nn.Module):
         h = s.inp(torch.cat(feats, -1))
         if s.time:
             fr = torch.exp(-math.log(10000) * torch.arange(32, device=x.device) / 32)
-            a = (t[:, None] * 1000) * fr
+            a = t[..., None] * 1000 * fr
             te = s.temb(torch.cat([a.sin(), a.cos()], -1))
         else:
             te = torch.zeros(B, h.shape[-1], device=x.device)

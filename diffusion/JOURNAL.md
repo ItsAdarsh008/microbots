@@ -112,3 +112,39 @@ What it shows (one seed, so a hypothesis): when there is no map to tell particle
 Hypotheses:
 - H12: connectivity of unconditional local samples rises with radius (queued: r=0.4).
 - H13: for a real swarm, the target must be broadcast in some form (map, code or coarse density); "noise to any shape" with purely local communication is not what a swarm can do. The cheap thing to test is how little needs broadcasting: a low-resolution map (queued next if H12 fails).
+
+## 2026-10-29 tick 5: three more GPUs, radius replicated, training-set curve so far, robustness
+
+**Compute.** Five A100-40GB boxes now. Allocation: boxes 1 and 2 finish the earlier queue (replicates, unconditional runs, clock-jitter training); box 3 = how little must be broadcast (`coarse` maps of 4x4, 8x8, 16x16 numbers; local and global); box 4 = training-set-size curve (conditional 30/300/3000 shapes, unconditional 1000/3000); box 5 = radius curve (0.6, 0.8), global model without a clock, replicates.
+
+**Replicated: radius closes the local gap (2 seeds).** Held-out-family error: r=0.25 gives 1.63 and 1.65, r=0.40 gives 1.29 and 1.25, global gives 1.14 and 1.12, no-learning baseline 1.31. Familiar shapes: r=0.40 1.30 and 1.34. Connected shapes at r=0.40: 0.97 and 0.98. A local denoiser with a larger sensing radius is about as good as the baseline on unseen families and about 0.15 worse than global; rounds (2 vs 4) made no difference.
+
+**Training-set size, conditional global model (1 seed each unless stated):**
+
+| shapes | familiar | held-out family | emoji |
+| --- | --- | --- | --- |
+| 100 | 1.35 | 1.01 | 1.33 |
+| 1,000 | 1.26 | 1.11 | 1.32 |
+| 10,000 (2 seeds) | 1.24, 1.33 | 1.14, 1.12 | 1.40, 1.41 |
+
+The curve is flat from 100 to 10,000 shapes for the map-conditioned task (differences are within what seeds do). Second seed of the 100-shape run and runs at 10, 30, 300 and 3,000 are in progress. H10 (shape count matters for the unconditional task, not the conditional one) is still untested; unconditional 100/1,000/3,000 runs are queued.
+
+**Robustness (S1d-lite, `robust.py`, no retraining, one model per row, 96 val shapes, 16 steps).** Collisions (fraction of particles closer than 0.35 spacings to a neighbour); base value first:
+
+| model | base | clock jitter 0.1 | clock jitter 0.25 | half the particles update each round | motion noise 0.3 sp | 128 / 512 particles |
+| --- | --- | --- | --- | --- | --- | --- |
+| global | 0.02 | 0.13 | 0.22 | 0.11 | 0.04 | 0.01 / 0.06 |
+| local r=0.25 | 0.02 | 0.04 | 0.04 | 0.10 | 0.04 | 0.02 / 0.05 |
+| local r=0.40 | 0.04 | 0.07 | 0.11 | 0.12 | 0.06 | 0.01 / 0.08 |
+| local r=0.40, no clock | 0.08 | 0.08 | 0.08 | 0.14 | 0.11 | 0.04 / 0.25 |
+
+- The headline error barely moves under these perturbations (w2 1.17 to 1.23 for global under jitter) while collisions rise 6 to 10 times: error alone hides it. Keep collisions in every table.
+- Models handle half or double the particle count they were trained on (coverage and collisions stay near base), apart from the time-free one at 512 particles (coverage 0.81, collisions 0.25).
+- Asynchronous updates cost every model about 0.15 to 0.2 spacings of error and raise collisions to 10 to 14%.
+
+**CORRECTION.** The first version of the asynchronous test had a bug: each update used a step 1/p too large, so particles overshot by 2x. It showed catastrophic failures (cover 0.14, collisions 0.96 for the time-free model) and led me to the wrong hypothesis (H14: "async fails because the clock disagrees with each particle's progress"). With the step fixed, the failure is mild and the time-free models are no better than clocked ones, so H14 is rejected. The numbers above are from the fixed script.
+
+Hypotheses:
+- H15: models trained with every particle on one shared clock are fragile to clock errors. Train each particle with its own noisy time (`tjit`; the target velocity is unchanged). Queued for global, local r=0.25 and local r=0.40; evaluated with `robust.py` afterwards.
+- H16: the global model's jitter fragility (collisions 0.22) is an artefact of attention across all particles reading many inconsistent clocks; the local models, which see fewer particles, are less affected (consistent with the table; one seed each).
+- H13 stays open: coarse-map runs on box 3 test how few numbers need broadcasting.

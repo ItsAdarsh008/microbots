@@ -106,9 +106,14 @@ def main(cfg_path):
                 mi = idx if not cfg["shuffle_labels"] else np.random.permutation(idx)
                 mi = torch.as_tensor(mi, device=dev)
                 o, sd = aug_maps(tr_occ[mi], tr_sdf[mi], k, flip)
-                maps = make_maps(o, sd)
+                maps = make_maps(o, sd, cfg.get("coarse", 0))
             t = torch.rand(x0.shape[0], device=dev)
-            xt = (1 - t[:, None, None]) * x0 + t[:, None, None] * x1
+            if cfg.get("tjit", 0):
+                # every particle gets its own slightly wrong clock; the straight-line target is unchanged
+                t = (t[:, None] + torch.randn(x0.shape[:2], device=dev) * cfg["tjit"]).clamp(0, 1)
+                xt = (1 - t[..., None]) * x0 + t[..., None] * x1
+            else:
+                xt = (1 - t[:, None, None]) * x0 + t[:, None, None] * x1
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 v = model(xt, t, maps)
             loss = F.mse_loss(v.float(), x1 - x0)

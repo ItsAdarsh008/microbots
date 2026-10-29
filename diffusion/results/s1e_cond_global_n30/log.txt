@@ -1,0 +1,15 @@
+params 3650470 cfg {"name": "s1e_cond_global_n30", "cond": "map", "radius": null, "layers": 6, "d": 192, "heads": 6, "time": true, "n_train": 30, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128}
+it 500 loss 0.0378 gn 0.15 lr 3.0e-04 30s
+it 1000 loss 0.0113 gn 0.30 lr 3.0e-04 62s
+it 1500 loss 0.0094 gn 0.21 lr 3.0e-04 94s
+it 2000 loss 0.0087 gn 0.06 lr 3.0e-04 126s
+it 2500 loss 0.0081 gn 0.41 lr 3.0e-04 158s
+it 3000 loss 0.0078 gn 0.15 lr 2.9e-04 189s
+it 3500 loss 0.0073 gn 0.16 lr 2.9e-04 221s
+it 4000 loss 0.0071 gn 0.11 lr 2.9e-04 253s
+it 4500 loss 0.0067 gn 0.36 lr 2.8e-04 285s
+it 5000 loss 0.0065 gn 0.40 lr 2.8e-04 316s
+it 5500 loss 0.0062 gn 0.17 lr 2.8e-04 348s
+it 6000 loss 0.0060 gn 0.09 lr 2.7e-04 380s
+it 6500 loss 0.0058 gn 0.13 lr 2.7e-04 412s
+it 7000 loss 0.0055 gn 0.11 lr 2.6e-04 444s

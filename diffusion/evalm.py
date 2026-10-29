@@ -18,7 +18,13 @@ import torch
 from scipy import ndimage
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import wasserstein_distance
-from model import make_maps, read_map
+from model import make_maps as _make_maps, read_map
+
+COARSE = 0
+
+
+def make_maps(occ, sdf):
+    return _make_maps(occ, sdf, COARSE)
 
 R = 64
 PX = 2.0 / R
@@ -38,8 +44,8 @@ def sample(model, x0, maps, K, traj=False):
     return (x, tr) if traj else x
 
 
-def spacing(occ):
-    return float(np.sqrt(occ.sum() * PX ** 2 / 256))
+def spacing(occ, n=256):
+    return float(np.sqrt(occ.sum() * PX ** 2 / n))
 
 
 def sdf_at(x, sdf):
@@ -52,7 +58,7 @@ def sdf_at(x, sdf):
 
 
 def metrics(X, ref, occ, sdf):
-    sp = spacing(occ)
+    sp = spacing(occ, len(X))
     C = ((X[:, None] - ref[None]) ** 2).sum(-1)
     r, c = linear_sum_assignment(C)
     w2 = float(np.sqrt(C[r, c].mean()) / sp)
@@ -124,6 +130,8 @@ def agg(rows):
 
 
 def evaluate(model, cfg, D, out, log):
+    global COARSE
+    COARSE = cfg.get("coarse", 0)
     dev = "cuda"
     cond = cfg["cond"] == "map"
     rng = np.random.default_rng(1234)

@@ -2,7 +2,7 @@
     python collect.py
 """
 import glob, json, os, subprocess
-HOSTS = ["ubuntu@129.213.131.224", "ubuntu@129.146.37.80"]
+HOSTS = ["ubuntu@129.213.131.224", "ubuntu@129.146.37.80", "ubuntu@129.213.24.52", "ubuntu@129.213.20.169", "ubuntu@193.122.154.46"]
 HERE = os.path.dirname(os.path.abspath(__file__))
 for h in HOSTS:
     subprocess.run(["rsync", "-az", "--include=*/", "--include=result.json", "--include=samples.png", "--include=traj.gif",

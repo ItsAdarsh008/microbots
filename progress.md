@@ -85,9 +85,9 @@ One small neural network (52,627 weights), copied into every bot. Each bot feeds
 
 ## 10. Making it local, and catching broken bots (Oct 28)
 
-![Arch: built, cut, repaired](media/progress/arch_build_and_repair.gif)
+![Arch: built, cut, repaired, in both views](media/progress/arch_side_by_side.gif)
 
-**The arch, as of today:** 902 bots build a curved stone-style arch where every layer steps in over the one below. Then a slice is cut out of the top and the spares climb back up and fill it. Every decision about which cell to fill next, and whether it's safe to let go, is now made locally.
+**The arch, as of today:** 902 bots build a curved stone-style arch where every layer steps in over the one below. Then a slice is cut out of the top and the spares climb back up and fill it. Both sides are the **same run**, using Kuan's arm-link rules: on the left each bot is drawn as microbot v1, on the right as a plain cube, so it's easier to see which bots are locked in (purple), moving (grey) or mid-flip (orange). Every decision about which cell to fill next, and whether it's safe to let go, is now made locally.
 
 ![Training curve](media/linking_training.png)
 

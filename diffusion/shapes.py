@@ -14,7 +14,8 @@ import os
 import numpy as np
 from scipy import ndimage
 
-FAMILIES = ["blob", "discs", "strokes", "poly", "holey", "csg", "star", "annulus"]
+FAMILIES = ["blob", "discs", "strokes", "poly", "holey", "csg", "star", "annulus", "tree", "spider"]
+BASE = ["blob", "discs", "strokes", "poly", "holey", "csg"]
 HELD_OUT = {"star", "annulus"}
 G = 128   # raster used for generation
 R = 64    # raster stored / used as the map
@@ -127,7 +128,32 @@ def f_csg(rng):
     return (a | b) if rng.random() < 0.65 else (a & ~b)
 
 
-GEN = {"blob": f_blob, "discs": f_discs, "strokes": f_strokes, "poly": f_poly,
+def f_tree(rng):
+    m = np.zeros((G, G), bool)
+    w = rng.uniform(0.05, 0.08)
+    stack = [(rng.uniform(-0.3, 0.3, 2), rng.uniform(0, 2 * np.pi), 0)]
+    while stack:
+        p, a, d = stack.pop()
+        q = p + rng.uniform(0.25, 0.4) * np.array([np.cos(a), np.sin(a)])
+        m |= capsule(p, np.clip(q, -0.95, 0.95), w)
+        if d < 3:
+            for da in ([-1, 1] if rng.random() < 0.8 else [rng.choice([-1, 1])]):
+                stack.append((np.clip(q, -0.95, 0.95), a + da * rng.uniform(0.4, 0.9), d + 1))
+    return m
+
+
+def f_spider(rng):
+    m = disc(0, 0, rng.uniform(0.15, 0.3))
+    k = rng.integers(4, 9)
+    a0 = rng.uniform(0, 2 * np.pi)
+    w = rng.uniform(0.04, 0.07)
+    for i in range(k):
+        a = a0 + 2 * np.pi * i / k + rng.uniform(-0.2, 0.2)
+        m |= capsule((0, 0), rng.uniform(0.5, 0.9) * np.array([np.cos(a), np.sin(a)]), w)
+    return m
+
+
+GEN = {"tree": f_tree, "spider": f_spider, "blob": f_blob, "discs": f_discs, "strokes": f_strokes, "poly": f_poly,
        "holey": f_holey, "csg": f_csg, "star": f_star, "annulus": f_annulus}
 
 
@@ -235,13 +261,15 @@ if __name__ == "__main__":
     ap.add_argument("--n-train", type=int, default=10000)
     ap.add_argument("--n-val", type=int, default=512)
     ap.add_argument("--emoji", default="data/emoji_shapes")
+    ap.add_argument("--v2", action="store_true", help="add thin branching families: tree (train), spider (held out)")
     a = ap.parse_args()
     from multiprocessing import Pool
-    train_fams = [f for f in FAMILIES if f not in HELD_OUT]
+    train_fams = BASE + (["tree"] if a.v2 else [])
+    held = sorted(HELD_OUT | ({"spider"} if a.v2 else set()))
     with Pool(min(24, os.cpu_count())) as pool:
         tr = build(a.n_train, train_fams, 1_000_000, pool)
         va = build(a.n_val, train_fams, 2_000_000, pool)
-        oo = build(a.n_val, sorted(HELD_OUT), 3_000_000, pool)
+        oo = build(a.n_val, held, 3_000_000, pool)
     en, ep, eo, es = load_emoji(a.emoji)
     os.makedirs(os.path.dirname(a.out) or ".", exist_ok=True)
     np.savez_compressed(a.out + ".tmp.npz",

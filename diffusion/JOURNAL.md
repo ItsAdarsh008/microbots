@@ -182,3 +182,39 @@ The two 100-shape seeds differ by 0.16 on held-out families, so my earlier remar
 Hypotheses:
 - H17: with 10 training shapes the conditional model only fails on the shapes most unlike its training set (emoji), so the knee is around 30 to 100 shapes. Tested by the 30 and 300-shape runs in progress.
 - H18: a generator with more shapes that are long and thin or branched (low solidity) would be needed before the unconditional task can be called generalising; the current set is mostly compact by construction. Next: add a "skinny and branched" family and a held-out version of it.
+
+## 2026-10-29 tick 7: radius curve, how little to broadcast, clock replicate, clock-jitter training
+
+**Radius curve (conditional, 4 rounds). Held-out-family error, one entry per seed; no-learning baseline 1.31, global 1.12 and 1.14:**
+
+| radius | held-out family | familiar | collisions (val) | connected |
+| --- | --- | --- | --- | --- |
+| 0.15 | 1.70 | 1.33 | 0.02 | 0.75 |
+| 0.25 | 1.63, 1.65 | 1.27, 1.29 | 0.02 | 0.95 |
+| 0.40 | 1.29, 1.25 | 1.30, 1.34 | 0.04 | 0.97 |
+| 0.60 | 1.16 | 1.31 | 0.06 | 0.98 |
+| global | 1.14, 1.12 | 1.24, 1.33 | 0.03 | 1.00 |
+
+Error keeps falling with radius up to 0.6, where it matches global (one seed), but collisions rise steadily (0.02 to 0.06). Radius 0.8 is running. For a real swarm the radius is a hardware cost (sensing range, number of neighbours to talk to), so the useful reading is a trade-off curve, not a "best" radius.
+
+**Clock, replicated.** Local r=0.4 without a clock: connected shapes 0.59 (seed 1) and 0.61 (seed 0); error 1.49 and 1.44 familiar. So local models need a clock (2 seeds); the global model does not (1 seed: 1.35 / 1.20 / 1.45).
+
+**How little must be broadcast (global attention, the swarm is given only a g x g occupancy grid instead of the full map, 1 seed each):**
+
+| broadcast | numbers | familiar | held-out family | emoji | collisions |
+| --- | --- | --- | --- | --- | --- |
+| full map (64x64 plus distance field) | 4,096+ | 1.24, 1.33 | 1.14, 1.12 | 1.40, 1.41 | 0.03 |
+| 8 x 8 | 64 | 1.38 | 1.23 | 1.41 | 0.03 |
+| 4 x 4 | 16 | 1.49 | 1.58 | 1.71 | 0.04 |
+
+Caveat: the no-learning baseline cannot use these coarse maps, so it stays at its full-map numbers (1.45 / 1.31 / 1.60). A swarm told only 64 numbers (an 8x8 occupancy grid) still forms unseen held-out shapes about as well as with the full map (1.23 vs 1.13). 16 numbers is too few. This supports H13 for the global model; the local versions (r=0.25 at 4, 8, 16 and r=0.4 at 8) are running and are the ones that matter for a swarm.
+
+**Training-set curve completing (1 seed each unless noted), held-out family:** 10: 1.21, 30: 0.99, 100: 1.01 and 1.17, 300: 1.18, 1,000: 1.11, 10,000: 1.14 and 1.12. Flat across three orders of magnitude within seed noise (about 0.15); emoji only worse at 10 shapes (1.55). 3,000 is running. So for a map-conditioned task a few dozen shapes suffice; the open question is the unconditional task (runs at 100, 1,000 and 3,000 are in progress).
+
+**Clock-jitter training did not help (and I tested the wrong thing).** I trained with every particle given its own noisy time in the *input and the position* (`tjit`: particles at different stages of progress, each told its true stage). Result: nominal collisions went up (r=0.25: 0.02 to 0.08, r=0.40: 0.04 to 0.12) and under clock jitter the models got worse than the ordinary ones (r=0.25 at jitter 0.25: error 2.08, collisions 0.14, vs 1.51 and 0.04 before). That training did not match the test: the test gives particles a *wrong* clock reading at the right position. H15 as designed is rejected. The matching training is noise on the clock reading only (`tnoise`); queued for global and local r=0.4. Local r=0.25 was robust to clock errors already (collisions 0.04 at jitter 0.25), which may make the fix unnecessary there.
+
+**New data (v2).** Added thin branching families: trees (training) and spiders (held out), all with arms 0.04 to 0.08 wide. Jobs on this set (global, local r=0.25, local r=0.40, unconditional) are queued on box 5. They test whether the conclusions so far hold on shapes whose parts are narrower than the sensing radius (H18).
+
+Hypotheses:
+- H19: local denoisers fall furthest behind global on v2 (thin arms hold fewer neighbours), so the radius needed will be larger there.
+- H20: if H13 holds for the local models too, the swarm needs one 64-number broadcast and nothing else; that is the cleanest statement of what the generative approach could give a physical swarm.

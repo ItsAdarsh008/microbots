@@ -64,10 +64,14 @@ Error is optimal-matching RMS distance to a reference sample of the shape, in pa
 | global attention, with map | 1.24, 1.33 | 1.14, 1.12 | 1.40, 1.41 | 1.00 | 0.03 | 2 |
 | local r=0.25, 4 rounds | 1.27, 1.29 | 1.63, 1.65 | 1.65, 1.68 | 0.95 | 0.02 | 2 |
 | local r=0.40, 4 rounds | 1.30, 1.34 | 1.29, 1.25 | 1.51, 1.52 | 0.97 | 0.04 | 2 |
+| local r=0.60, 4 rounds | 1.31 | 1.16 | 1.45 | 0.98 | 0.06 | 1 |
 | local r=0.15, 4 rounds | 1.33 | 1.70 | 1.71 | 0.75 | 0.02 | 1 |
 | local r=0.25, no clock | 1.65 | 1.86 | 1.90 | 0.07 | 0.05 | 1 |
-| local r=0.40, no clock | 1.44 | 1.55 | 1.65 | 0.61 | 0.09 | 1 |
-| global, 100 / 1,000 shapes | 1.35 / 1.26 | 1.01 / 1.11 | 1.33 / 1.32 | 1.00 | 0.04 / 0.03 | 1 each |
+| local r=0.40, no clock | 1.44, 1.49 | 1.55, 1.55 | 1.65, 1.69 | 0.61, 0.59 | 0.09, 0.13 | 2 |
+| global, no clock | 1.35 | 1.20 | 1.45 | 0.99 | 0.05 | 1 |
+| global, told only an 8x8 map (64 numbers) | 1.38 | 1.23 | 1.41 | 1.00 | 0.03 | 1 |
+| global, told only a 4x4 map (16 numbers) | 1.49 | 1.58 | 1.71 | 1.00 | 0.04 | 1 |
+| global, 10 / 30 / 100 / 300 / 1,000 shapes | 1.22 / 1.27 / 1.35 / 1.33 / 1.26 | 1.21 / 0.99 / 1.01, 1.17 / 1.18 / 1.11 | 1.55 / 1.32 / 1.33, 1.34 / 1.26 / 1.32 | 1.00 | 0.01 to 0.05 | 1 each (100: 2) |
 | control: shuffled labels | 3.07 | 3.19 | 3.51 | 0.98 | 0.16 | 1 |
 | unconditional global (no target) | n/a | n/a | n/a | 0.996 | | 1 |
 | unconditional local r=0.25 | n/a | n/a | n/a | 0.68 | | 1 |
@@ -76,6 +80,8 @@ Read, with what is replicated (2 seeds) marked:
 - A map-conditioned global model forms unseen shapes better than the no-learning baseline, with a third of its collisions. (2 seeds)
 - A local denoiser matches global on familiar shapes; on unseen shape families it needs a sensing radius of about 0.4 (about 5 particle spacings); 0.25 falls behind the baseline. Rounds do not help. (2 seeds)
 - Without a clock, shapes break up unless the radius is large; even then it is worse. (1 seed)
-- Number of training shapes (100 to 10,000) makes no visible difference for the map-conditioned task. (1 seed per point; replicates running)
+- Number of training shapes (10 to 10,000) makes no visible difference for the map-conditioned task, within a seed spread of about 0.15; only the emoji get worse at 10 shapes. (mostly 1 seed per point)
+- The swarm needs very little broadcast: an 8x8 occupancy grid (64 numbers) is nearly as good as the full map for the global model; 4x4 is not. Local versions are running. (1 seed)
+- Local models need a clock (2 seeds); the global model does not (1 seed).
 - With no map at all, a global model makes plausible compact shapes; a local-only one fragments. (1 seed)
 - Headline error hides collision problems under clock jitter and asynchronous updates; see the robustness table in the journal.

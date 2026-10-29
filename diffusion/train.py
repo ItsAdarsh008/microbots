@@ -76,7 +76,7 @@ def main(cfg_path):
 
     torch.manual_seed(cfg["seed"]); np.random.seed(cfg["seed"])
     dev = "cuda"
-    D = np.load(os.path.join(HERE, "data/shapes.npz"))
+    D = np.load(os.path.join(HERE, f"data/{cfg.get('data', 'shapes')}.npz"))
     ntr = cfg["n_train"]
     tr_pts = D["tr_pts"][:ntr]
     tr_occ = torch.tensor(D["tr_occ"][:ntr], device=dev); tr_sdf = torch.tensor(D["tr_sdf"][:ntr], device=dev)
@@ -114,8 +114,13 @@ def main(cfg_path):
                 xt = (1 - t[..., None]) * x0 + t[..., None] * x1
             else:
                 xt = (1 - t[:, None, None]) * x0 + t[:, None, None] * x1
+            t_in = t
+            if cfg.get("tnoise", 0):
+                # the particle's clock reading is wrong; where it actually is (xt) is unchanged
+                t_in = (t[:, None] if t.dim() == 1 else t) + torch.randn(x0.shape[:2], device=dev) * cfg["tnoise"]
+                t_in = t_in.clamp(0, 1)
             with torch.autocast("cuda", dtype=torch.bfloat16):
-                v = model(xt, t, maps)
+                v = model(xt, t_in, maps)
             loss = F.mse_loss(v.float(), x1 - x0)
             opt.zero_grad(set_to_none=True); loss.backward()
             gn = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)

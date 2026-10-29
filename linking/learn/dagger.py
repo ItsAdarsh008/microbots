@@ -12,7 +12,9 @@ situations the teacher never showed it, and errors pile up. DAgger fixes this:
 """
 
 import argparse
+import json
 import os
+import time
 
 import jax
 import numpy as np
@@ -58,22 +60,36 @@ def main():
     x, m, y = T.record(shapes, range(a.seeds))
     params = T.init(jax.random.PRNGKey(0)); opt = T.adam_init(params)
     rng = np.random.default_rng(0)
+    # held-out teacher decisions, never trained on, to check agreement each epoch
+    order = rng.permutation(len(y)); n_val = len(y) // 10
+    xv, mv, yv = x[order[:n_val]], m[order[:n_val]], y[order[:n_val]]
+    x, m, y = x[order[n_val:]], m[order[n_val:]], y[order[n_val:]]
+    log = {"loss": [], "epoch_end": [], "agree": [], "stage": [], "data": [], "started": time.strftime("%Y-%m-%d %H:%M")}
 
-    def fit(params, opt, x, m, y, epochs):
+    def fit(params, opt, x, m, y, epochs, stage):
         for _ in range(epochs):
             idx_all = rng.permutation(len(y))
             for i in range(0, len(y) - 511, 512):
                 idx = idx_all[i:i + 512]
-                params, opt, _ = T.train_step(params, opt, x[idx], m[idx], y[idx])
+                params, opt, loss = T.train_step(params, opt, x[idx], m[idx], y[idx])
+                log["loss"].append(round(float(loss), 4))
+            agree = float(T.accuracy(params, xv, mv, yv))
+            log["epoch_end"].append(len(log["loss"])); log["agree"].append(round(agree, 4))
+            log["stage"].append(stage); log["data"].append(int(len(y)))
+            print(f"  {stage:9s} epoch {len(log['agree']):2d}  loss {np.mean(log['loss'][-50:]):.3f}  "
+                  f"agrees with the teacher on {agree:.1%} of held-out decisions", flush=True)
         return params, opt
 
-    params, opt = fit(params, opt, x, m, y, 10)
+    params, opt = fit(params, opt, x, m, y, 10, "imitation")
     for r in range(a.rounds):
         np_params = [(np.asarray(l["w"]), np.asarray(l["b"])) for l in params]
         xs, ms, ys = collect(np_params, shapes, range(1000 + 10 * r, 1000 + 10 * r + a.seeds))
         x, m, y = np.concatenate([x, xs]), np.concatenate([m, ms]), np.concatenate([y, ys])
-        params, opt = fit(params, opt, x, m, y, 6)
         print(f"round {r + 1}: +{len(ys)} decisions where the student drove and the teacher labelled ({len(y)} total)")
+        params, opt = fit(params, opt, x, m, y, 6, f"dagger {r + 1}")
+    log_path = os.path.splitext(a.out)[0] + "_log.json"
+    json.dump(log, open(log_path, "w"))
+    print("saved", log_path, "(python linking/learn/plot_training.py draws it)")
     T.save(params, a.out)
     print("saved", a.out)
 

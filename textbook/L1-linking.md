@@ -202,7 +202,7 @@ A second, weaker set of paths is added afterwards for bots perched on top of oth
 
 ### 5.2 What happens in a tick
 
-1. **Pick the goal.** `goal_cells()` returns the empty target cells in the **lowest unfinished layer**. Building bottom-up means a gap in the shape is always open from above, so a bot can pivot down into it. (Try building top-down in the exercises and watch what happens.)
+1. **Pick the goal.** `goal_cells()` returns the empty target cells that are **ready**: on the floor, or with the shape cell under them already filled (an overhang, like a bridge deck, needs a filled cell beside it instead). A cell also waits until the shape cells in the layer below, within 3 cells, are filled. Every check looks only at nearby cells. Building bottom-up means a gap in the shape is always open from above, so a bot can pivot down into it. (`ready_cells()` has the details.)
 2. **Build the distance field** towards those goal cells.
 3. **For each free bot, in random order:** list its legal moves, keep the ones that lower its distance (plus, 30% of the time, ones that keep it level, so bots stuck behind each other can shuffle sideways), and try the best one. Keep it only if nothing falls.
 4. **Lock arrivals.** A bot that lands on a goal cell is locked and never moves again.
@@ -271,7 +271,7 @@ Be honest about this one: two parts of this model use information no real bot wo
 1. **The distance field** is computed over the whole grid. A real swarm could spread it as a hop-count gradient through the links, as in Chapter 2.
 2. **The "will anything fall?" check** looks at the whole structure. A real bot only knows its neighbours. Deciding locally whether it's safe to let go is a known hard problem in modular robotics.
 
-They're global here on purpose, so you can study the move rules on their own. Making them local is the next step, and a learned policy (like the neural particle automata in later phases) is one candidate for it.
+They're global here on purpose, so you can study the move rules on their own. Both now have local versions in [Linking 2](L2-from-rules-to-a-model.md) (Part 8): a relayed signal plus a compass for the first, and a "holder tree" for the second.
 
 ---
 
@@ -282,7 +282,7 @@ Predict what will happen before you run each one. Put each change back afterward
 1. **No sideways shuffling.** Set `SIDEWAYS_CHANCE = 0` and build the sheet, then the arch. *(Sheet: still finishes, a bit slower. Arch: gets stuck just short of done, around 99%. Bots queued behind each other can't get past.)*
 2. **Remove the safety rule.** In `tick`, replace `if is_connected(self.occ):` with `if True:` and build the arch. *(Pieces break off almost immediately and stay disconnected for nearly the whole run, and the build stalls well short of done.)*
 3. **Face-only paths.** In `distance_field`, change both `structure=ONE_MOVE` to `structure=FACE_LINKS` and build the sheet. *(It stalls at about three-quarters full: the top of a one-bot-thick wall can only be reached by a diagonal pivot.)*
-4. **Build top-down.** In `goal_cells`, change `z = layers[0]` to `z = layers[-1]`. *(Almost nothing gets built. The goal is up in the air with nothing under it to crawl along.)*
+4. **Let columns race ahead.** Set `KEEP_LEVEL = False`, so a cell only waits for the cell under it, not its neighbours in the layer below. Build all three shapes. *(Everything still builds, about 10% slower: tall columns get ahead, and spares have to climb them or squeeze into the gaps between them.)*
 5. **No floor.** In `pieces`, use `ndimage.label(occ, ...)` without `with_floor` and run the arch repair. *(The cut now loses over a hundred bots instead of 24, because the two legs are only connected through the bridge, so a whole side falls.)*
 6. **Your own shape.** Add a function like `shape_sheet` that builds a staircase or a plus sign, add it to `SHAPES`, and run it. Does it build? If it gets stuck, where, and why?
 
@@ -329,7 +329,7 @@ A pivot moves a bot diagonally. Without diagonal steps, cells only reachable by 
 <details>
 <summary>7. Why is the shape built from the bottom layer up?</summary>
 
-A bot needs a surface underneath to crawl on and pivot down from. Filling bottom-up keeps every gap open from above. Top-down puts the goal in mid-air.
+A bot needs a surface underneath to crawl on and pivot down from. Filling bottom-up keeps every gap open from above: a cell isn't ready until the one under it is filled, so the cell above a gap never fills first.
 </details>
 
 <details>

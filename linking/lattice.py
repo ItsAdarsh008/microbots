@@ -11,14 +11,16 @@ touching the structure while it moves:
 A move is only allowed if the whole structure is still one connected piece
 afterwards, so nothing ever floats free.
 
-Bots fill a target shape from the bottom layer up. A movable bot crawls over
+Bots fill a target shape from the bottom up: a target cell opens once the
+cell under it is filled (the readiness rule, see ready_cells). A movable bot crawls over
 the outside of the structure, following a distance field that leads towards
 the empty target cells, and stops once it reaches a target cell. Target cells
 stay filled; bots inside the target never move again. Once the shape is done,
 spare bots climb back down and park on the floor, ready for repairs.
 
-What is NOT local yet: the distance field and the "is everything still
-connected?" check are computed over the whole grid each tick. A real swarm
+What is NOT local here: the distance field and the "is everything still
+connected?" check are computed over the whole grid each tick (linking/learn/
+has local versions of both). A real swarm
 would need local versions of both (a hop-count gradient like Phase 2, and a
 local test for whether a bot is safe to remove). They are kept global here
 so the movement rules can be studied on their own.
@@ -42,6 +44,7 @@ FACE_LINKS = ndimage.generate_binary_structure(3, 1)
 ONE_MOVE = ndimage.generate_binary_structure(3, 2)
 
 GRID = (24, 16, 14)            # grid size in cells (x, y, z)
+KEEP_LEVEL = True              # readiness rule also waits for the neighbours below (see ready_cells)
 SIDEWAYS_CHANCE = 0.3          # chance of taking a move that doesn't get closer
 
 
@@ -219,6 +222,44 @@ def distance_field(occ, locked, goal):
     return dist
 
 
+# Horizontal neighbours only (the 4 cells around a cell in its own layer).
+FLAT_LINKS = np.zeros((3, 3, 3), dtype=bool)
+FLAT_LINKS[1, 1, 1] = FLAT_LINKS[0, 1, 1] = FLAT_LINKS[2, 1, 1] = FLAT_LINKS[1, 0, 1] = FLAT_LINKS[1, 2, 1] = True
+
+LEVEL_WINDOW = np.zeros((7, 7, 1), dtype=bool)
+LEVEL_WINDOW[:, :, 0] = True                 # 7x7 in one layer: 3 cells around, about Kilobot infrared range
+
+
+def ready_cells(target, locked):
+    """Target cells that are ready to be filled, decided cell by cell.
+
+    The readiness rule: a target cell is ready if
+    * it is on the floor, or
+    * the cell under it is part of the shape and already locked in, or
+    * the cell under it is NOT part of the shape (an overhang, like the deck
+      of a bridge) and a locked bot sits right beside it in the same layer;
+    * and (KEEP_LEVEL) every shape cell in the layer below within 3 cells is
+      filled, so no part of the shape runs far ahead of the rest.
+
+    Every test looks only at a cell's own neighbours, so a real bot (or the
+    cell's neighbours) could check it without knowing anything about the rest
+    of the structure. It still builds bottom-up within each column.
+    """
+    below_locked = np.zeros_like(locked)
+    below_locked[:, :, 1:] = locked[:, :, :-1]
+    below_target = np.zeros_like(target)
+    below_target[:, :, 1:] = target[:, :, :-1]
+    beside_locked = ndimage.binary_dilation(locked, structure=FLAT_LINKS) & ~locked
+    ready = np.where(below_target, below_locked, beside_locked)
+    if KEEP_LEVEL:
+        # don't run ahead: wait until the shape cells in the layer below, up to
+        # 3 cells around, are filled too
+        waiting = ndimage.binary_dilation(target & ~locked, structure=LEVEL_WINDOW)
+        ready[:, :, 1:] &= ~waiting[:, :, :-1]
+    ready[:, :, 0] = True
+    return target & ready
+
+
 class Swarm:
     """Holds the bots and the target, and runs one tick at a time."""
 
@@ -241,23 +282,33 @@ class Swarm:
 
     # -- which target cells are open for filling right now
     def goal_cells(self):
-        """Empty target cells in the lowest unfinished layer.
+        """Empty target cells that are ready to fill (see ready_cells).
 
-        Filling bottom-up means a hole always stays open from above, so a
-        bot can pivot down into it.
+        Each cell decides this by looking only at its own neighbours, so
+        there is no global "which layer are we on". Towers can grow at
+        different speeds, and a hole always stays open from above, because the
+        cell over it isn't ready until the hole is filled.
         """
-        empty_target = self.target & ~self.occ
-        layers = np.where(empty_target.any(axis=(0, 1)))[0]
-        if len(layers) == 0:
-            return empty_target
-        goal = np.zeros_like(empty_target)
-        z = layers[0]
-        goal[:, :, z] = empty_target[:, :, z]
-        # Only cells that touch the structure (or the ground) can be reached
-        # by crawling, so keep those.
+        goal = ready_cells(self.target, self.locked) & ~self.occ
+        if goal.any() or self.done():
+            return goal
+        # Shouldn't happen for a shape that stands on the floor; just in case,
+        # open every empty target cell that touches something.
         touching = ndimage.binary_dilation(self.occ, structure=FACE_LINKS)
         touching[:, :, 0] = True
-        return goal & touching if (goal & touching).any() else goal
+        return self.target & ~self.occ & touching
+
+    def settle(self):
+        """Lock any free bot already sitting on a target cell that is ready.
+
+        Bottom-up, so a column of free bots standing in the shape locks in one go.
+        """
+        for z in range(GRID[2]):
+            here = self.occ[:, :, z] & self.target[:, :, z] & ~self.locked[:, :, z]
+            if not here.any():
+                continue
+            ready = ready_cells(self.target, self.locked)[:, :, z]
+            self.locked[:, :, z] |= here & ready
 
     def damage(self, region):
         """Remove every bot inside `region` (a boolean grid). They're lost."""
@@ -359,14 +410,7 @@ class Swarm:
 
         if not building:
             return
-        # A free bot that happens to be sitting on a target cell at or below
-        # the layer being built is in place: lock it.
-        empty_target = self.target & ~self.occ
-        layers = np.where(empty_target.any(axis=(0, 1)))[0]
-        top = layers[0] if len(layers) else GRID[2] - 1
-        settled = self.occ & self.target
-        settled[:, :, top + 1:] = False
-        self.locked |= settled
+        self.settle()
 
 
 def run(shape="sheet", max_ticks=600, seed=0, damage_region=None, extra=12,

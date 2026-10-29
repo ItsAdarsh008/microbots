@@ -14,7 +14,7 @@ Kilobots never attached to each other; they just stopped next to each other on a
   - A pivot needs the corner cell it swings through to be empty.
   - No move may leave any bot without a chain of links to the floor. Nothing ever falls.
 - **All bots move at the same time.** A bot may only move into cells that were empty when the step began and that no other bot has claimed.
-- **Building:** the target is filled bottom layer first. Free bots crawl over the outside of the structure towards the empty target cells and lock in place when they arrive. Spare bots then climb down and park on the floor.
+- **Building:** the target is filled from the bottom up (a cell opens when the cell under it is filled). Free bots crawl over the outside of the structure towards the empty target cells and lock in place when they arrive. Spare bots then climb down and park on the floor.
 - **Repair:** cut part of the finished shape away. Anything no longer linked to the floor falls off. The spares crawl back up and rebuild.
 
 ## Clips
@@ -40,14 +40,14 @@ python linking/diagram.py                # redraws media/linking_moves.png
 
 Textbook: [Linking chapter](../textbook/L1-linking.md).
 
-## What is not local yet
+## What's local now
 
-Two parts are computed over the whole grid every step:
+The first version kept two things global so the move rules could be tested on their own. Both now have local versions (`learn/env.py` and the sandbox):
 
-1. **The distance field** that tells each bot which way to crawl. A real swarm would spread it as a hop-count gradient through the links, like Phase 2.
-2. **The "will anything fall?" check.** A real bot can only see its neighbours, so it needs a local test for whether it's safe to let go.
+1. **Which cells to fill next.** No more "lowest unfinished layer". A shape cell opens when the cell under it is filled (or, for an overhang, a locked bot sits beside it) and the shape cells in the layer below within 3 cells are filled. Each check looks only at nearby cells.
+2. **Will anything fall?** Each bot keeps a *holder*: one linked neighbour that holds it up, or the floor. A bot may only move once every bot it holds has switched to another holder whose chain still reaches the floor without it (checked by asking up the chain, at most 16 bots). It never dropped anything in any test, and costs some speed because it's more cautious than checking the whole structure.
 
-Both were kept global on purpose, so the move rules could be tested on their own. Replacing them with something local is the open problem, and it's where the learned policy could come in.
+Still global: the crawl map the hand-written rules use (the trained model uses a relayed signal and a compass instead), and the support-pillar planner.
 
 ## Combining this with the NPA work
 

@@ -10,7 +10,11 @@ move may leave anything unattached). What's new:
 * step(): one tick where a chooser picks each free bot's move. The chooser
   is either the hand-written rules (the teacher) or a trained network.
 
-The "will anything fall?" check is still global (is_connected).
+* the "will anything fall?" check is local too (SAFETY = "tree"): every bot
+  keeps a "holder", one linked neighbour (or the floor) that holds it up,
+  and a bot may only move if each bot it holds can switch to another holder
+  whose chain still reaches the floor without it.
+  See HolderTree. SAFETY = "global" uses the old whole-structure check.
 """
 
 import os
@@ -44,6 +48,10 @@ SIDEWAYS_CHANCE = L.SIDEWAYS_CHANCE
 # whether the local signal is what holds the network back).
 SIGNAL = os.environ.get("LINK_SIGNAL", "radio")
 RADIO = 2
+
+# "tree":   the local holder tree (HolderTree below)
+# "global": flood the whole structure after every move (the old check)
+SAFETY = os.environ.get("LINK_SAFETY", "tree")
 
 
 # ---------------------------------------------------------------- work signal
@@ -135,6 +143,168 @@ def frame_state(sw, goal, dist=None):
             "locked": sw.locked, "goal_cells": np.argwhere(goal)}
 
 
+
+# ---------------------------------------------------------------- local safety
+
+FLOOR = -2          # holder value meaning "held by the floor"
+EMPTY = -1
+REACH = 16          # how many holders up the chain a bot will ask before giving up ("not sure")
+
+
+class HolderTree:
+    """The local "will anything fall?" check (the browser sandbox has the same one).
+
+    Every bot keeps a holder: one linked neighbour that holds it up, or the
+    floor. Bots locked into the shape hang only from other locked bots, so
+    once a chain of holders reaches a locked bot (or the floor) it is anchored
+    for good. Following holders never loops, so every chain ends at an anchor.
+
+    * A free bot may move only if every bot it holds can switch to another
+      linked neighbour whose own chain reaches an anchor within REACH hops
+      without passing through the bot that's leaving. Finding out is a message
+      passed up the chain, one neighbour at a time. The bots it holds are
+      handed over one at a time, so one can hang from another that has
+      already been moved off it.
+    * After moving, a bot holds nobody, so it can take any linked neighbour
+      as its holder (a locked one if it can).
+    * Free bots switch to a neighbour with a shorter chain whenever there is
+      one (relax()), so chains stay short and more bots are free to move.
+
+    It is more cautious than checking the whole structure (a chain longer
+    than REACH counts as "not sure"), but it never lets anything drop.
+    """
+
+    def __init__(self, occ, locked):
+        self.holder = {}
+        self.fixed = set()             # locked bots whose chain is all locked bots: anchors
+        self.rebuild(occ, locked)
+
+    def anchored(self, c):
+        return self.holder.get(c) == FLOOR or c in self.fixed
+
+    def chain_length(self, c, avoid=()):
+        """Hops from c up its holders to an anchor, avoiding `avoid`; inf if not shown within REACH."""
+        for k in range(REACH + 1):
+            if c in avoid or c == EMPTY or c is None:
+                return float("inf")
+            if self.anchored(c):
+                return k
+            c = self.holder.get(c)
+        return float("inf")
+
+    def rebuild(self, occ, locked):
+        """Start from scratch: a wave up from the floor, locked bots first (like the Kilobot gradient)."""
+        self.holder, self.fixed = {}, set()
+        seeds = [tuple(c) for c in np.argwhere(locked & occ) if c[2] == 0]
+        for c in seeds:
+            self.holder[c] = FLOOR
+        for c in self._wave(locked & occ, seeds):
+            self.fixed.add(c)
+        floor_free = [tuple(c) for c in np.argwhere(occ & ~locked) if c[2] == 0]
+        for c in floor_free:
+            self.holder[c] = FLOOR
+        self._wave(occ, floor_free + list(self.fixed))
+
+    def _wave(self, members, seeds):
+        seeds = list(seeds)
+        for c in seeds:
+            for n in neighbours(c):
+                if members[n] and n not in self.holder:
+                    self.holder[n] = c
+                    seeds.append(n)
+        return seeds
+
+    def plan_leave(self, occ, p):
+        """If p can leave, [(bot it holds, new holder)]; otherwise None."""
+        todo = [n for n in neighbours(p) if occ[n] and self.holder.get(n) == p]
+        old = {n: self.holder[n] for n in todo}
+        plan = []
+        while todo:
+            left = []
+            for n in todo:
+                if n[2] == 0:
+                    plan.append((n, FLOOR)); self.holder[n] = FLOOR
+                    continue
+                best, best_len = None, float("inf")
+                for q in neighbours(n):
+                    if q != p and occ[q]:
+                        length = self.chain_length(q, (p, n))
+                        if length < best_len:
+                            best, best_len = q, length
+                if best is None:
+                    left.append(n)
+                else:
+                    plan.append((n, best)); self.holder[n] = best   # tentatively
+            if len(left) == len(todo):
+                break
+            todo = left
+        self.holder.update(old)                                     # put back; apply() makes it real
+        return None if len(plan) < len(old) else plan
+
+    def attach(self, occ, locked, c):
+        """Give the bot at c (holding nobody) a holder: an anchored locked one if it can."""
+        if c[2] == 0:
+            self.holder[c] = FLOOR
+            if locked[c]:
+                self.fixed.add(c)
+            return
+        nbrs = [q for q in neighbours(c) if occ[q]]
+        best = min(nbrs, key=lambda q: (q not in self.fixed, min(self.chain_length(q, (c,)), REACH + 1)))
+        self.holder[c] = best
+        if locked[c] and best in self.fixed:
+            self.fixed.add(c)
+
+    def apply(self, occ, locked, p, c, plan):
+        """p has moved to c (occ and locked already show it). Hand over p's bots, then attach c."""
+        for n, q in plan:
+            self.holder[n] = q
+        self.holder.pop(p, None)
+        self.fixed.discard(p)
+        self.attach(occ, locked, c)
+
+    def lock(self, occ, locked, cells):
+        """Newly locked bots move onto an anchored locked neighbour, lowest first."""
+        for c in sorted(cells, key=lambda c: c[2]):
+            self.settle_on_locked(occ, c)
+
+    def settle_on_locked(self, occ, c):
+        if c[2] == 0:
+            self.holder[c] = FLOOR
+            self.fixed.add(c)
+            return
+        for q in neighbours(c):
+            if occ[q] and q in self.fixed:
+                self.holder[c] = q
+                self.fixed.add(c)
+                return
+
+    def relax(self, occ, locked):
+        """Free bots switch to a neighbour with a shorter chain (one not running through themselves)."""
+        for c in map(tuple, np.argwhere(occ)):
+            if locked[c]:
+                if c not in self.fixed:
+                    self.settle_on_locked(occ, c)
+                continue
+            if c[2] == 0:
+                self.holder[c] = FLOOR
+                continue
+            best, best_len = self.holder.get(c), self.chain_length(c) - 1
+            for q in neighbours(c):
+                if occ[q]:
+                    length = self.chain_length(q, (c,))
+                    if length < best_len:
+                        best, best_len = q, length
+            self.holder[c] = best
+
+
+def neighbours(c):
+    x, y, z = c
+    for dx, dy, dz in FACES:
+        n = (x + dx, y + dy, z + dz)
+        if 0 <= n[0] < GRID[0] and 0 <= n[1] < GRID[1] and 0 <= n[2] < GRID[2]:
+            yield n
+
+
 # ---------------------------------------------------------------- one tick
 
 def legal_slots(sw, p, busy):
@@ -162,6 +332,10 @@ def rule_order(sw, p, slots, dist):
             ranked.append((dist[c] + sw.rng.random() * 0.1, s))
         elif dist[c] == here and sw.rng.random() < SIDEWAYS_CHANCE:
             ranked.append((dist[c] + 0.5, s))
+        elif getattr(sw, "stalls", 0) > 3 and sw.rng.random() < 0.3:
+            # unjam: after a few steps where nothing new got locked in, a bot
+            # may step backwards too, so a knot of bots can come apart
+            ranked.append((10**6 + sw.rng.random(), s))
     ranked.sort()
     return [s for _, s in ranked]
 
@@ -180,6 +354,10 @@ def step(sw, chooser, record=None):
     ctx = {"dist": L.distance_field(sw.occ, sw.locked, goal), "goal": goal}
     ctx["frame"] = frame_state(sw, goal, ctx["dist"])
     busy = sw.occ.copy()
+    if SAFETY == "tree":
+        if not hasattr(sw, "tree"):
+            sw.tree = HolderTree(sw.occ, sw.locked)
+        sw.tree.relax(sw.occ, sw.locked)
     free = np.argwhere(sw.occ & ~sw.locked)
     sw.rng.shuffle(free)
     moves = 0
@@ -191,13 +369,15 @@ def step(sw, chooser, record=None):
         obs = observe(ctx["frame"], p) if record is not None or chooser is not rule_chooser else None
         ctx["obs"] = obs
         taken = 0
+        plan = sw.tree.plan_leave(sw.occ, p) if SAFETY == "tree" else []
         for s in chooser(sw, p, slots, ctx):
-            if s == 0:
-                break                                  # chose to stay
+            if s == 0 or plan is None:
+                break                                  # chose to stay, or it's holding someone up
             kind, c, via = slots[s]
             sw.occ[p] = False
             sw.occ[c] = True
-            if L.is_connected(sw.occ):                 # nothing comes loose
+            ok = True if SAFETY == "tree" else L.is_connected(sw.occ)   # nothing comes loose
+            if ok:
                 bot = sw.id_at[p]
                 sw.id_at[p], sw.id_at[c] = -1, bot
                 sw.pos[bot] = c
@@ -207,6 +387,8 @@ def step(sw, chooser, record=None):
                 if goal[c]:
                     sw.locked[c] = True
                     goal[c] = False
+                if SAFETY == "tree":
+                    sw.tree.apply(sw.occ, sw.locked, p, c, plan)
                 break
             sw.occ[c] = False
             sw.occ[p] = True
@@ -216,13 +398,13 @@ def step(sw, chooser, record=None):
             for s in slots:
                 mask[s] = True
             record.append((obs, mask, taken))
-    # a bot standing on a target cell at or below the layer being built is in place
-    empty_target = sw.target & ~sw.occ
-    layers = np.where(empty_target.any(axis=(0, 1)))[0]
-    top = layers[0] if len(layers) else GRID[2] - 1
-    settled = sw.occ & sw.target
-    settled[:, :, top + 1:] = False
-    sw.locked |= settled
+    before = sw.locked.copy()
+    sw.settle()      # free bots standing on ready target cells lock in place
+    progress = int(sw.locked.sum()) > getattr(sw, "locked_before", 0)
+    sw.locked_before = int(sw.locked.sum())
+    sw.stalls = 0 if progress else getattr(sw, "stalls", 0) + 1
+    if SAFETY == "tree":
+        sw.tree.lock(sw.occ, sw.locked, list(map(tuple, np.argwhere(sw.locked & ~before))))
     return moves
 
 

@@ -74,10 +74,10 @@ So we can borrow NPA's structure (shared network, local perception) but our **ou
 A **multi-layer perceptron (MLP)** is the simplest neural network. It is just a few rounds of: multiply the inputs by a table of weights, add a bias, and squash out the negatives (a **ReLU**). For example:
 
 ```
-258 numbers in  →  [weights 258×128] → ReLU  →  [weights 128×128] → ReLU  →  [weights 128×19]  →  19 scores out
+262 numbers in  →  [weights 262×128] → ReLU  →  [weights 128×128] → ReLU  →  [weights 128×19]  →  19 scores out
 ```
 
-That's about 52,000 weights in total. Training is the process of nudging those 52,000 numbers.
+That's about 52,600 weights in total. Training is the process of nudging those 52,000 numbers.
 
 ---
 
@@ -87,7 +87,7 @@ When people say the **format**, they mean: exactly which numbers go in, in what 
 
 Here is the format this project will start with. Every number below is a starting choice, and all of it can change after talking to Kuan.
 
-### 3.1 Observation: 258 numbers per bot
+### 3.1 Observation: 262 numbers per bot
 
 | Part | Count | What it is |
 | --- | --- | --- |
@@ -95,6 +95,7 @@ Here is the format this project will start with. Every number below is a startin
 | Neighbourhood: part of the shape? | 125 | Same block: 1 if that cell belongs to the target shape. Like the Kilobots, every bot is given the shape map. |
 | Work signal | 7 | The "how far to the work" value at the bot's own cell and its 6 face neighbours (Part 4 explains how it becomes local) |
 | Own state | 1 | 1 if the bot is locked into the shape, 0 if it's free |
+| Compass | 4 | Direction to the nearest open shape cell, and how close it is, worked out from the shape map and the bot's own position (added later, see Part 7) |
 
 ### 3.2 Action: 19 slots
 
@@ -128,7 +129,7 @@ The distance map is computed over the whole grid. A real bot can't do that. The 
 
 That number is the "work signal" in the observation. It's not identical to the global distance map (it travels through bots, not empty air), so the trained policy has to cope with a noisier signal. That's part of what training is for.
 
-The "will anything fall?" check stays global for now. Making *that* local is a separate, harder problem, and it's honest to say so.
+The "will anything fall?" check was left global at first. Making *that* local is a separate, harder problem; Part 8 shows how it was done.
 
 ---
 
@@ -189,6 +190,69 @@ The lesson worth remembering: when a learned policy fails, test whether it's mis
 
 ---
 
+## Part 8: Making the rest local
+
+After Part 7, two things were still global: which cells are open for filling ("the layer being built"), and the "will anything fall?" check. Both are local now, in the Python environment and in the browser sandbox.
+
+### 8.1 Which cells to fill: the readiness rule
+
+Before, the whole swarm agreed on one number, the lowest unfinished layer. No real bot could know that. Now each shape cell decides for itself, by looking at nearby cells only. A cell is **ready** if:
+
+- it's on the floor, or
+- the shape cell under it is already filled, or
+- for an overhang (like a bridge deck, with nothing of the shape underneath), a filled bot sits beside it;
+- **and** every shape cell in the layer below, within 3 cells, is filled.
+
+The last line matters more than it looks. Without it, one tower of a dome races ahead of the support pillars inside, closes over the top, and the bots that still need to get inside can't. Looking 2 cells around fixed most runs; 3 cells (about the Kilobots' infrared range) fixed all of them.
+
+A nice side effect: different parts of the shape can grow at different speeds. With this rule alone (before the holder tree below), most browser shapes built faster than with one global layer, for example the long bridge in about 125 steps instead of 170 to 225.
+
+### 8.2 Will anything fall? The holder tree
+
+Every bot remembers one thing: its **holder**, one linked neighbour that holds it up (or the floor). Following holders from any bot leads, step by step, down to the floor, like a family tree with the floor at the root. Bots locked into the shape only ever hang from other locked bots, so once a chain reaches a locked bot it is safe for good.
+
+The rule for moving:
+
+1. A bot that holds nobody can always move.
+2. A bot that does hold someone must first hand each of them over to another neighbour. The new holder must be one whose own chain reaches the floor (or a locked bot) **without passing through the bot that wants to leave**.
+3. To find that out, the question is passed up the chain, one bot at a time, at most 16 bots. If the answer doesn't come back in time, the answer is "not sure", so the bot stays.
+4. After moving, the bot picks any linked neighbour as its new holder (a locked one if it can).
+5. Every step, bots switch to a neighbour with a shorter chain if there is one, so chains stay short.
+
+Why it's safe: before a bot leaves, nobody's chain runs through it any more, and every chain still ends at the floor. So nothing can come loose. In every test run, across every shape and both bot models, nothing ever did.
+
+The cost: it's more cautious than checking the whole structure. A bot sometimes stays put even though moving would have been fine, because it can't *prove* it locally. Builds take somewhat longer: in Python the rules build the arch in about 100 to 150 steps instead of 80 to 90, and the long bridge in the browser takes about 200 steps instead of 125.
+
+### 8.3 The arm model: swivelling in place
+
+With Kuan's arm links, a bot is only linked to the neighbours its arms point at (or that point at it), so many bots have just one link. Under the real-strength limit that caused the old jam: bots under a deck hung off each other in chains, and nobody could let go first.
+
+Two changes fixed most of it:
+
+- **Swivel:** a free bot may turn its arms to another axis without moving, as long as it stays linked to its holder and to every bot it holds. It picks the axis that links it to the most neighbours. More links means more ways to hand someone over, so fewer bots get stuck holding someone.
+- **Back off when jammed:** if nothing has been locked in for a while, hanging bots spend a few steps heading for the floor. The chains come apart from their free ends, and the bots try again.
+
+Result: arms plus real strength went from finishing 0 of 8 shapes to 7 of 8 every time. The big arch still jams in some runs.
+
+### 8.4 Broken bots: noticing repeated failure
+
+What if a bot's connector is faulty? It keeps getting placed, falling off, and getting replaced: the swarm would rebuild the same section forever without noticing. In the sandbox you can click a bot to break its grip and watch this happen.
+
+Two local rules catch it:
+
+- **Each bot counts its own falls.** A bot that has lost its grip twice decides it is broken and rolls off to a reject pad, where nobody uses it again. It knows this about itself, so no one else has to work it out.
+- **The bots around a spot count how often it has come apart.** If different bots keep failing at the same spot, the spot is the problem (a missing support, say), not the bot.
+
+The general idea, from fault-tolerant swarm robotics: **when the same work keeps getting undone, that repetition is the signal**. Blame the bot if it's the same bot every time, and the spot if it's a different bot every time.
+
+### 8.5 The training curve
+
+![Training curve](../media/linking_training.png)
+
+The blue line is the loss (lower means the network predicts the rules' move better). The orange dots show how often it picks the same move as the rules on decisions it never trained on. In the shaded DAgger rounds the loss jumps up, because new, harder data arrives: situations the network got itself into, which the rules never would. Agreement on the rules' own runs dips a little at the same time. What matters is that it builds, and it does: wall, arch and tower, every time.
+
+---
+
 ## Questions to ask Kuan
 
 1. Does your NPA code take one list of numbers per particle and output one action per particle? Could the output be "pick one of 19 moves" instead of a direction?
@@ -232,9 +296,21 @@ Training the network to copy the rules' choices from local observations. It's fa
 </details>
 
 <details>
-<summary>6. What part is still not local, even after this plan?</summary>
+<summary>6. What part is still not local?</summary>
 
-The "will anything fall?" check. It still looks at the whole structure.
+The crawl map the hand-written rules use (the trained model doesn't need it: it uses the relayed signal and the compass) and the support-pillar planner. The layer choice and the "will anything fall?" check are local now (Part 8).
+</details>
+
+<details>
+<summary>7. Why can't a bot move if it is someone's holder, even when moving would be safe?</summary>
+
+It only knows about its neighbours and what it can learn by asking up a chain of at most 16 bots. If it can't prove the bots it holds have another way down to the floor, it stays. Cautious, but it never drops anything.
+</details>
+
+<details>
+<summary>8. How does the swarm catch a bot with a faulty connector?</summary>
+
+The bot counts its own falls. After two, it decides it's broken and takes itself to the reject pad. If different bots keep failing at the same spot instead, the spot is the problem, not the bot.
 </details>
 
 ---
@@ -258,3 +334,8 @@ The "will anything fall?" check. It still looks at the whole structure.
 | PPO | A common, stable RL algorithm |
 | Hop-count gradient | A distance passed bot to bot, one more than the smallest neighbour's value |
 | NPA | Neural Particle Automata: one shared network in every particle, perceiving its neighbours |
+| Readiness rule | A shape cell opens for filling once the cells under it (and nearby in the layer below) are filled |
+| Holder | The one linked neighbour (or the floor) a bot counts on to hold it up |
+| Holder tree | Every bot's holder, together: chains that all lead down to the floor |
+| DAgger | Let the student drive, have the teacher label what it would have done, retrain |
+| Livelock | Bots busy moving but making no progress, like two people stepping the same way in a corridor |

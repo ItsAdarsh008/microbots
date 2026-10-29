@@ -5,6 +5,7 @@
 //   node run_shapes.js                       # all shapes, cubes then real render
 //   node run_shapes.js bridge,table arms 1   # some shapes, one model, strength limit on
 //
+// Then the truss bridge, then a broken-bot run (three bots with bad grips).
 // For each run: bots, support bots, steps to finish, whether it finished,
 // whether everything stayed attached at EVERY step, longest overhang, and
 // milliseconds per step (slower than the page, since connectivity is
@@ -51,6 +52,23 @@ const strength = process.argv[4] === "1";
     return out;
   });
   console.log("truss            ", JSON.stringify(t));
+  // broken bots: build the long bridge, break the grip of 3 deck bots, and
+  // check the shape still finishes, and where the broken bots end up: caught
+  // (retired after 2 falls) or resting harmlessly on the floor after 1
+  const f = await page.evaluate(([model, strength]) => {
+    playing = false; MODEL = model; V1 = strength;
+    document.getElementById("shape").value = "bridge"; reset();
+    let k = 0; while (!done() && k < 1500) { tick(); k++; }
+    const picked = [];
+    for (let b = 0; b < S.pos.length && picked.length < 3; b++) {
+      const i = S.pos[b];
+      if (S.alive[b] && zOf(i) === 7 && xOf(i) >= 26 + picked.length * 5) { S.faulty[b] = 1; picked.push(b); }
+    }
+    let t = 0; while (t < 1500 && !(done() && parked())) { tick(); t++; }
+    const grounded = picked.filter(b => !S.retired[b] && zOf(S.pos[b]) === 0).length;
+    return { broken: picked.length, caught: S.caught, restingOnFloor: grounded, stepsToSettle: t, finished: done(), falls: picked.map(b => S.falls[b]) };
+  }, [models[0], strength]);
+  console.log(`broken bots (${models[0]}${strength ? ", strength" : ""})`, JSON.stringify(f));
   console.log(errors.length ? "page errors: " + errors.join(" | ") : "no page errors");
   await browser.close();
 })();

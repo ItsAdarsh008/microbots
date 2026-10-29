@@ -353,3 +353,17 @@ On thin and branched shapes both global and local r=0.4 beat the baseline on hel
 Hypotheses:
 - H28: the poor pile result is mostly the overlapping random pile, not the pile idea: a well-spaced pile (what a real pile of non-overlapping bots would look like) should close most of the gap. Queued: global, local r=0.4, and local r=0.4 with 64-number broadcast, all on the thin-shape data (so their baselines are the v2 rows above).
 - H29: with a physically realisable start the local models need larger radius than from Gaussian noise (start is dense and nobody can see the shape's outline); to check once H28 results are in.
+
+## 2026-10-29 tick 12: unconditional replicated, 64-number broadcast on thin shapes
+
+Compute: 5 A100 GPUs, 9 of 10 job slots in use; boxes 1 and 2 had run dry and were refilled (see below).
+
+**Unconditional global, 60k iterations, replicated (2 seeds, v1 data):** one piece 0.992 and 0.992, holes 0.22 and 0.19 per shape (real 0.14), elongation 0.689 and 0.681 (real 0.675), collisions 0.06 and 0.05. H9 (the excess holes in the 30k run were under-training) now holds on two seeds.
+
+**Unconditional global on the thin-shape data (v2, 60k, 1 seed):** 99.6% in one piece, size and elongation match (0.676 vs 0.679), but 0.56 holes per shape against 0.30 for real shapes; real v2 shapes contain loops more often (trees), and generated ones show about twice as many gaps. Not examined shape by shape yet.
+
+**64-number broadcast on thin shapes, global model (v2, 1 seed):** familiar 1.49, held-out family 1.59, emoji 1.46 (full map: 1.41 / 1.47 / 1.42, two seeds; baseline with full map 1.71 / 1.96 / 1.60). Cost of cutting the broadcast from the full map to 64 numbers is about 0.1 on this harder set, and it still beats the no-learning baseline's held-out error by 19%.
+
+**New runs queued to fill idle slots:**
+- `s1_cond_local_r25_L4_60k` and `s1_cond_local_r25_L4_d384`: is the r=0.25 local gap on unseen shapes a training-length or capacity problem rather than a radius problem? (H30: no. Prior: 2 vs 4 rounds made no difference, and the r=0.4 model at the same size and length is fine.)
+- `s2pf_cond_local_r60_L4_pf` and `s2pf_cond_global_g8_pf`: well-spaced pile start with a larger radius and with a 64-number broadcast (H28/H29).

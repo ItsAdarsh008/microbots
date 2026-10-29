@@ -1,0 +1,8 @@
+params 3650470 cfg {"name": "s1d_cond_global_tn15", "cond": "map", "radius": null, "layers": 6, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "tnoise": 0.15}
+it 500 loss 0.0375 gn 0.61 lr 3.0e-04 35s
+it 1000 loss 0.0107 gn 0.51 lr 3.0e-04 70s
+it 1500 loss 0.0090 gn 0.21 lr 3.0e-04 104s
+it 2000 loss 0.0084 gn 0.27 lr 3.0e-04 138s
+it 2500 loss 0.0082 gn 0.56 lr 3.0e-04 173s
+it 3000 loss 0.0078 gn 0.21 lr 2.9e-04 207s
+it 3500 loss 0.0076 gn 0.28 lr 2.9e-04 241s

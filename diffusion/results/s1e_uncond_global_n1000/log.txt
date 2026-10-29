@@ -31,3 +31,36 @@ it 14500 loss 0.0122 gn 0.19 lr 1.6e-04 900s
 it 15000 loss 0.0123 gn 0.15 lr 1.5e-04 931s
 it 15500 loss 0.0121 gn 0.10 lr 1.5e-04 962s
 it 16000 loss 0.0122 gn 0.14 lr 1.4e-04 992s
+it 16500 loss 0.0120 gn 0.22 lr 1.3e-04 1023s
+it 17000 loss 0.0121 gn 0.10 lr 1.2e-04 1054s
+it 17500 loss 0.0119 gn 0.06 lr 1.2e-04 1085s
+it 18000 loss 0.0118 gn 0.12 lr 1.1e-04 1116s
+it 18500 loss 0.0118 gn 0.10 lr 1.0e-04 1147s
+it 19000 loss 0.0117 gn 0.09 lr 9.5e-05 1178s
+it 19500 loss 0.0116 gn 0.14 lr 8.8e-05 1209s
+it 20000 loss 0.0117 gn 0.12 lr 8.2e-05 1240s
+it 20500 loss 0.0116 gn 0.19 lr 7.5e-05 1271s
+it 21000 loss 0.0116 gn 0.12 lr 6.9e-05 1302s
+it 21500 loss 0.0116 gn 0.07 lr 6.3e-05 1333s
+it 22000 loss 0.0116 gn 0.08 lr 5.7e-05 1364s
+it 22500 loss 0.0116 gn 0.11 lr 5.2e-05 1395s
+it 23000 loss 0.0115 gn 0.06 lr 4.6e-05 1425s
+it 23500 loss 0.0114 gn 0.15 lr 4.1e-05 1456s
+it 24000 loss 0.0114 gn 0.10 lr 3.7e-05 1487s
+it 24500 loss 0.0115 gn 0.10 lr 3.2e-05 1519s
+it 25000 loss 0.0114 gn 0.16 lr 2.9e-05 1550s
+it 25500 loss 0.0113 gn 0.11 lr 2.5e-05 1581s
+it 26000 loss 0.0113 gn 0.05 lr 2.2e-05 1612s
+it 26500 loss 0.0114 gn 0.07 lr 1.9e-05 1643s
+it 27000 loss 0.0113 gn 0.14 lr 1.6e-05 1673s
+it 27500 loss 0.0113 gn 0.10 lr 1.4e-05 1705s
+it 28000 loss 0.0114 gn 0.11 lr 1.2e-05 1736s
+it 28500 loss 0.0113 gn 0.06 lr 1.1e-05 1767s
+it 29000 loss 0.0113 gn 0.15 lr 9.8e-06 1798s
+it 29500 loss 0.0113 gn 0.08 lr 9.2e-06 1829s
+it 30000 loss 0.0113 gn 0.10 lr 9.0e-06 1859s
+val {"noise": {"w2": 9.742, "inside": 0.309, "cover": 0.566, "coll": 0.063, "nn": 1.705, "skill": 0.0}, "K64": {"w2": 3.104, "inside": 0.727, "cover": 0.767, "coll": 0.09, "nn": 0.754, "skill": 0.681}}
+ood_family {"noise": {"w2": 7.081, "inside": 0.343, "cover": 0.594, "coll": 0.076, "nn": 1.496, "skill": 0.0}, "K64": {"w2": 3.165, "inside": 0.667, "cover": 0.619, "coll": 0.107, "nn": 0.664, "skill": 0.553}}
+emoji {"noise": {"w2": 8.77, "inside": 0.311, "cover": 0.548, "coll": 0.066, "nn": 1.66, "skill": 0.0}, "K64": {"w2": 3.521, "inside": 0.671, "cover": 0.695, "coll": 0.081, "nn": 0.746, "skill": 0.599}}
+stats connected {'gen': 0.9921875, 'real': 1.0} best_iou_train {'gen': 0.8503435850143433, 'real': 0.8523240089416504}
+done

@@ -44,6 +44,16 @@ def sample(model, x0, maps, K, traj=False):
     return (x, tr) if traj else x
 
 
+def init_noise(shape, g, cfg):
+    """Starting positions: Gaussian noise, or a compact pile (radius 0.7 at a random spot)."""
+    if cfg.get("start", "gauss") == "pile":
+        B, N = shape[0], shape[1]
+        c = torch.rand((B, 1, 2), generator=g) - 0.5
+        r = 0.7 * torch.sqrt(torch.rand((B, N, 1), generator=g)); th = torch.rand((B, N, 1), generator=g) * 2 * np.pi
+        return (c + r * torch.cat([th.cos(), th.sin()], -1)).to("cuda")
+    return (torch.randn(shape, generator=g) * cfg["sigma"]).to("cuda")
+
+
 def spacing(occ, n=256):
     return float(np.sqrt(occ.sum() * PX ** 2 / n))
 
@@ -146,7 +156,7 @@ def evaluate(model, cfg, D, out, log):
     for sname, S in sets.items():
         ref = np.stack([s[0] for s in S]); occ = np.stack([s[1] for s in S]); sdf = np.stack([s[2] for s in S])
         g = torch.Generator().manual_seed(7)
-        x0 = (torch.randn(ref.shape, generator=g) * cfg["sigma"]).to(dev)
+        x0 = init_noise(ref.shape, g, cfg)
         maps = make_maps(torch.tensor(occ, device=dev), torch.tensor(sdf, device=dev)) if cond else None
         sp = torch.tensor([spacing(o) for o in occ], device=dev)
         table = {}
@@ -176,7 +186,7 @@ def evaluate(model, cfg, D, out, log):
         ref = np.stack([s[0] for s in sets["val"]]); occ = np.stack([s[1] for s in sets["val"]]); sdf = np.stack([s[2] for s in sets["val"]])
         sh = np.roll(np.arange(len(ref)), 1)
         g = torch.Generator().manual_seed(7)
-        x0 = (torch.randn(ref.shape, generator=g) * cfg["sigma"]).to(dev)
+        x0 = init_noise(ref.shape, g, cfg)
         maps = make_maps(torch.tensor(occ[sh], device=dev), torch.tensor(sdf[sh], device=dev))
         K = max(cfg["eval_steps"])
         X = torch.cat([sample(model, x0[i:i + 64], maps[i:i + 64], K) for i in range(0, len(x0), 64)]).cpu().numpy()
@@ -188,7 +198,7 @@ def evaluate(model, cfg, D, out, log):
     # shape-level statistics: generated vs real descriptor distributions (works for every model)
     g = torch.Generator().manual_seed(11)
     n = 256
-    x0 = (torch.randn((n, 256, 2), generator=g) * cfg["sigma"]).to(dev)
+    x0 = init_noise((n, 256, 2), g, cfg)
     if cond:
         i0 = np.arange(n) % len(D["va_pts"])
         maps = make_maps(torch.tensor(D["va_occ"][i0], device=dev), torch.tensor(D["va_sdf"][i0], device=dev))
@@ -204,7 +214,8 @@ def evaluate(model, cfg, D, out, log):
                        w1=float(wasserstein_distance([d[k] for d in dg], [d[k] for d in dr])))
     stat["connected_frac"] = dict(gen=float(np.mean([d["ncomp"] == 1 for d in dg])), real=float(np.mean([d["ncomp"] == 1 for d in dr])))
     # memorisation: best IoU with a training shape (10k) vs the same for real val shapes
-    mt = torch.tensor(D["tr_occ"].reshape(len(D["tr_occ"]), -1) > 0.5, device=dev).float()
+    ntr = cfg.get("n_train", len(D["tr_occ"]))   # only the shapes this model was trained on
+    mt = torch.tensor(D["tr_occ"][:ntr].reshape(ntr, -1) > 0.5, device=dev).float()
 
     def best_iou(Xs):
         M = torch.tensor(np.stack([raster(x) for x in Xs]).reshape(len(Xs), -1), device=dev).float()
@@ -233,7 +244,7 @@ def evaluate(model, cfg, D, out, log):
     from PIL import Image
     ids = [i for i in range(len(D["em_pts"])) if D["em_names"][i] in ("star", "butterfly", "key", "snowflake")][:4]
     g = torch.Generator().manual_seed(3)
-    x0 = (torch.randn((len(ids), 256, 2), generator=g) * cfg["sigma"]).to(dev)
+    x0 = init_noise((len(ids), 256, 2), g, cfg)
     mp = make_maps(torch.tensor(D["em_occ"][ids], device=dev), torch.tensor(D["em_sdf"][ids], device=dev)) if cond else None
     _, tr = sample(model, x0, mp, 64, traj=True)
     frames = []

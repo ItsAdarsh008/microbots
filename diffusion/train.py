@@ -23,8 +23,8 @@ DEFAULT = dict(name="x", cond="map", radius=None, layers=6, d=192, heads=6, time
 
 class Pairs(torch.utils.data.IterableDataset):
     """Yields (shape index, aug code, noise, matched target) batches; matching done on the CPU."""
-    def __init__(s, pts, bs, sigma, ot, seed):
-        s.pts, s.bs, s.sigma, s.ot, s.seed = pts, bs, sigma, ot, seed
+    def __init__(s, pts, bs, sigma, ot, seed, start="gauss"):
+        s.pts, s.bs, s.sigma, s.ot, s.seed, s.start = pts, bs, sigma, ot, seed, start
 
     def __iter__(s):
         wi = torch.utils.data.get_worker_info()
@@ -38,7 +38,12 @@ class Pairs(torch.utils.data.IterableDataset):
                 x1[..., 0] *= -1
             for _ in range(k):
                 x1 = np.stack([-x1[..., 1], x1[..., 0]], -1)
-            x0 = rng.normal(size=x1.shape).astype(np.float32) * s.sigma
+            if s.start == "pile":   # a compact pile of radius 0.7 somewhere in the arena, like bots dropped together
+                c = rng.uniform(-0.5, 0.5, (s.bs, 1, 2)); r = 0.7 * np.sqrt(rng.uniform(size=x1.shape[:2] + (1,)))
+                th = rng.uniform(0, 2 * np.pi, x1.shape[:2] + (1,))
+                x0 = (c + r * np.concatenate([np.cos(th), np.sin(th)], -1)).astype(np.float32)
+            else:
+                x0 = rng.normal(size=x1.shape).astype(np.float32) * s.sigma
             if s.ot:
                 for b in range(s.bs):
                     C = ((x0[b][:, None] - x1[b][None]) ** 2).sum(-1)
@@ -91,7 +96,7 @@ def main(cfg_path):
         s = torch.load(ck, map_location=dev)
         model.load_state_dict(s["model"]); ema.load_state_dict(s["ema"]); opt.load_state_dict(s["opt"]); it0 = s["it"]
         log("resumed at", it0)
-    dl = torch.utils.data.DataLoader(Pairs(tr_pts, cfg["bs"], cfg["sigma"], cfg["ot"], cfg["seed"] + it0),
+    dl = torch.utils.data.DataLoader(Pairs(tr_pts, cfg["bs"], cfg["sigma"], cfg["ot"], cfg["seed"] + it0, cfg.get("start", "gauss")),
                                      batch_size=None, num_workers=10, prefetch_factor=4, persistent_workers=True)
     t_start, losses = time.time(), []
     total = cfg["iters"]

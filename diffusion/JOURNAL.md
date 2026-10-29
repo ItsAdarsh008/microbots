@@ -218,3 +218,36 @@ Caveat: the no-learning baseline cannot use these coarse maps, so it stays at it
 Hypotheses:
 - H19: local denoisers fall furthest behind global on v2 (thin arms hold fewer neighbours), so the radius needed will be larger there.
 - H20: if H13 holds for the local models too, the swarm needs one 64-number broadcast and nothing else; that is the cleanest statement of what the generative approach could give a physical swarm.
+
+## 2026-10-29 tick 8: radius plateau, unconditional local replicated, broadcast with local models, memorisation check fixed
+
+**Radius curve, last point.** Held-out family: r=0.6 1.16, r=0.8 1.22 (both 1 seed; global 1.12 and 1.14; baseline 1.31); r=0.8 gives 100% connected shapes and collisions 0.05. Error stops improving beyond about r=0.6, so about 6 particle spacings of sensing radius is where local ties global in this setup.
+
+**Replicated: unconditional local r=0.4.** Second seed: 95% of samples are one piece (first seed 95%), holes 0.27 (0.30), elongation 0.755 (0.758). Radius 0.25 gave 68%. Two seeds now support "radius lifts local unconditional connectivity from 68% to 95%". Samples remain rounder than real (elongation 0.755 vs 0.675), so local unconditional is not equal to global unconditional (elongation 0.67, 99% one piece).
+
+**Training-set size, conditional global, held-out family, 3,000 shapes:** 1.16 (val 1.24, emoji 1.40). The curve is flat from 10 to 10,000 shapes; seed spread about 0.15.
+
+**Unconditional, training-set size (1 seed each, global attention):**
+
+| shapes | one piece | holes (real 0.14) | elongation (real 0.675) | best overlap with a training shape: generated / real unseen |
+| --- | --- | --- | --- | --- |
+| 100 | 0.988 | 0.27 | 0.651 | 0.774 / 0.763 |
+| 1,000 | 0.992 | 0.26 | 0.671 | 0.829 / 0.823 |
+| 10,000 (60k iterations) | 0.992 | 0.22 | 0.689 | 0.865 / 0.856 |
+
+No sign of copying at any size, and the descriptor statistics are nearly the same at 100 and 10,000 shapes. H10 (the shape count matters for the unconditional task) is therefore **not supported**, but the descriptors I use may be too coarse to see a difference; I would not conclude that the shape distribution is learned equally well. (Also: after the 100-shape run showed 0.85 overlap I found my memorisation check compared against all 10,000 training shapes, not the ones the model was trained on. The numbers in the table come from the fixed check, `memo.py`; earlier `iou` columns for the 100- and 1,000-shape runs in `collect.py` are the old, wrong comparison and should be ignored. `evalm.py` is fixed for new runs.)
+
+**How little must be broadcast, local models (1 seed each; global with the same maps and full-map references in the earlier table):**
+
+| model | broadcast | familiar | held-out family | emoji | one piece |
+| --- | --- | --- | --- | --- | --- |
+| local r=0.25 | full map | 1.27, 1.29 | 1.63, 1.65 | 1.65, 1.68 | 0.95 |
+| local r=0.25 | 16 x 16 | 1.38 | 1.74 | 1.68 | 0.77 |
+| local r=0.25 | 4 x 4 | 1.50 | 1.83 | 1.83 | 0.84 |
+
+At r=0.25 a coarse map costs 0.1 to 0.2 in error and 10 to 20 points of connected shapes. The r=0.25 model was already the weak local setting; the r=0.4 (8x8) and r=0.6 (8x8) runs decide whether H20 holds for a swarm.
+
+Hypotheses:
+- H21: the unconditional task is not hard in the way the plan assumed: even a model trained on 100 shapes samples plausible compact shapes without copying. The difficulty will appear when the generator contains shapes that cannot be produced by a smooth average (the v2 thin-branch data) or when the target is specified by something other than a map.
+- H22: a swarm that starts as a pile (where real bots start) is a different problem from one that starts as scattered noise: paths from a compact pile to a shape are shorter, but particles start overlapping. Pile-start runs (global and local r=0.4) are queued. They also use the same evaluation (the chance row becomes the pile itself).
+- H23 (design): flow-matching sampling takes 4 steps as well as 64 (earlier tick); combined with pile starts this is the first thing that looks like a feasible bot controller: 4 to 8 rounds of communication-and-move.

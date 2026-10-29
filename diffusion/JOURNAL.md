@@ -148,3 +148,37 @@ Hypotheses:
 - H15: models trained with every particle on one shared clock are fragile to clock errors. Train each particle with its own noisy time (`tjit`; the target velocity is unchanged). Queued for global, local r=0.25 and local r=0.40; evaluated with `robust.py` afterwards.
 - H16: the global model's jitter fragility (collisions 0.22) is an artefact of attention across all particles reading many inconsistent clocks; the local models, which see fewer particles, are less affected (consistent with the table; one seed each).
 - H13 stays open: coarse-map runs on box 3 test how few numbers need broadcasting.
+
+## 2026-10-29 tick 6: no-clock global model, unconditional runs, training-set curve, rounds at r=0.4
+
+**Global model without a clock (1 seed):** val 1.35, held-out family 1.20, emoji 1.45, 99% connected shapes, collisions 0.05 (with clock: 1.24 and 1.33 / 1.14 and 1.12 / 1.40 and 1.41, collisions 0.03). Global attention does not need `t`. Local models without a clock broke apart (connected 0.07 at r=0.25, 0.61 at r=0.4). Reading (hypothesis, consistent with H5): the clock is only needed when a particle cannot see enough of the configuration to tell how far along it is; global attention sees all of it.
+
+**Rounds at r=0.4 (1 seed):** 2 rounds give val 1.27, held-out family 1.63, emoji 1.63, collisions 0.14; 4 rounds give 1.30 / 1.29 / 1.51 with collisions 0.04. At r=0.25 rounds made no difference (2 vs 4: 1.64 vs 1.63). So at a large radius two rounds are not enough; replicate queued.
+
+**Training-set size, conditional global model.** Held-out-family error, one entry per seed:
+
+| shapes | familiar | held-out family | emoji |
+| --- | --- | --- | --- |
+| 10 | 1.22 | 1.21 | 1.55 |
+| 100 | 1.35, 1.35 | 1.01, 1.17 | 1.33, 1.34 |
+| 1,000 | 1.26 | 1.11 | 1.32 |
+| 10,000 | 1.24, 1.33 | 1.14, 1.12 | 1.40, 1.41 |
+
+The two 100-shape seeds differ by 0.16 on held-out families, so my earlier remark that 100 shapes "beat" 10,000 was seed noise. What the table supports: between 100 and 10,000 shapes nothing visible changes for the map-conditioned task; 10 shapes are as good on familiar and held-out families but worse on emoji (1.55). Runs at 30, 300 and 3,000 are in progress to locate the knee.
+
+**Unconditional (the "noise to any shape" task), one seed each:**
+
+| run | one piece | holes per shape (real 0.14) | elongation (real 0.675) | collisions | solidity mean (real 0.956) | best overlap with a training shape (real 0.852) |
+| --- | --- | --- | --- | --- | --- | --- |
+| global, 30k iterations | 0.996 | 0.49 | 0.671 | 0.14 | 0.945 | 0.848 |
+| global, 60k iterations | 0.992 | 0.22 | 0.689 | 0.06 | 0.958 | 0.856 |
+| local r=0.25 | 0.676 | 0.55 | 0.797 | 0.05 | 0.885 | 0.799 |
+| local r=0.40 | 0.949 | 0.30 | 0.758 | 0.06 | 0.940 | 0.841 |
+
+- H9 (excess holes are under-training) is supported for the global model: doubling iterations roughly halves the holes (0.49 to 0.22) and collisions (0.14 to 0.06). One seed; replicate queued.
+- H12 (radius fixes local unconditional fragmentation) is supported by one seed: 68% to 95% of samples in one piece. Local samples remain rounder than real ones (elongation 0.76 vs 0.675). Replicate and a 60k run queued.
+- H8 (the unconditional model collapses towards compact blobs) is **not supported** by the one measure I have: real validation shapes are themselves compact (solidity 0.956, only 3% below 0.8) and the 60k global model matches that (0.958, 1%). The measure is blunt (it dilates the particles by twice the median spacing, which fills thin concavities), so thin arms could still be under-produced. No memorisation signal: best overlap with training shapes equals that of real validation shapes (0.856 vs 0.852).
+
+Hypotheses:
+- H17: with 10 training shapes the conditional model only fails on the shapes most unlike its training set (emoji), so the knee is around 30 to 100 shapes. Tested by the 30 and 300-shape runs in progress.
+- H18: a generator with more shapes that are long and thin or branched (low solidity) would be needed before the unconditional task can be called generalising; the current set is mostly compact by construction. Next: add a "skinny and branched" family and a held-out version of it.

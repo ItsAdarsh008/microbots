@@ -390,3 +390,28 @@ Compute: 5 A100 GPUs; this tick I loaded the one idle GPU (box 5) with repair-tr
 - So repair is not a free property of this sampler (unlike what the NPA work was trained for). H31: it has to be trained in.
 
 **What I built:** `damage_p` in the trainer: with that probability a batch starts from the shape with a contiguous chunk of bots removed (192 to 240 bots left, fewer than the 256 normally used), and the target is the same shape at that bot count, evenly spread. Three models queued on box 5 (global, local r=0.6, local r=0.4, all with damage_p = 0.5, v1 data). Evaluation: `repair.py` restarts the clock at 0 for these and also reports the old rewind variants. Prediction (to be tested, not a result): cover after repair rises above 0.9 while formation from scratch stays at 1.2 to 1.3 in error.
+
+## 2026-10-29 tick 14: CORRECTION to tick 13, well-spaced pile, local-gap controls
+
+**CORRECTION (tick 13).** That entry says the three repair-trained models were "queued on box 5". They were not: the connection to box 5 dropped ("Network is unreachable") during that step and I wrote the entry without checking. This tick found all five boxes idle for that reason, and the repair runs (`s3_*`) were queued and verified running only now.
+
+**Is the local gap at r=0.25 a training-length or size problem? (conditional, v1, held-out family; 1 seed each)** r=0.25 baseline run 1.63 and 1.65 (2 seeds); 60,000 iterations 1.52; hidden width 384 (4x the parameters) 1.54. Both controls help a little (about 0.1) and neither closes the gap to r=0.40 (1.29 and 1.25) or global (1.12 and 1.14). H30 is mostly supported: the gap is mainly a sensing-radius effect; training length and model size account for at most about a quarter of it.
+
+**Well-spaced pile start (bots begin evenly spread in a disc of radius 0.7, no overlaps; thin-shape data v2; 1 seed each).** Compared with the same models from Gaussian noise (v2: global 1.41 and 1.47 held-out; r=0.4 1.69; r=0.6 1.54):
+
+| model (pile start) | familiar | held-out family | emoji | collisions | one piece |
+| --- | --- | --- | --- | --- | --- |
+| global | 1.57 | 1.93 | 1.82 | 0.01 | 1.00 |
+| global, 64-number broadcast | 1.67 | 2.02 | 1.83 | 0.01 | 1.00 |
+| local r=0.40 | 1.73 | 2.13 | 1.82 | 0.00 | 1.00 |
+| local r=0.40, 64-number broadcast | 1.75 | 2.22 | 1.83 | 0.00 | 1.00 |
+| local r=0.60 | 1.71 | 2.11 | 1.86 | 0.00 | 1.00 |
+
+- H28 (the overlapping random pile was the problem) is **half right**: collisions drop from 0.20-0.27 to 0.00-0.01 and every shape stays in one piece, but error from a pile is still 0.4 to 0.6 worse on held-out shapes than from scattered noise, and a larger radius no longer helps (r=0.4 2.13, r=0.6 2.11). Going from a compact pile to a shape is a bigger global rearrangement (for a ring the bots must move outwards and leave the middle empty), not just local attraction.
+- **Baseline from the same start.** The no-learning rule (project onto the shape, then local repulsion) run for 200 steps from this pile gets 4.57 / 5.40 (familiar / held-out family) with 19 to 23% collisions: it has not finished spreading. I reran it with more steps (`classical_pile.py`): 600 steps 3.13 / 3.82, 1500 steps 2.03 / 2.42 with about 9% collisions. The learned global model reaches 1.51 / 1.79 in 8 steps and 1.57 / 1.93 in 64, with 1% collisions, so from a pile it is better than the baseline's 1500 steps by 0.4 to 0.5 in error and uses 190x fewer steps. Caveats: the baseline rule is untuned, and it scores cover 0.99 and inside 1.00 (it projects onto the shape) where the learned model gets cover 0.92 and inside 0.8 (about 20% of particles end more than half a spacing outside the shape). This is a 1-seed result.
+- My reading in the earlier tick that the pile results "tie the baseline" used the wrong reference (the Gaussian-start baseline). Corrected here.
+
+Hypotheses:
+- H32: pile-start difficulty is coordination, not sensing: a bigger model or longer training should help the global model if so (queued: global 60k iterations; seed replicates of global and local r=0.6).
+- H33: all the physical pieces together (pile start, 64-number broadcast, noisy clock, local radius 0.6) are within a factor 1.2 of the best Gaussian-start local model (queued: r=0.6, 8x8 broadcast, noisy clock training from a pile).
+- H31 (repair has to be trained in) is being tested: `s3_cond_global_dmg`, `s3_cond_local_r60_L4_dmg`, `s3_cond_local_r40_L4_dmg`, plus a pile-start and repair model.

@@ -78,10 +78,11 @@ Error is optimal-matching RMS distance to a reference sample of the shape, in pa
 
 Read, with what is replicated (2 seeds) marked:
 - A map-conditioned global model forms unseen shapes better than the no-learning baseline, with a third of its collisions. (2 seeds)
-- A local denoiser matches global on familiar shapes; on unseen shape families it needs a sensing radius of about 0.4 (about 5 particle spacings); 0.25 falls behind the baseline. Rounds do not help. (2 seeds)
-- Without a clock, shapes break up unless the radius is large; even then it is worse. (1 seed)
-- Number of training shapes (10 to 10,000) makes no visible difference for the map-conditioned task, within a seed spread of about 0.15; only the emoji get worse at 10 shapes. (mostly 1 seed per point)
-- The swarm needs very little broadcast: an 8x8 occupancy grid (64 numbers) is nearly as good as the full map for the global model; 4x4 is not. Local versions are running. (1 seed)
-- Local models need a clock (2 seeds); the global model does not (1 seed).
-- With no map at all, a global model makes plausible compact shapes; a local-only one fragments. (1 seed)
-- Headline error hides collision problems under clock jitter and asynchronous updates; see the robustness table in the journal.
+- A local denoiser matches global on familiar shapes; on unseen shape families it needs a sensing radius of about 0.4 to 0.6 (5 to 8 particle spacings); r=0.25 falls behind the baseline and bigger models or longer training help by only about 0.1. Rounds help at r=0.4 (2 seeds). (2 seeds)
+- Local models need a clock (2 seeds); the global model does not (1 seed). A noisy-clock training run removes the collision problem under clock errors (1 seed).
+- Number of training shapes (10 to 10,000) makes no visible difference for the map-conditioned task, within a seed spread of about 0.15 (mostly 1 seed per point).
+- The swarm needs very little broadcast: an 8x8 occupancy grid (64 numbers) costs about 0.1 in error for the global model (2 seeds) and the r=0.4 local model (2 seeds); a 4x4 grid is too coarse.
+- On thin branching shapes (trees, spiders) global and local r=0.4 both beat the no-learning baseline on held-out families (2 seeds each); spiders are the hardest family for every model.
+- Without a map, a global model makes plausible compact shapes (2 seeds at 60k iterations); a local-only one fragments at r=0.25 (1 seed) and mostly holds together at r=0.4 (2 seeds).
+- Physical constraints (1 seed): a hard-core spacing rule removes all collisions for 0.01 of error; a speed cap costs 0.2 from scattered noise but nothing from a pile. A well-spaced pile start gives zero collisions but forms held-out shapes 0.4 to 0.6 worse than scattered noise; against the no-learning baseline from the same pile (2.0 to 2.4 after 1500 steps) the learned model is better after 8 steps.
+- Self-repair is not free: rewinding the clock does not refill a cut chunk, and a model that keeps stepping without a clock collapses into a clump. Repair-trained models are running.

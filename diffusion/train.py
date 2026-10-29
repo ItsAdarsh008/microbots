@@ -38,7 +38,9 @@ class Pairs(torch.utils.data.IterableDataset):
                 x1[..., 0] *= -1
             for _ in range(k):
                 x1 = np.stack([-x1[..., 1], x1[..., 0]], -1)
-            if s.start == "pile":   # a compact pile of radius 0.7 somewhere in the arena, like bots dropped together
+            if s.start == "pile_fps":
+                x0 = evalm.pile_fps(rng, s.bs, x1.shape[1])
+            elif s.start == "pile":   # a compact pile of radius 0.7 somewhere in the arena, like bots dropped together
                 c = rng.uniform(-0.5, 0.5, (s.bs, 1, 2)); r = 0.7 * np.sqrt(rng.uniform(size=x1.shape[:2] + (1,)))
                 th = rng.uniform(0, 2 * np.pi, x1.shape[:2] + (1,))
                 x0 = (c + r * np.concatenate([np.cos(th), np.sin(th)], -1)).astype(np.float32)

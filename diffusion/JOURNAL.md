@@ -321,3 +321,35 @@ Hypotheses:
 Hypotheses:
 - H26: thin arms narrower than a few spacings fail because the 256 particles cannot resolve them (spacing vs arm width), not because of the architecture; test by giving the spiders more particles (N = 512) at test time with the same model (it handled 512 in the robustness test) (training at N = 512 would need the dataset rebuilt with 512 points per shape; not done).
 - H27: a pile start shortens the long-travel tail and removes the speed-cap cost; pile runs are in progress.
+
+## 2026-10-29 tick 11: thin shapes replicated, pile start, a naming mistake
+
+**Naming mistake.** `s2p_cond_global_pile`, `s2p_cond_local_r40_L4_pile` and `s2p_cond_global_pile_seed1` were queued without `"data":"shapes2"`, so they trained and were evaluated on the **original (v1) shapes**, despite the `s2` in their names; compare them with the v1 rows. `s2p_cond_local_r40_g8_pile` and `s2p_cond_local_r60_g8_pile` do use the thin-shape set (v2). Nothing was wrong with the numbers, only with my reading of the names. Also: a job failed because box 4 had no copy of the v2 data; copied and requeued.
+
+**Thin shapes (v2), replicated.** Error in spacings, baseline (full map) 1.71 familiar / 1.96 held-out family / 1.60 emoji:
+
+| model | familiar | held-out family | emoji | seeds |
+| --- | --- | --- | --- | --- |
+| global | 1.41, 1.47 | 1.47, 1.41 | 1.42, 1.42 | 2 |
+| local r=0.40 | 1.46, 1.50 | 1.69, 1.68 | 1.48, 1.53 | 2 |
+| local r=0.25 | 1.51 | 1.97 | 1.65 | 1 |
+
+On thin and branched shapes both global and local r=0.4 beat the baseline on held-out families (2 seeds each; global by 25 to 28%, local r=0.4 by 14%); local r=0.25 does not (1 seed).
+
+**Local r=0.4, 64-number broadcast, replicated (v1 data):** held-out family 1.38 and 1.43, familiar 1.36 and 1.39, 91 to 93% one piece. Versus the no-learning baseline with the *full* map: better on familiar shapes (1.37 vs 1.45), about 0.1 worse on held-out families (1.40 vs 1.31).
+
+**Pile start (a random pile of radius 0.7; 1 seed each; v1 data unless noted). Gaussian-start numbers from earlier ticks in brackets:**
+
+| model | familiar | held-out family | emoji | collisions |
+| --- | --- | --- | --- | --- |
+| global | 1.26 (1.24, 1.33) | 1.42 (1.14, 1.12) | 1.60 (1.40, 1.41) | 0.20 (0.03) |
+| local r=0.40 | 1.46 (1.30, 1.34) | 1.82 (1.29, 1.25) | 1.78 (1.51, 1.52) | 0.27 (0.04) |
+| v2 data: local r=0.40, 8x8 broadcast | 1.83 | 2.28 | 1.84 | 0.26 |
+| v2 data: local r=0.60, 8x8 broadcast | 1.77 | 2.17 | 1.81 | 0.27 |
+
+- The random pile is itself 23% collisions (Poisson clumps; bots cannot overlap like that), and the learned flow keeps them: collisions stay at 0.19 to 0.27 at every step count. The pile start is worse than Gaussian noise by 0.3 to 0.5 on held-out shapes, most for local models, and a coarse broadcast on top compounds it.
+- Physical sampler on the pile model (`physical.py`): the speed cap now costs nothing (error 1.32 with and without a cap of 1 spacing per step; mean path 6.1 spacings, vs 7.7 from Gaussian noise), which supports H27. Hard-core spacing (0.7) again removes all collisions for 0.01 of error. So pile + speed cap 0.5 spacings per step + 64 steps + hard-core = error 1.34, no collisions. This is the first complete set of physical constraints that works for the global model (1 seed).
+
+Hypotheses:
+- H28: the poor pile result is mostly the overlapping random pile, not the pile idea: a well-spaced pile (what a real pile of non-overlapping bots would look like) should close most of the gap. Queued: global, local r=0.4, and local r=0.4 with 64-number broadcast, all on the thin-shape data (so their baselines are the v2 rows above).
+- H29: with a physically realisable start the local models need larger radius than from Gaussian noise (start is dense and nobody can see the shape's outline); to check once H28 results are in.

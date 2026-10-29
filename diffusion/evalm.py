@@ -44,8 +44,26 @@ def sample(model, x0, maps, K, traj=False):
     return (x, tr) if traj else x
 
 
+def pile_fps(rng, B, N, R0=0.7):
+    """B well-spaced piles: N points chosen by farthest-point sampling from a uniform disc of radius R0,
+    centred at a random spot. Like bots dropped together: touching, never overlapping."""
+    cand = rng.uniform(-1, 1, (B, 1500, 2)); cand = cand[(cand ** 2).sum(-1) < 1].reshape(B, -1, 2) if False else cand
+    r = R0 * np.sqrt(rng.uniform(size=(B, 1500))); th = rng.uniform(0, 2 * np.pi, (B, 1500))
+    cand = np.stack([r * np.cos(th), r * np.sin(th)], -1)
+    idx = np.zeros((B, N), int); idx[:, 0] = rng.integers(1500, size=B)
+    d = ((cand - cand[np.arange(B), idx[:, 0]][:, None]) ** 2).sum(-1)
+    for k in range(1, N):
+        j = d.argmax(1); idx[:, k] = j
+        d = np.minimum(d, ((cand - cand[np.arange(B), j][:, None]) ** 2).sum(-1))
+    pts = cand[np.arange(B)[:, None], idx]
+    return (pts + rng.uniform(-0.5, 0.5, (B, 1, 2))).astype(np.float32)
+
+
 def init_noise(shape, g, cfg):
     """Starting positions: Gaussian noise, or a compact pile (radius 0.7 at a random spot)."""
+    if cfg.get("start", "gauss") == "pile_fps":
+        rng = np.random.default_rng(int(torch.randint(0, 2 ** 31 - 1, (1,), generator=g)))
+        return torch.tensor(pile_fps(rng, shape[0], shape[1])).to("cuda")
     if cfg.get("start", "gauss") == "pile":
         B, N = shape[0], shape[1]
         c = torch.rand((B, 1, 2), generator=g) - 0.5

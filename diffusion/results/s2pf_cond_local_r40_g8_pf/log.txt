@@ -1,0 +1,16 @@
+params 2465434 cfg {"name": "s2pf_cond_local_r40_g8_pf", "cond": "map", "radius": 0.4, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "coarse": 8, "start": "pile_fps"}
+it 500 loss 0.0391 gn 0.96 lr 3.0e-04 42s
+it 1000 loss 0.0192 gn 0.49 lr 3.0e-04 84s
+it 1500 loss 0.0156 gn 0.15 lr 3.0e-04 125s
+it 2000 loss 0.0143 gn 0.38 lr 3.0e-04 167s
+it 2500 loss 0.0128 gn 0.42 lr 3.0e-04 208s
+it 3000 loss 0.0123 gn 0.41 lr 2.9e-04 250s
+it 3500 loss 0.0120 gn 0.34 lr 2.9e-04 291s
+it 4000 loss 0.0119 gn 0.61 lr 2.9e-04 333s
+it 4500 loss 0.0115 gn 0.31 lr 2.8e-04 375s
+it 5000 loss 0.0105 gn 0.36 lr 2.8e-04 416s
+it 5500 loss 0.0105 gn 0.39 lr 2.8e-04 457s
+it 6000 loss 0.0104 gn 0.58 lr 2.7e-04 499s
+it 6500 loss 0.0102 gn 0.46 lr 2.7e-04 541s
+it 7000 loss 0.0101 gn 0.17 lr 2.6e-04 582s
+it 7500 loss 0.0102 gn 0.29 lr 2.6e-04 624s

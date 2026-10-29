@@ -367,3 +367,26 @@ Compute: 5 A100 GPUs, 9 of 10 job slots in use; boxes 1 and 2 had run dry and we
 **New runs queued to fill idle slots:**
 - `s1_cond_local_r25_L4_60k` and `s1_cond_local_r25_L4_d384`: is the r=0.25 local gap on unseen shapes a training-length or capacity problem rather than a radius problem? (H30: no. Prior: 2 vs 4 rounds made no difference, and the r=0.4 model at the same size and length is fine.)
 - `s2pf_cond_local_r60_L4_pf` and `s2pf_cond_global_g8_pf`: well-spaced pile start with a larger radius and with a 64-number broadcast (H28/H29).
+
+## 2026-10-29 tick 13: self-repair is not free; repair has to be trained in
+
+Compute: 5 A100 GPUs; this tick I loaded the one idle GPU (box 5) with repair-trained models (below).
+
+**New results.** Thin shapes (v2), local r=0.60: familiar 1.41, held-out family 1.54, emoji 1.56, 97% one piece, collisions 0.07 (1 seed). The radius trend on thin shapes: r=0.25 1.97, r=0.40 1.69 and 1.68 (2 seeds), r=0.60 1.54, global 1.47 and 1.41; baseline 1.96. Pile start (random pile, v1 data), global model, seed 1: 1.49 / 1.67 / 1.60 with collisions 0.20; seed 0 was 1.26 / 1.42 / 1.60 with 0.20. The pile result is noisy (0.25 between seeds) but both seeds are worse than Gaussian start on held-out shapes (1.12 and 1.14) and both keep 20% collisions.
+
+**Self-repair test (`repair.py`, no retraining; 64 val shapes; form the shape, then damage it; 1 seed per model). Cover = fraction of shape pixels with a particle within one spacing (spacing for the surviving particle count). Formed shapes: cover 0.90 to 0.93.**
+
+| model | damage | cover after damage | cover after rewinding the clock to 0.5 | collisions after: before / after |
+| --- | --- | --- | --- | --- |
+| global | cut a chunk (disc r=0.3), 204 bots left | 0.77 | 0.81 | 0.04 / 0.06 |
+| local r=0.40 | chunk | 0.78 | 0.75 | 0.06 / 0.09 |
+| local r=0.60 | chunk | 0.77 | 0.76 | 0.08 / 0.10 |
+| global | random 20% removed | 0.92 | 0.88 | 0.03 / 0.03 |
+| local r=0.40 | random 20% | 0.92 | 0.85 | 0.04 / 0.06 |
+| global, no clock | chunk, kept stepping | 0.75 | 0.14 | 0.07 / 0.97 |
+
+- Rewinding the clock does not refill a cut chunk (cover 0.75 to 0.81, no gain) and after a random 20% loss it makes things worse (0.92 to 0.85 to 0.88). The flow sends particles from noise to the shape; particles that are already on the shape get squeezed together instead of spread out.
+- The no-clock model is not stationary: stepping it past completion collapses the swarm into a clump (collisions 0.97, cover 0.14). So the "no clock" results above are results about forming a shape, not about holding one.
+- So repair is not a free property of this sampler (unlike what the NPA work was trained for). H31: it has to be trained in.
+
+**What I built:** `damage_p` in the trainer: with that probability a batch starts from the shape with a contiguous chunk of bots removed (192 to 240 bots left, fewer than the 256 normally used), and the target is the same shape at that bot count, evenly spread. Three models queued on box 5 (global, local r=0.6, local r=0.4, all with damage_p = 0.5, v1 data). Evaluation: `repair.py` restarts the clock at 0 for these and also reports the old rewind variants. Prediction (to be tested, not a result): cover after repair rises above 0.9 while formation from scratch stays at 1.2 to 1.3 in error.

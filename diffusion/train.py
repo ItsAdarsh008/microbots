@@ -21,10 +21,23 @@ DEFAULT = dict(name="x", cond="map", radius=None, layers=6, d=192, heads=6, time
                eval_steps=[4, 8, 16, 32, 64], n_eval=128)
 
 
+_AX = (np.arange(64) + 0.5) * (2 / 64) - 1
+
+
+def fps_occ(occ, n, rng):
+    """n well-spaced points on the shape given by a 64x64 occupancy map (rows = y, cols = x)."""
+    ys, xs = np.nonzero(occ > 0.5)
+    c = np.stack([_AX[xs], _AX[ys]], 1) + rng.uniform(-0.5, 0.5, (len(xs), 2)) * (2 / 64)
+    s = [int(rng.integers(len(c)))]; d = ((c - c[s[0]]) ** 2).sum(1)
+    for _ in range(n - 1):
+        j = int(np.argmax(d)); s.append(j); d = np.minimum(d, ((c - c[j]) ** 2).sum(1))
+    return c[s].astype(np.float32)
+
+
 class Pairs(torch.utils.data.IterableDataset):
     """Yields (shape index, aug code, noise, matched target) batches; matching done on the CPU."""
-    def __init__(s, pts, bs, sigma, ot, seed, start="gauss"):
-        s.pts, s.bs, s.sigma, s.ot, s.seed, s.start = pts, bs, sigma, ot, seed, start
+    def __init__(s, pts, bs, sigma, ot, seed, start="gauss", occ=None, damage_p=0.0):
+        s.pts, s.bs, s.sigma, s.ot, s.seed, s.start, s.occ, s.damage_p = pts, bs, sigma, ot, seed, start, occ, damage_p
 
     def __iter__(s):
         wi = torch.utils.data.get_worker_info()
@@ -38,7 +51,21 @@ class Pairs(torch.utils.data.IterableDataset):
                 x1[..., 0] *= -1
             for _ in range(k):
                 x1 = np.stack([-x1[..., 1], x1[..., 0]], -1)
-            if s.start == "pile_fps":
+            if s.damage_p and rng.random() < s.damage_p:
+                # repair batch: start from the shape with a contiguous chunk of bots removed (N' < 256 left);
+                # the target is the same shape at N' bots, evenly spread
+                Np = int(rng.integers(192, 241)); Dn = x1.shape[1] - Np
+                ob = s.occ[idx]
+                if flip:
+                    ob = ob[..., ::-1]
+                ob = np.rot90(ob, k, (1, 2))
+                x0 = np.empty((s.bs, Np, 2), np.float32); x1n = np.empty((s.bs, Np, 2), np.float32)
+                for b in range(s.bs):
+                    c = x1[b][rng.integers(x1.shape[1])]
+                    x0[b] = x1[b][np.argsort(((x1[b] - c) ** 2).sum(1))[Dn:]]
+                    x1n[b] = fps_occ(ob[b], Np, rng)
+                x1 = x1n
+            elif s.start == "pile_fps":
                 x0 = evalm.pile_fps(rng, s.bs, x1.shape[1])
             elif s.start == "pile":   # a compact pile of radius 0.7 somewhere in the arena, like bots dropped together
                 c = rng.uniform(-0.5, 0.5, (s.bs, 1, 2)); r = 0.7 * np.sqrt(rng.uniform(size=x1.shape[:2] + (1,)))
@@ -98,7 +125,7 @@ def main(cfg_path):
         s = torch.load(ck, map_location=dev)
         model.load_state_dict(s["model"]); ema.load_state_dict(s["ema"]); opt.load_state_dict(s["opt"]); it0 = s["it"]
         log("resumed at", it0)
-    dl = torch.utils.data.DataLoader(Pairs(tr_pts, cfg["bs"], cfg["sigma"], cfg["ot"], cfg["seed"] + it0, cfg.get("start", "gauss")),
+    dl = torch.utils.data.DataLoader(Pairs(tr_pts, cfg["bs"], cfg["sigma"], cfg["ot"], cfg["seed"] + it0, cfg.get("start", "gauss"), D["tr_occ"][:ntr], cfg.get("damage_p", 0.0)),
                                      batch_size=None, num_workers=10, prefetch_factor=4, persistent_workers=True)
     t_start, losses = time.time(), []
     total = cfg["iters"]

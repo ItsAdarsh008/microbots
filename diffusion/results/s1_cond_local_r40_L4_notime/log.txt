@@ -1,0 +1,14 @@
+params 2465434 cfg {"name": "s1_cond_local_r40_L4_notime", "cond": "map", "radius": 0.4, "layers": 4, "d": 192, "heads": 6, "time": false, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128}
+it 500 loss 0.0428 gn 0.44 lr 3.0e-04 22s
+it 1000 loss 0.0158 gn 0.27 lr 3.0e-04 43s
+it 1500 loss 0.0137 gn 0.31 lr 3.0e-04 64s
+it 2000 loss 0.0129 gn 0.44 lr 3.0e-04 84s
+it 2500 loss 0.0124 gn 0.44 lr 3.0e-04 105s
+it 3000 loss 0.0119 gn 0.32 lr 2.9e-04 126s
+it 3500 loss 0.0116 gn 0.35 lr 2.9e-04 147s
+it 4000 loss 0.0116 gn 0.39 lr 2.9e-04 168s
+it 4500 loss 0.0111 gn 0.26 lr 2.8e-04 189s
+it 5000 loss 0.0111 gn 0.33 lr 2.8e-04 210s
+it 5500 loss 0.0108 gn 0.21 lr 2.8e-04 231s
+it 6000 loss 0.0106 gn 0.27 lr 2.7e-04 251s
+it 6500 loss 0.0107 gn 0.13 lr 2.7e-04 272s

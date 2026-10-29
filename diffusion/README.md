@@ -54,3 +54,19 @@ runs/<name>/{result.json, samples.png, traj.gif, log.txt}   (on the GPU machines
 ```
 
 Run on the GPU boxes: `python shapes.py` once, then drop configs into `~/diffusion/queue/pending/` and start `python worker.py`.
+
+## Results so far (see JOURNAL.md for every entry and the caveats)
+
+Error is optimal-matching RMS distance to a reference sample of the shape, in particle spacings (floor about 0.7 to 0.8: two independent samples of the same shape). No-learning baseline with the map: 1.45 familiar, 1.31 held-out family, 1.60 emoji. Chance: 9.7 / 7.1 / 8.8.
+
+| Run | Familiar | Held-out family | Emoji | Connected | Seeds |
+| --- | --- | --- | --- | --- | --- |
+| global attention, with map | 1.24, 1.33 | 1.14, 1.12 | 1.40, 1.41 | 1.00 | 2 |
+| local r=0.25, 2 rounds | 1.29 | 1.64 | 1.68 | 0.92 | 1 |
+| local r=0.25, 4 rounds | 1.27 | 1.63 | 1.65 | 0.95 | 1 |
+| local r=0.15, 4 rounds | 1.33 | 1.70 | 1.71 | 0.75 | 1 |
+| local r=0.25, 4 rounds, no clock | 1.65 | 1.86 | 1.90 | 0.07 | 1 |
+| control: shuffled labels | 3.07 | 3.19 | 3.51 | 0.98 | 1 |
+| unconditional global | n/a (no target) | n/a | n/a | 0.996 | 1 |
+
+Read: a map-conditioned global model forms held-out shapes better than the no-learning baseline and with a third of its collisions (2 seeds); locality costs nothing on familiar shapes and about 0.5 spacings on unseen ones (1 seed each; replicate running); removing the clock breaks connectivity (1 seed); the unconditional global model makes plausible compact shapes with too many holes.

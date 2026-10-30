@@ -1213,3 +1213,8 @@ State: all five GPU boxes idle, 215 jobs finished in the queues, none failed, no
 - **Hugging Face:** a **private** repo `KuanKuanKuan/microbots-flow-swarm` with a model card, a manifest of all 215 runs (config and main metrics), the datasets (uploaded) and the weights (upload running at about 0.8 MB/s, an estimated 50 minutes in total). The local copies are to be deleted only after the Hub listing is checked against the local files.
 - **Everything else** is in git on `diffusion-swarm`: code, configs, per-run `result.json`, logs and pictures, the journal, `STAGE1_SUMMARY.md`, `STAGE2_PLAN.md`, `STAGE3_PLAN.md`.
 - All five boxes idle (no running, pending or failed jobs); the recurring check was stopped; the live demo only runs on box 3 (`129.213.24.52`).
+
+## 2026-10-30 tick 57: wind-down finished
+
+The weights upload completed. **Verified:** all 231 local files (215 weights, 4 dataset files plus the emoji silhouettes) are on the Hub with identical size and SHA-256 (0 missing, 0 mismatched); the repo is private. Then the local copies were deleted (as asked) and the temporary working folders cleared. The boxes were checked against the local copy earlier (217 of 217 files, matching sizes). Where things are: `WEIGHTS.md`. Left in git: code, configs, per-run results, logs, pictures, journal, summaries and plans. **Not saved anywhere:** optimizer states (so training cannot be resumed) and the full-size logs beyond `log.txt` per run.
+Mistake worth recording: a commit in this tick added three dataset files (190 MB) to git because the folder was not ignored; fixed with a follow-up commit that removes them from the tip. They remain in the branch history (a history rewrite was not done; it needs an explicit go-ahead).

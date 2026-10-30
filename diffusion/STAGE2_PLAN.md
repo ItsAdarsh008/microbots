@@ -14,6 +14,9 @@ Result: with at most 4 ports + 2 tips per bot the finished swarm links into a co
 - Add a bond-aware term to training or a final docking phase; compare. Decide whether the swarm should end in a triangular lattice rather than an even random spread (the training targets are random even samples, not lattices).
 - Repair with docked bots: a bot cannot just walk through a docked structure.
 
+## v1b (journal tick 54): flat structures
+In the plane a v1 bot has 4 usable connectors (2 in-plane ports + 2 tips); a rigid pin-jointed 2D frame needs 3.97 links per bot on average, so it is at the counting limit (greedy reached rank 0.93 to 0.98 of 2N-3). Rigid planar structures need the out-of-plane ports (3D) or bending-resistant joints. Design decision needed.
+
 ## v2: 3D (the `linking/` lattice work: slide and pivot moves, the floor, the cantilever limit); decide whether the learned flow is the planner for target cells there.
 
 ## Needed from the owner of the design

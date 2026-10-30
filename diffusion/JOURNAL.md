@@ -1181,3 +1181,20 @@ The big-cut repair model gives the same at 2.35 (connected 1.00, rank 1.00, 734 
 **What this does and does not show.** Graph-level feasibility only (seed 0 of each model; one run). It ignores arm geometry (the 100-degree arm cone, arms crossing, the 15-degree docking angles, whether an arm can physically reach the port that the greedy choice wants), assumes pin joints (the v1 note says squares and hexagons are rigid only with joints locked), and uses far more links than the minimum (about 4 per bot would suffice; the greedy uses 5.7). Also not tested: strength (3 N per connector is an assumption) and whether bots can dock in time. So: no evidence yet against a rigid linked structure, and no proof of one.
 
 **Next (Stage 2 version 2):** a docking geometry check (can the chosen links be made with arms in their allowed cone?) and a minimal-link, triangulated assignment; then the link-aware repair question (a bot cannot walk through a docked structure). A decision point for the owner of the design: 2D plane docking (no gravity) or move to the 3D lattice in `linking/`.
+
+## 2026-10-30 tick 54: a flat 2D structure of v1 bots is at the limit of rigidity by connector counting
+
+Same pipeline as tick 53 (composed v3 swarm at r=0.14, 32 rounds, touching bodies, greedy shortest-link assignment, rank of the 2D rigidity matrix against 2N - 3; 24 val shapes; seed 0), but with only the connectors that lie **in the plane**. A v1 bot has 2 arm tips (steerable) and 4 equatorial ports; if its pole axis lies in the plane, 2 of the 4 ports lie in the plane and 2 point up and down.
+
+| longest link | connectors per bot | links per bot | largest connected piece | rigidity rank / (2N-3) |
+| --- | --- | --- | --- | --- |
+| 1.6 bodies | 4 ports + 2 tips (the 3D count) | 5.12 | 1.00 | 1.00 |
+| 1.6 | **2 ports + 2 tips (flat)** | 3.69 | 1.00 | **0.93** |
+| 2.35 (arm reach) | 4 ports + 2 tips | 5.74 | 1.00 | 1.00 |
+| 2.35 | **2 ports + 2 tips (flat)** | 3.90 | 1.00 | **0.98** |
+
+**Counting argument (independent of the greedy algorithm):** a rigid pin-jointed 2D frame of N bots needs at least 2N - 3 links, i.e. an average of 3.97 per bot; a bot in the plane has at most 4 usable connectors, so only about 6 connector-ends in the whole swarm may stay unused. Boundary bots have fewer neighbours within reach, and the greedy run (which ignores the direction constraint of the 2 ports: they sit on opposite sides of the ball, so it is optimistic) stops at 0.93 to 0.98. So **a flat, pin-jointed rigid frame from v1 bots is at the edge of what the connector count allows; a rigid 2D structure effectively needs the out-of-plane ports (a second layer, i.e. 3D), or locked, bending-resistant joints**.
+
+**Caveats:** the greedy rule is not optimal (a smarter assignment may reach 1.00 at high reach, but the counting bound leaves almost no slack); the pin-joint model is conservative: the v1 note says the connector's teeth carry shear and twist (only bending is weak, about 15 mN·m per face), so a bending-resistant model would call fewer links rigid-enough; strength (3 N per connector) is an assumption. One run, seed 0.
+
+**Consequence for the plan:** for the bots as designed, the 6 connectors are a 3D count (Maxwell). A planar demonstration should either use the bots lying in a plane with a bending-resistant connector model (then a tree can already hold the shape) or go to 3D, where the `linking/` lattice work applies directly. This is a design question for the owner of the bot, not something training can fix.

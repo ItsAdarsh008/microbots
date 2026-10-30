@@ -17,7 +17,7 @@ SHORT, REACH = 1.2, float(os.environ.get('REACH', 2.35))
 def link(X, s):
     N = len(X); d = np.sqrt(((X[:, None] - X[None]) ** 2).sum(-1)); iu = np.triu_indices(N, 1)
     cand = [(d[i, j], i, j) for i, j in zip(*iu) if d[i, j] <= REACH * s]; cand.sort()
-    ports, tips = np.full(N, 4), np.full(N, 2); edges = []
+    ports, tips = np.full(N, int(os.environ.get('PORTS', 4))), np.full(N, int(os.environ.get('TIPS', 2))); edges = []
     for L, i, j in cand:
         if L <= SHORT * s:                                 # touching: port to port (a tip may stand in)
             ci = 'p' if ports[i] else ('t' if tips[i] else None); cj = 'p' if ports[j] else ('t' if tips[j] else None)
@@ -47,5 +47,5 @@ for K, vmax in ((32, 0.5),):
         k, lab = connected_components(csr_matrix(A)); big = np.bincount(lab).max() / 256
         rank = rigidity(X[i], edges); res.append((big, 2 * len(edges) / 256, rank / (2 * 256 - 3), len(edges)))
     r = np.mean(res, 0)
-    print(f"{run}: reach {REACH} bodies; rounds {K}, max step {vmax}, bodies touching; links limited to 4 ports + 2 tips per bot (24 val shapes)\n"
+    print(f"{run}: reach {REACH} bodies; rounds {K}, max step {vmax}, bodies touching; links limited to {os.environ.get('PORTS', 4)} ports + {os.environ.get('TIPS', 2)} tips per bot (24 val shapes)\n"
           f"   largest connected piece {r[0]:.2f} | mean links per bot {r[1]:.2f} | rigidity rank / (2N-3) = {r[2]:.2f} (1.00 = fully rigid) | links {r[3]:.0f}")

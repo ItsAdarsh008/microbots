@@ -13,3 +13,14 @@ it 5500 loss 0.0393 gn 0.32 lr 2.8e-04 454s
 it 6000 loss 0.0363 gn 0.86 lr 2.7e-04 496s
 it 6500 loss 0.0391 gn 0.41 lr 2.7e-04 537s
 it 7000 loss 0.0356 gn 0.42 lr 2.6e-04 578s
+it 7500 loss 0.0429 gn 0.31 lr 2.6e-04 620s
+it 8000 loss 0.0392 gn 0.30 lr 2.5e-04 661s
+it 8500 loss 0.0375 gn 0.77 lr 2.5e-04 703s
+it 9000 loss 0.0372 gn 0.39 lr 2.4e-04 744s
+it 9500 loss 0.0387 gn 0.30 lr 2.3e-04 785s
+it 10000 loss 0.0338 gn 0.26 lr 2.3e-04 827s
+it 10500 loss 0.0387 gn 0.25 lr 2.2e-04 868s
+it 11000 loss 0.0338 gn 0.61 lr 2.1e-04 909s
+it 11500 loss 0.0373 gn 0.10 lr 2.1e-04 951s
+it 12000 loss 0.0376 gn 0.67 lr 2.0e-04 992s
+it 12500 loss 0.0352 gn 0.12 lr 1.9e-04 1033s

@@ -1,0 +1,12 @@
+params 2465434 cfg {"name": "s13_r60_aux100_tn15", "cond": "map", "radius": 0.6, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "aux_in": 100.0, "aux_rep": 100.0, "tnoise": 0.15}
+it 500 loss 0.2279 gn 0.59 lr 3.0e-04 30s
+it 1000 loss 0.0558 gn 0.34 lr 3.0e-04 58s
+it 1500 loss 0.0515 gn 0.20 lr 3.0e-04 86s
+it 2000 loss 0.0494 gn 0.51 lr 3.0e-04 114s
+it 2500 loss 0.0495 gn 0.41 lr 3.0e-04 142s
+it 3000 loss 0.0439 gn 0.26 lr 2.9e-04 170s
+it 3500 loss 0.0445 gn 0.59 lr 2.9e-04 199s
+it 4000 loss 0.0467 gn 0.49 lr 2.9e-04 227s
+it 4500 loss 0.0396 gn 0.28 lr 2.8e-04 255s
+it 5000 loss 0.0427 gn 0.42 lr 2.8e-04 283s
+it 5500 loss 0.0405 gn 0.26 lr 2.8e-04 312s

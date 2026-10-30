@@ -1,0 +1,17 @@
+params 3650470 cfg {"name": "s6_global_aux_in100_rep100_seed1", "cond": "map", "radius": null, "layers": 6, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 1, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "aux_in": 100.0, "aux_rep": 100.0}
+it 500 loss 0.2261 gn 0.39 lr 3.0e-04 27s
+it 1000 loss 0.0518 gn 0.54 lr 3.0e-04 52s
+it 1500 loss 0.0470 gn 0.41 lr 3.0e-04 78s
+it 2000 loss 0.0448 gn 0.37 lr 3.0e-04 104s
+it 2500 loss 0.0400 gn 0.48 lr 3.0e-04 130s
+it 3000 loss 0.0445 gn 0.30 lr 2.9e-04 155s
+it 3500 loss 0.0428 gn 0.39 lr 2.9e-04 181s
+it 4000 loss 0.0441 gn 0.57 lr 2.9e-04 207s
+it 4500 loss 0.0386 gn 0.41 lr 2.8e-04 232s
+it 5000 loss 0.0387 gn 0.10 lr 2.8e-04 257s
+it 5500 loss 0.0409 gn 0.44 lr 2.8e-04 283s
+it 6000 loss 0.0413 gn 0.53 lr 2.7e-04 309s
+it 6500 loss 0.0369 gn 0.51 lr 2.7e-04 335s
+it 7000 loss 0.0386 gn 0.24 lr 2.6e-04 360s
+it 7500 loss 0.0398 gn 0.41 lr 2.6e-04 386s
+it 8000 loss 0.0392 gn 0.38 lr 2.5e-04 405s

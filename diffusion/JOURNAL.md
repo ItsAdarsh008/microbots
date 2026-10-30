@@ -917,3 +917,17 @@ Queued (tick 36), each changing one thing from the weight-100 local recipe (`s6_
 In clean conditions this model reaches `w2` 0.80, the floor, which means its placement is as good as an independent perfect sample. Weak spots: **clock errors** (not trained for: IoU 0.66 at the large setting) and a tight **speed cap from a scattered start** (the move averages 8 spacings and the far bots are capped; the pile start removes most of this). Asynchronous updates give 10% collisions. Motion noise and the bot count are fine. Hypothesis H50: noisy-clock training (as in the reference swarm) fixes the clock sensitivity at no cost in clean quality; `s13_r60_aux100_tn15` queued.
 
 Queued and running: 64-number broadcast at weight 100 (`s12_*`, radii 0.6 and 0.25, and an 16x16 grid), r=0.4 at weight 100, global weight 100 seed 1, no-clock (`s11_*notime`), offset pile and repair-in-training (`s11_*`), reference swarm at weight 100, r=0.25 at weight 100, weight 200.
+
+## 2026-10-30 tick 38: weight sweep saturated; switching from tuning to the open questions
+
+**Weight 200 (local r=0.6, 1 seed; 64-step protocol, val / held-out / emoji): 0.79 / 0.75 / 0.76**, against 0.78 / 0.74 / 0.75 at 100 and 0.77 / 0.73 / 0.73 at 50 (2 seeds each): the weight sweep has saturated (about +0.01 per doubling past 50); no more weight runs. **r=0.25 at weight 100: 0.77 / 0.72 / 0.73** (1 seed; weight 50: 0.76 / 0.70 / 0.72): a 2.5-spacing sensing radius is within about 0.03 of radius 0.6.
+
+**Open questions, each with its run** (none of these results are in yet; no claims until they are):
+- H50: noisy-clock training fixes the clock sensitivity of the best model (IoU 0.66 at clock error 0.25) at no cost when clean: `s13_r60_aux100_tn15`.
+- H51: with the geometric losses a local swarm no longer needs a shared clock (it did not before: 7% and 61% of shapes were connected): `s11_r60_notime_aux100`, `s11_r40_notime_aux100`.
+- H52: the offset-pile start no longer costs about 0.5 with these losses: `s11_r60_pfoffset_aux100`.
+- H53: repair batches still work at weight 100 and do not cost formation quality: `s11_r60_dmg_aux100`.
+- H54: a 64-number broadcast costs little at weight 100 (at weight 0 it cost about 0.1 in `w2`): `s12_r60_g8_aux100`, `s12_r60_g16_aux100`, `s12_r25_g8_aux100`.
+- H55: the whole recipe composed (64-number map, noisy clock, repair batches, centred pile, weight 100) at radii 0.4 and 0.25 keeps most of the quality; `s14_refv2_r40`, `s14_refv2_r25` queued now. This is the candidate "reference swarm v2" for Stage 2, to be tested end to end (travel and form, repair after a cut, clock jitter, speed cap, 128 to 512 bots) and looked at by eye, as the first reference swarm was.
+
+**Remaining known weaknesses (looked at by eye):** the butterfly's far wing and the key's ring end; fine outlines are fuzzier than the hand-written rule's; everything so far is 2D and fixed at 256 bots in training.

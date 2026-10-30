@@ -14,11 +14,11 @@ Written for someone who has not followed the journal. Every number is from `JOUR
 4. **Scales to more bots without retraining** (trained with 256; sensing kept fixed in spacings): well formed at 1024 and 2048 bots (1 model, 1 seed).
 5. **Collisions are removed by one local rule** (push apart pairs closer than 0.7 spacings): 0.00 collisions under motion noise and asynchronous updates (1 seed).
 6. **Repair has to be trained in** (cover 0.75 to 0.97 after a cut chunk at large range; 2 seeds); it costs about 0.01 of formation quality (2 seeds).
-7. **A shared swarm-density state improves repair at the shortest range** (cover 0.85 to 0.91; matched control 0.86; 2 seeds), partially.
+7. **Repair at the shortest range improves with more repair practice** (50% to 80% repair batches in training: cover 0.85 to 0.92; 2 seeds). A shared swarm-density state gave 0.91 against the 50% base (2 seeds, matched control 0.86), but that gain may be the same effect: the test with 80% repair batches plus the density state, and its control, is running (journal ticks 48 and 49).
 
 ## What does not work, or is not enough
 - A 64-number map costs 0.05 to 0.09 of held-out overlap from scattered noise (2 seeds); 256 numbers cost nothing (1 seed). Removing the shared clock gives undersized, skeletal shapes (2 seeds).
-- Repair of a large cut at short range is still incomplete (0.91 cover; the pictures show unfilled regions).
+- Repair of a large cut at short range is still incomplete (0.92 cover at best; the density-state pictures showed unfilled regions).
 - Motion noise is only handled with the hard-core rule. Everything is 2D with idealised moves (no arms, no docking, no link strength).
 
 ## Things that turned out wrong (kept in the journal)

@@ -1099,3 +1099,21 @@ Composed v3 swarm at r=0.14 (2.3 spacings, the v1 arm reach; 16x16 map; centred 
 - **Supported on 2 seeds with a matched control (H56):** the density state raises repair of a cut chunk from 0.85 to 0.91 cover; the same architecture fed another swarm's density gives 0.86 (base level), so the gain comes from information about this swarm. Formation is unchanged; the wrong-state swap barely changes formation error (1.11 to 1.14) but is what the repair relies on. This is the first shared-state result that survives a matched control, and it is in the case predicted in advance (a short-range bot cannot see a hole elsewhere).
 - **Looked at** (`repair_pics.png`: anchor, snowflake, thick B, thin S; cut, then repaired; rows base / control / density state): the base and the control leave the cut regions mostly empty; the density-state model fills part of them (a few bots reach the anchor's ring and the top of the B). **A partial improvement, not a full refill**: cover 0.91 is still far below the 0.97 that radius 0.6 reaches, and large cuts are visibly not repaired.
 - Not tried: a larger density grid, several rounds of density feedback, repair batches with larger cuts (`s18_*` with 80% repair batches and a 64-number map are running).
+
+## 2026-10-30 tick 49: CORRECTION to tick 48: more repair practice does what the density state did
+
+Composed v3 swarm at r=0.14 (2.3 spacings; 16x16 map; centred pile; noisy clock; weight 100). Repair test (cover after cutting a chunk of about 50 bots, before / after; 20% random loss for comparison):
+
+| model | cut chunk | 20% random loss | formation (val / held-out / emoji IoU) | seeds |
+| --- | --- | --- | --- | --- |
+| base (repair batches 50%) | 0.83 / 0.85 | 0.98 / 0.98 | 0.79 / 0.74 / 0.76 | 2 |
+| + swarm-density state (tick 48) | 0.84 / 0.91 | 0.98 / 0.98 | 0.79 / 0.74 to 0.75 / 0.76 to 0.77 | 2 |
+| matched control: density state from another swarm | 0.84 / 0.86 | 0.98 / 0.98 | | 1 |
+| **no shared state, repair batches 80%** | 0.84 / **0.92** | 0.98 / **0.99** | 0.78 / 0.74 / 0.76 | **2 (0.92 and 0.92)** |
+| no shared state, 64-number map, 50% | 0.82 / 0.83 | 0.97 / 0.96 | 0.76 / 0.68 / 0.71 | 1 |
+
+**CORRECTION.** Tick 48 reported the density state as the thing that improved repair of a cut chunk (0.85 to 0.91) and called it the first shared-state gain. The comparison base had only 50% repair batches in training. With 80% repair batches and **no shared state at all** the same model reaches 0.92 on both seeds. So the density-state gain is **at least partly (possibly entirely) explained by more repair practice**; the matched control I used (density from another swarm) controlled for parameters but not for this. Until the test below, "a shared state helps repair" is not supported beyond "it did not hurt".
+
+**The decisive pair, queued (all other settings identical):** repair batches 80% **with** the density state (seed 0 and 1) and its matched shuffled control, against 80% without it (0.92, 2 seeds). If the density state adds nothing above 0.92 it is not needed. Also queued: bigger cuts in training (the training cut removes at most 64 bots, the test removes about 50; `dmg_lo` 128 allows up to 128), 80%, two seeds.
+
+The 64-number map at the arm reach costs about 0.06 held-out overlap (0.68 vs 0.74) and repairs worse (0.83): a second data point against the small map.

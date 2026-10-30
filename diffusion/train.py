@@ -36,8 +36,8 @@ def fps_occ(occ, n, rng):
 
 class Pairs(torch.utils.data.IterableDataset):
     """Yields (shape index, aug code, noise, matched target) batches; matching done on the CPU."""
-    def __init__(s, pts, bs, sigma, ot, seed, start="gauss", occ=None, damage_p=0.0):
-        s.pts, s.bs, s.sigma, s.ot, s.seed, s.start, s.occ, s.damage_p = pts, bs, sigma, ot, seed, start, occ, damage_p
+    def __init__(s, pts, bs, sigma, ot, seed, start="gauss", occ=None, damage_p=0.0, dmg_lo=192):
+        s.pts, s.bs, s.sigma, s.ot, s.seed, s.start, s.occ, s.damage_p, s.dmg_lo = pts, bs, sigma, ot, seed, start, occ, damage_p, dmg_lo
 
     def __iter__(s):
         wi = torch.utils.data.get_worker_info()
@@ -54,7 +54,7 @@ class Pairs(torch.utils.data.IterableDataset):
             if s.damage_p and rng.random() < s.damage_p:
                 # repair batch: start from the shape with a contiguous chunk of bots removed (N' < 256 left);
                 # the target is the same shape at N' bots, evenly spread
-                Np = int(rng.integers(192, 241)); Dn = x1.shape[1] - Np
+                Np = int(rng.integers(s.dmg_lo, 241)); Dn = x1.shape[1] - Np
                 ob = s.occ[idx]
                 if flip:
                     ob = ob[..., ::-1]
@@ -132,7 +132,7 @@ def main(cfg_path):
         s = torch.load(ck, map_location=dev)
         model.load_state_dict(s["model"]); ema.load_state_dict(s["ema"]); opt.load_state_dict(s["opt"]); it0 = s["it"]
         log("resumed at", it0)
-    dl = torch.utils.data.DataLoader(Pairs(tr_pts, cfg["bs"], cfg["sigma"], cfg["ot"], cfg["seed"] + it0, cfg.get("start", "gauss"), D["tr_occ"][:ntr], cfg.get("damage_p", 0.0)),
+    dl = torch.utils.data.DataLoader(Pairs(tr_pts, cfg["bs"], cfg["sigma"], cfg["ot"], cfg["seed"] + it0, cfg.get("start", "gauss"), D["tr_occ"][:ntr], cfg.get("damage_p", 0.0), cfg.get("dmg_lo", 192)),
                                      batch_size=None, num_workers=10, prefetch_factor=4, persistent_workers=True)
     t_start, losses = time.time(), []
     total = cfg["iters"]

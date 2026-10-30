@@ -697,3 +697,19 @@ Hypotheses: H45, the learned flow's errors are mostly near the end (small displa
 **What the generative approach contributes, as measured so far:** fast coarse transport to the right region (16 steps instead of 1500), conditioning on a coarse 64-number map (the rule cannot use one), repair when trained for it, an unconditional mode, and a better start for the rule's refinement. It does **not** yet draw crisp shapes on its own.
 
 **Next (in order):** the five geometric-loss runs (`s6_*`) aimed at crisp edges and even spacing, judged by IoU and by looking at pictures; a letters and hand-drawn test set for all models; then, if a model reaches crisp outputs on its own, revisit shared state on that base.
+
+## 2026-10-29 tick 28: first geometric-loss model; shared-state controls finished
+
+**Geometric auxiliary losses (`aux_in` penalises where a bot would end up if it kept going outside the shape, `aux_rep` penalises crowding; weight 5 and 5), local r=0.6, thin shapes, scattered start, 1 seed.** Same protocol as the earlier IoU table (16 steps, footprint IoU, ceiling 0.79 / 0.78 / 0.83); emoji / held-out / familiar:
+
+| model | emoji | held-out | familiar | after 60 polish steps |
+| --- | --- | --- | --- | --- |
+| no-learning rule | 0.63 | 0.61 | 0.67 | |
+| local r=0.6 (plain) | 0.58 | 0.61 | 0.67 | 0.70 / 0.70 / 0.75 |
+| local r=0.6 + geometric losses | **0.63** | **0.65** | **0.70** | 0.71 / 0.70 / 0.76 |
+
+Looked at it (`aux_grid.png` in the scratchpad, next to the plain model and the rule): the ring now keeps its hole and reads as a band, the star is star-shaped, bots stay closer to the target; the outline is still fuzzy and thin parts (anchor loops, key ring, snowflake arms) are still lost. So: **a real but modest improvement, +0.03 to +0.05 IoU, up to the level of the no-learning rule and not past it; not crisp on its own.** The polished result is unchanged (0.70 to 0.71). Replicate and larger weights queued (`s6_r60_aux_in5_rep5_seed1`, `s6_r60_aux_in20_rep20`, `s6_global_aux_in20_rep20`, plus the reference-swarm setting `s7_ref_local_r60_aux5`). Other `s6` runs (global, weight 1 and 5) are still running.
+
+**Shared-state controls finished (held-out `w2`, one entry per seed; no-learning baseline here 1.97, 2.03, 2.01 on 3 seeds):** grid8 1.62, 1.64 vs its shuffled control 2.09; isab4x16 1.59, 1.59 vs control 1.87; mean64 1.75, 1.85 vs controls 1.83, 2.02; mean16 1.85. Precise reading: in `w2` the learned grid and four-token variants **do** beat their matched controls and the baseline on 2 seeds (so these `w2` gains are real and information-driven, not seed luck); the pooled vector does not beat its control. But `w2` is not shape quality: by IoU and by eye (tick 27) these variants show no visible improvement. So the finding is "shared state changes `w2`, not what the shapes look like", not "shared state does nothing in any sense".
+
+Hypotheses: H47, a stronger geometric weight (20) will tighten further but may trade off with fine structure; the wider test decides. H48, since polish equalises all models at 0.70 to 0.72, the useful split of labour is learned transport plus a local refinement rule, and the learned part should be trained for what the refinement cannot do (reaching far parts, topology).

@@ -477,3 +477,10 @@ Compute: 5 A100 GPUs, 10 job slots; three boxes had run dry and were refilled.
 Hypotheses and queued tests:
 - H37: a pile centred on the arena (not at a random offset) and a larger, sparser pile (radius 0.9) are easier because less transport is needed (queued: `s2pfc_*` and `s2pfr_*`, global and local r=0.60, thin shapes).
 - H32 (capacity or length) controls still running: wider network, 60k iterations, second seeds.
+
+## 2026-10-29 tick 18: pile plus repair training replicated
+
+Thin shapes, local r=0.60, well-spaced pile start, with repair batches (`damage_p` 0.5), held-out-family error: 2.01 and 2.00 (2 seeds); the same model without repair batches: 2.11 and 2.10 (2 seeds); familiar 1.63 and 1.61 vs 1.71 and 1.68; emoji 1.67 and 1.70 vs 1.86 and 1.86. Collisions 0.00. Training with damaged starts in the mix therefore does more than add repair: from a pile it improves formation by about 0.1 on held-out shapes and 0.17 on emoji (2 seeds).
+H38: the damaged-start batches teach the "refine a nearly formed shape" half of the flow, which the pile start needs at the end. Queued to test the dose and the model type: damage fraction 0.8 (local r=0.60) and a global model with repair batches from a pile.
+
+Still running: pile variants (centred pile, larger pile), wider network (d=384), 60k iterations (global and local), second seeds on v1 data, and r=0.40 second seed from a pile.

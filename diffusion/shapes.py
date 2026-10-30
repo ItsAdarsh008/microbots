@@ -14,7 +14,7 @@ import os
 import numpy as np
 from scipy import ndimage
 
-FAMILIES = ["blob", "discs", "strokes", "poly", "holey", "csg", "star", "annulus", "tree", "spider"]
+FAMILIES = ["blob", "discs", "strokes", "poly", "holey", "csg", "star", "annulus", "tree", "spider", "blocks"]
 BASE = ["blob", "discs", "strokes", "poly", "holey", "csg"]
 HELD_OUT = {"star", "annulus"}
 G = 128   # raster used for generation
@@ -153,7 +153,20 @@ def f_spider(rng):
     return m
 
 
-GEN = {"tree": f_tree, "spider": f_spider, "blob": f_blob, "discs": f_discs, "strokes": f_strokes, "poly": f_poly,
+def f_blocks(rng):
+    """Union of 2-5 rectangles (mostly axis-aligned, some rotated): T-, L-, E- and plus-like shapes. Not letters."""
+    m = np.zeros((G, G), bool)
+    c = rng.uniform(-0.3, 0.3, 2)
+    for _ in range(rng.integers(2, 6)):
+        c = np.clip(c + rng.uniform(-0.45, 0.45, 2), -0.7, 0.7)
+        w, h = rng.uniform(0.07, 0.5), rng.uniform(0.07, 0.8)
+        th = rng.choice([0, np.pi / 2]) if rng.random() < 0.75 else rng.uniform(0, np.pi)
+        u = (X - c[0]) * np.cos(th) + (Y - c[1]) * np.sin(th); v = -(X - c[0]) * np.sin(th) + (Y - c[1]) * np.cos(th)
+        m |= (np.abs(u) < w) & (np.abs(v) < h)
+    return m
+
+
+GEN = {"blocks": f_blocks, "tree": f_tree, "spider": f_spider, "blob": f_blob, "discs": f_discs, "strokes": f_strokes, "poly": f_poly,
        "holey": f_holey, "csg": f_csg, "star": f_star, "annulus": f_annulus}
 
 
@@ -262,10 +275,11 @@ if __name__ == "__main__":
     ap.add_argument("--n-val", type=int, default=512)
     ap.add_argument("--emoji", default="data/emoji_shapes")
     ap.add_argument("--v2", action="store_true", help="add thin branching families: tree (train), spider (held out)")
+    ap.add_argument("--v3", action="store_true", help="v2 plus a union-of-rectangles family (train)")
     a = ap.parse_args()
     from multiprocessing import Pool
-    train_fams = BASE + (["tree"] if a.v2 else [])
-    held = sorted(HELD_OUT | ({"spider"} if a.v2 else set()))
+    train_fams = BASE + (["tree"] if (a.v2 or a.v3) else []) + (["blocks"] if a.v3 else [])
+    held = sorted(HELD_OUT | ({"spider"} if (a.v2 or a.v3) else set()))
     with Pool(min(24, os.cpu_count())) as pool:
         tr = build(a.n_train, train_fams, 1_000_000, pool)
         va = build(a.n_val, train_fams, 2_000_000, pool)

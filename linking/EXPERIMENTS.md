@@ -144,6 +144,17 @@ Step counts from `sandbox/tests/run_shapes.js` (one run each) and `learn/evaluat
 | Parking: pad only | A few hundred spares never fit. Now with more bots, spares outside the shape stack on the floor or on parked spares; after 300 steps any still wandering stay put. |
 | Rendering | Over 2,500 bots the 3D view went blank (instance buffers were sized for 2,500); now 6,000. |
 
+**Spares leaving after a build.** Three runs each, steps until every spare is parked (cap 300, then the rest give up and stay put):
+
+| Tried | Result |
+| --- | --- |
+| Before: "stalled" while parking meant nothing moved at all | Spares kept shuffling, so the unjam (backward moves) never kicked in. Every run hit the 300-step cap. |
+| "Stalled" while parking = nobody new parked | The unjam kicks in. Normal-size bridge parks in 142–210 steps, dome 116–212. Table and arch (arms) still leave 2–16 perched spares. |
+| + peel from the outside: leave only when holding nobody and nothing on top | **Worse.** Most heaps deadlocked: the top spare often had no way down, so everyone under it waited forever (3x bridge: 365 spares never left). |
+| + peel from the top only, lifted when parking stalls (used) | About the same as without it: bridge 159–223, dome 160–274, 3x leaves 22–63 perched spares vs 27–61. It looks tidier, a heap coming apart from the top, but isn't measurably faster. |
+
+What really holds spares up is physical: most of the ones left are holding up another spare that has no other way down, so neither can move. Ordering who goes first doesn't change that.
+
 **Shapes that hang from above.** The "1" in the default text has a flag that hangs off the top bar, so nothing in it can ever be "ready" from below, and the build stalled (also before the readiness rule, 1 run in 2). When nothing is ready, cells next to a locked bot (face or edge) with no empty shape cell under them now open. "123" builds 3/3.
 
 **Training log.** `dagger.py` now writes `policy_log.json`; `plot_training.py` draws `media/linking_training.png`. Retrained on the local rules: Python wall/arch/tower 15/15 (arch 96–116 steps, rules 97–151).

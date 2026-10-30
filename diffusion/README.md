@@ -107,3 +107,7 @@ Everything above that says a learned model "beats the no-learning baseline" is *
 - **Known regression:** the same losses make wide hand-drawn T shapes worse for the global model (cover 1.00 to 0.56); a coverage penalty is being tested.
 - Older tables above that are in `w2` should be read with the correction at the top of the journal (tick 26): they compare learned variants with each other, not shape quality against the hand-written rule.
 - The demo (`demo/`) lists the best models, 52 letters and the emoji upright.
+
+### Update (journal tick 36)
+
+The geometric-loss weight keeps helping up to about 100: local radius 0.6 reaches footprint IoU 0.75 / 0.75 / 0.79 (emoji / held-out / familiar) against 0.58 / 0.61 / 0.67 without it and 0.63 / 0.61 / 0.67 for the hand-written rule (ceiling 0.79 / 0.78 / 0.83). On letters the weight-100 local model scores 0.76 (thick) and 0.70 (thin) against the rule's 0.59 and 0.56. The T-shape regression seen at weight 20 disappears at weight 100. With these losses a small sensing radius is nearly as good (radius 0.25 is about 0.03 below 0.6, 2 seeds at weight 20). Adding a union-of-rectangles shape family to the training data changed nothing. Weight 100 is still one seed per model; replicates are running.

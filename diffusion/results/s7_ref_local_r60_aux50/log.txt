@@ -50,3 +50,18 @@ it 24000 loss 0.0124 gn 0.09 lr 3.7e-05 1296s
 it 24500 loss 0.0157 gn 0.22 lr 3.2e-05 1323s
 it 25000 loss 0.0124 gn 0.08 lr 2.9e-05 1350s
 it 25500 loss 0.0133 gn 0.03 lr 2.5e-05 1377s
+it 26000 loss 0.0132 gn 0.04 lr 2.2e-05 1405s
+it 26500 loss 0.0122 gn 0.07 lr 1.9e-05 1432s
+it 27000 loss 0.0149 gn 0.15 lr 1.6e-05 1460s
+it 27500 loss 0.0123 gn 0.11 lr 1.4e-05 1487s
+it 28000 loss 0.0125 gn 0.13 lr 1.2e-05 1513s
+it 28500 loss 0.0138 gn 0.02 lr 1.1e-05 1541s
+it 29000 loss 0.0128 gn 0.13 lr 9.8e-06 1568s
+it 29500 loss 0.0132 gn 0.04 lr 9.2e-06 1595s
+it 30000 loss 0.0127 gn 0.04 lr 9.0e-06 1623s
+val {"noise": {"w2": 2.927, "inside": 0.631, "cover": 0.879, "coll": 0.0, "nn": 1.187, "iou": 0.484, "prec": 0.559, "rec": 0.702, "skill": 0.0}, "classical": {"w2": 1.944, "inside": 0.914, "cover": 0.883, "coll": 0.093, "nn": 0.818, "iou": 0.698, "prec": 0.782, "rec": 0.823, "skill": 0.336}, "K64": {"w2": 0.9, "inside": 0.94, "cover": 0.979, "coll": 0.003, "nn": 0.809, "iou": 0.758, "prec": 0.82, "rec": 0.894, "skill": 0.693}}
+ood_family {"noise": {"w2": 2.662, "inside": 0.604, "cover": 0.83, "coll": 0.0, "nn": 1.145, "iou": 0.435, "prec": 0.521, "rec": 0.654, "skill": 0.0}, "classical": {"w2": 1.953, "inside": 0.882, "cover": 0.844, "coll": 0.167, "nn": 0.74, "iou": 0.63, "prec": 0.766, "rec": 0.765, "skill": 0.266}, "K64": {"w2": 1.214, "inside": 0.886, "cover": 0.938, "coll": 0.006, "nn": 0.818, "iou": 0.666, "prec": 0.745, "rec": 0.835, "skill": 0.544}}
+emoji {"noise": {"w2": 2.734, "inside": 0.638, "cover": 0.862, "coll": 0.0, "nn": 1.076, "iou": 0.451, "prec": 0.547, "rec": 0.69, "skill": 0.0}, "classical": {"w2": 1.775, "inside": 0.914, "cover": 0.901, "coll": 0.061, "nn": 0.826, "iou": 0.686, "prec": 0.791, "rec": 0.831, "skill": 0.351}, "K64": {"w2": 0.976, "inside": 0.931, "cover": 0.972, "coll": 0.004, "nn": 0.811, "iou": 0.717, "prec": 0.792, "rec": 0.875, "skill": 0.643}}
+control wrong-map: w2 vs map fed 0.897 vs other shape 3.683
+stats connected {'gen': 0.9921875, 'real': 1.0} best_iou_train {'gen': 0.8429253101348877, 'real': 0.8245832920074463}
+done

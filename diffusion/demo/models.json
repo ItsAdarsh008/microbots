@@ -88,5 +88,15 @@
   "label": "Sensing radius 0.4 with geometric losses",
   "start": "noise",
   "note": "About 4 spacings of sensing."
+ },
+ "s6_r60_aux_in100_rep100": {
+  "label": "BEST: local radius 0.6, geometric losses weight 100",
+  "start": "noise",
+  "note": "Each bot senses about 6 spacings. Cleanest letters and emoji of the learned models so far (one training run)."
+ },
+ "s6_global_aux_in100_rep100": {
+  "label": "BEST: global attention, geometric losses weight 100",
+  "start": "noise",
+  "note": "All-to-all version of the same recipe."
  }
 }

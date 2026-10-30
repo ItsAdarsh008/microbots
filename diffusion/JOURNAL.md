@@ -869,3 +869,25 @@ Footprint IoU in the evaluator's protocol (64 steps; val / held-out / emoji; thi
 - Not yet checked this tick by eye: the weight-50 and r=0.25 models on the hand-drawn T/L/plus shapes and letters.
 
 Running: weight 100 (local, global), weight 50 + coverage 50 (local, global), reference swarm at weight 50, the rectangle-shapes data test (local, global), and now `s6_r25_aux_in50_rep50_seed1` and `s9_r25_in50_rep50_cov50`.
+
+## 2026-10-30 tick 36: weight 100; the rectangles data changes nothing; the T regression disappears at weight 100
+
+**Weight sweep, local r=0.6 / global (thin shapes, scattered start; 16 steps, fixed sets; footprint IoU emoji / held-out / familiar; ceiling 0.79 / 0.78 / 0.83; rule 0.63 / 0.61 / 0.67):** 0: 0.58 / 0.61 / 0.67 | 5: 0.63 / 0.65 / 0.70 | 20: 0.70 / 0.71 / 0.75 | 50: 0.74 / 0.74 / 0.77 | **100: 0.75 / 0.75 / 0.79** (local; global at 100 in protocol-64: 0.78 / 0.74 / 0.75 val / held-out / emoji, local 0.78 / 0.74 / 0.75). Weight 50 and 100 differ by about 0.01 to 0.02 (saturating); weight 100 is 1 seed per model (second seed, weight 200 and r=0.25 at weight 100 are running).
+
+**Letters (upright, 26 per font; ceiling 0.76; rule 0.59 thick / 0.56 thin):** local r=0.6 weight 100: **0.76 thick (at the ceiling), 0.70 thin**; weight 20: 0.71 / 0.64. Rendered: the weight-100 letters are tight and clean (the A keeps its hole; E, H, S, Z, B well formed), the best of any learned model; the rule's outline is still the crispest.
+
+**Hand-drawn shapes (inside / covered; one drawing each; 16 steps; 1 seed per model):**
+
+| shape | local, weight 20 | local, **weight 100** | global, weight 20 | global, **weight 100** |
+| --- | --- | --- | --- | --- |
+| fat T | 0.80 / 0.84 | **1.00 / 0.99** | 0.64 / 0.56 | **1.00 / 1.00** |
+| thin T | 0.71 / 0.78 | **1.00 / 0.99** | 0.48 / 0.38 | **1.00 / 0.99** |
+| disc, L, plus, ring | 0.99 to 1.00 | 0.99 to 1.00 | 0.99 to 1.00 | 1.00 |
+
+**The T-shape regression of tick 32 was a weight that was too low**, not a flaw of the idea: at weight 100 the T shapes form fully. (It also supports the coverage-penalty explanation only in part: a large "inside" weight alone is enough here. Whether coverage still adds anything at weight 100 is untested.)
+
+**Data attribution (matched pair; only the training data differs):** adding a union-of-rectangles family (boxy T, L, E, plus-like shapes; not letters) to the training shapes, weight 20, 1 seed each, changes nothing on the fixed test sets: emoji 0.70 vs 0.70, held-out 0.71 vs 0.71, familiar 0.74 vs 0.75, thick letters 0.71 vs 0.71, thin 0.63 vs 0.64; global the same within 0.01. **The loss weight, not the shape diversity, is what moved the results.** (Each is one seed; the differences are at the level of seed spread, so "no effect" means "no effect beyond 0.01 to 0.02".)
+
+**Reference swarm (pile start, 64-number map, noisy clock, repair) weight 50:** 0.76 / 0.67 / 0.72 (64-step protocol, val / held-out / emoji), zero collisions; weight 20: 0.74 / 0.65 / 0.70; weight 100 running.
+
+Demo: the weight-100 models are listed as BEST (restarted).

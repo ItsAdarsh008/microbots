@@ -54,3 +54,14 @@ it 26000 loss 0.0037 gn 0.05 lr 2.2e-05 2140s
 it 26500 loss 0.0037 gn 0.07 lr 1.9e-05 2181s
 it 27000 loss 0.0037 gn 0.05 lr 1.6e-05 2222s
 it 27500 loss 0.0035 gn 0.07 lr 1.4e-05 2263s
+it 28000 loss 0.0035 gn 0.08 lr 1.2e-05 2304s
+it 28500 loss 0.0035 gn 0.04 lr 1.1e-05 2346s
+it 29000 loss 0.0034 gn 0.05 lr 9.8e-06 2387s
+it 29500 loss 0.0035 gn 0.11 lr 9.2e-06 2428s
+it 30000 loss 0.0036 gn 0.07 lr 9.0e-06 2469s
+val {"noise": {"w2": 7.253, "inside": 0.505, "cover": 0.712, "coll": 0.0, "nn": 1.107, "skill": 0.0}, "classical": {"w2": 4.138, "inside": 1.0, "cover": 0.911, "coll": 0.23, "nn": 0.716, "skill": 0.429}, "K64": {"w2": 1.394, "inside": 0.865, "cover": 0.952, "coll": 0.001, "nn": 0.845, "skill": 0.808}}
+ood_family {"noise": {"w2": 6.197, "inside": 0.517, "cover": 0.621, "coll": 0.0, "nn": 0.972, "skill": 0.0}, "classical": {"w2": 4.813, "inside": 1.0, "cover": 0.892, "coll": 0.157, "nn": 0.758, "skill": 0.223}, "K64": {"w2": 1.735, "inside": 0.775, "cover": 0.923, "coll": 0.0, "nn": 0.934, "skill": 0.72}}
+emoji {"noise": {"w2": 6.795, "inside": 0.497, "cover": 0.676, "coll": 0.0, "nn": 1.076, "skill": 0.0}, "classical": {"w2": 4.641, "inside": 1.0, "cover": 0.879, "coll": 0.185, "nn": 0.736, "skill": 0.317}, "K64": {"w2": 1.826, "inside": 0.785, "cover": 0.911, "coll": 0.002, "nn": 0.897, "skill": 0.731}}
+control wrong-map: w2 vs map fed 1.379 vs other shape 3.141
+stats connected {'gen': 1.0, 'real': 1.0} best_iou_train {'gen': 0.8794093132019043, 'real': 0.8555002212524414}
+done

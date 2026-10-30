@@ -525,3 +525,22 @@ Hypotheses:
 **Repair batches with a global model from a pile (thin shapes, 1 seed):** 1.55 / 1.82 / 1.73 against 1.57, 1.62 / 1.93, 1.96 / 1.82, 1.84 without. Again about 0.1 better on held-out shapes, as for the local model (2 seeds); replicate queued.
 
 **Capacity, length, dose still running:** wider global model for 60k, wider local model, local 60k, repair share 0.8; centred-pile seed 1.
+
+## 2026-10-29 tick 21: centred pile and the two-phase swarm replicated; the reference swarm
+
+**Centred pile (thin shapes, 2 seeds). Familiar / held-out family / emoji; Gaussian-start numbers in brackets:**
+
+| model | centred pile | scattered noise (earlier) | offset pile (earlier) |
+| --- | --- | --- | --- |
+| global | 1.36, 1.31 / 1.40, 1.52 / 1.51, 1.35 | 1.41, 1.47 / 1.47, 1.41 / 1.42, 1.42 | 1.57, 1.62 / 1.93, 1.96 / 1.82, 1.84 |
+| local r=0.60 | 1.33, 1.34 / 1.53, 1.47 / 1.44, 1.45 | 1.41, 1.53 / 1.54, 1.59 / 1.56, 1.57 | 1.71, 1.68 / 2.11, 2.10 / 1.86, 1.86 |
+
+**H37 replicated (2 seeds, both models): a compact pile centred on the shape is as good as scattered noise; the cost of an offset pile is distance.**
+
+**Two-phase swarm (rigid travel to the shape's centre, then form with the centred-pile model), replicated.** Held-out-family error after travel: global 1.53 and 1.51; local r=0.60 1.80 and 1.79; versus the models trained on offset piles 1.93, 1.96 and 2.11, 2.10. Familiar shapes after travel: global 1.60, 1.55; local 1.84, 1.90 (offset-trained: 1.57, 1.62 and 1.71, 1.68). So travel-then-form is better on unseen shapes (0.4 for global, 0.3 for local) and roughly level on familiar ones. H39 is supported on 2 seeds.
+
+**Other replicates this tick:** v1 data, local r=0.60 from an offset pile 1.74 (2 seeds, both 1.74); local r=0.60 from an offset pile trained for 60k iterations 2.01 (1 seed; 2.10 to 2.11 at 30k).
+
+**Reference swarm for the hand-off to Stage 2 (queued).** One model with everything that worked: local radius 0.60, only a 64-number (8x8) broadcast, noisy-clock training (0.15), repair batches (50%), trained from a centred pile, thin-shape data. Two seeds local, one global as the upper bound. To be evaluated as a whole: formation after rigid travel, repair after cuts, clock jitter, speed cap and hard-core spacing, particle count change; against the no-learning rule from the same start.
+
+**Where Stage 1 stands.** The questions the ladder asked are answered at the level of 1 to 2 seeds: a flow-matching swarm forms unseen shapes from noise or a pile, local sensing needs a radius of about 0.6 (6 particle spacings), a 64-number broadcast is enough, repair needs to be trained in, a clock and a hard-core spacing rule are cheap fixes, and distance, not pile density, is what hurts from a pile. What remains is building the reference swarm and re-checking it end to end. After that, new sweeps would only fill in curves I understand; I propose to pause Stage 1 there and move to Stage 2, which needs the real bot numbers (diameter in particle spacings, top speed, sensing and communication radius, link strength).

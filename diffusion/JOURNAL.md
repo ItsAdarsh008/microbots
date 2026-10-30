@@ -461,3 +461,19 @@ Compute: 5 A100 GPUs, 10 job slots, all in use after this tick's refill.
 **Pile start plus repair (thin shapes, local r=0.60, well-spaced pile start, 1 seed).** Formation from the pile: 1.63 familiar / 2.01 held-out family / 1.67 emoji with collisions 0.00 (without repair training: 1.71 / 2.11 / 1.86). Repair test on it: cover after cutting a chunk 0.79 -> 0.97, after random 20% 0.92 -> 0.99, collisions 0.02 to 0.03. So repair from a physically realisable start works, and repair training did not hurt formation from the pile (slightly better, 1 seed; replicate queued).
 
 **Queued to separate "coordination" from "capacity or length" for the pile start (H32):** global model with hidden width 384 (4x the parameters), local r=0.60 at 60,000 iterations, local r=0.40 second seed, and a second seed of the pile-plus-repair model. Still running: global 60k from a pile (first look at the end of this tick), pile seed 1 replicates, v1-data pile runs, and the everything-physical run.
+
+## 2026-10-29 tick 17: pile-start cost replicated, localised to thin shapes, and the all-physical bundle
+
+Compute: 5 A100 GPUs, 10 job slots; three boxes had run dry and were refilled.
+
+**Pile start (well-spaced pile of radius 0.7 at a random spot), thin-shape data, replicated.** Held-out-family error, one entry per seed (Gaussian start in brackets): global 1.93 and 1.96 (1.47 and 1.41); local r=0.60 2.11 and 2.10 (1.54 and 1.59). The extra cost of starting from a pile is about 0.5 (2 seeds, both models). Collisions 0.00 to 0.01.
+
+**Where it is lost (`perfam.py`, global model from a pile, 1 seed):** star 1.32 (from Gaussian start 1.01), ring/annulus 1.63 (1.26), spider 3.07 (2.00) with 43% of the spider's bots ending outside the shape (inside 0.57). Spiders have thin legs reaching 0.5 to 0.9 out; from a compact pile the bots must be pushed out along each leg, from Gaussian noise they only have to be pulled in. H36: the pile cost is mostly an extrusion problem on thin, far-reaching parts, not a general slowdown.
+
+**Original-shape (v1) data, pile start (1 seed each; seed 1 queued).** Global 1.38 / 1.47 / 1.78 and local r=0.60 1.39 / 1.74 / 1.82 (familiar / held-out family / emoji), collisions 0.00 to 0.01, all shapes one piece. Gaussian start: global 1.24, 1.33 / 1.14, 1.12 / 1.40, 1.41; local r=0.60 1.31 / 1.16 / 1.45. So on blobby v1 shapes the pile costs about 0.3 to 0.6 on held-out ones, and radius matters again (r=0.60 is 0.27 worse than global from a pile).
+
+**Everything physical at once (local r=0.60, 64-number broadcast, noisy clock training, well-spaced pile, thin shapes; 1 seed):** 1.76 / 2.21 / 1.84, collisions 0.00. Compared with the same local model without broadcast and noisy clock (2.11, 2.10 held-out) the two extra physical pieces cost about 0.1. So H33 in its original form (within 1.2x of the best Gaussian-start local model: 2.21 vs 1.54 is 1.44x) is **not met**; the shortfall is almost all the pile start. Still, against the no-learning rule from the same start (2.0 to 2.4 after 1500 steps; 8x as many steps as 190 times more than the learned 8) the learned bundle is level.
+
+Hypotheses and queued tests:
+- H37: a pile centred on the arena (not at a random offset) and a larger, sparser pile (radius 0.9) are easier because less transport is needed (queued: `s2pfc_*` and `s2pfr_*`, global and local r=0.60, thin shapes).
+- H32 (capacity or length) controls still running: wider network, 60k iterations, second seeds.

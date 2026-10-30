@@ -65,8 +65,8 @@ class Pairs(torch.utils.data.IterableDataset):
                     x0[b] = x1[b][np.argsort(((x1[b] - c) ** 2).sum(1))[Dn:]]
                     x1n[b] = fps_occ(ob[b], Np, rng)
                 x1 = x1n
-            elif s.start == "pile_fps":
-                x0 = evalm.pile_fps(rng, s.bs, x1.shape[1])
+            elif s.start.startswith("pile_fps"):
+                x0 = evalm.pile_fps(rng, s.bs, x1.shape[1], **evalm.pile_opts(s.start))
             elif s.start == "pile":   # a compact pile of radius 0.7 somewhere in the arena, like bots dropped together
                 c = rng.uniform(-0.5, 0.5, (s.bs, 1, 2)); r = 0.7 * np.sqrt(rng.uniform(size=x1.shape[:2] + (1,)))
                 th = rng.uniform(0, 2 * np.pi, x1.shape[:2] + (1,))

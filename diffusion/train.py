@@ -90,6 +90,13 @@ def aug_maps(occ, sdf, k, flip):
     return occ, sdf
 
 
+def sdf_world(x, sd):
+    """signed distance (negative inside) of points x (B,N,2) from the (B,R,R) map sd, extended outside the box."""
+    c = x.clamp(-1, 1)
+    v = F.grid_sample(sd[:, None].float(), c[:, :, None, :].float(), mode="bilinear", padding_mode="border", align_corners=False)[:, 0, :, 0]
+    return v + (x - c).norm(dim=-1)
+
+
 def git_info():
     try:
         h = subprocess.check_output(["git", "rev-parse", "--short", "HEAD"], cwd=HERE, stderr=subprocess.DEVNULL).decode().strip()
@@ -156,6 +163,18 @@ def main(cfg_path):
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 v = model(xt, t_in, maps)
             loss = F.mse_loss(v.float(), x1 - x0)
+            if (cfg.get("aux_in") or cfg.get("aux_rep")) and cfg["cond"] == "map":
+                # geometric losses on where each bot would end up if it kept going: stay inside the shape, do not crowd
+                tt = t if t.dim() == 1 else t.mean(1)
+                x1h = xt + (1 - (t[:, None] if t.dim() == 1 else t))[..., None] * v.float()
+                w = (tt ** 2)
+                if cfg.get("aux_in"):
+                    loss = loss + cfg["aux_in"] * (F.relu(sdf_world(x1h, sd)) ** 2).mean(1).mul(w).mean()
+                if cfg.get("aux_rep"):
+                    spb = torch.sqrt(o.float().sum((1, 2)) * (2 / 64) ** 2 / x1h.shape[1])[:, None, None]
+                    dd = (x1h[:, :, None] - x1h[:, None]).norm(dim=-1)
+                    hinge = F.relu(0.8 * spb - dd) * (1 - torch.eye(x1h.shape[1], device=dev))
+                    loss = loss + cfg["aux_rep"] * (hinge ** 2).sum((1, 2)).div(x1h.shape[1]).mul(w).mean()
             opt.zero_grad(set_to_none=True); loss.backward()
             gn = torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()

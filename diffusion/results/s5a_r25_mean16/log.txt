@@ -18,3 +18,51 @@ it 8000 loss 0.0090 gn 0.20 lr 2.5e-04 358s
 it 8500 loss 0.0088 gn 0.24 lr 2.5e-04 381s
 it 9000 loss 0.0085 gn 0.22 lr 2.4e-04 403s
 it 9500 loss 0.0084 gn 0.19 lr 2.3e-04 426s
+it 10000 loss 0.0081 gn 0.13 lr 2.3e-04 448s
+it 10500 loss 0.0079 gn 0.07 lr 2.2e-04 470s
+it 11000 loss 0.0079 gn 0.11 lr 2.1e-04 484s
+it 11500 loss 0.0076 gn 0.25 lr 2.1e-04 498s
+it 12000 loss 0.0077 gn 0.14 lr 2.0e-04 513s
+it 12500 loss 0.0077 gn 0.18 lr 1.9e-04 528s
+it 13000 loss 0.0073 gn 0.17 lr 1.8e-04 543s
+it 13500 loss 0.0072 gn 0.19 lr 1.8e-04 558s
+it 14000 loss 0.0073 gn 0.08 lr 1.7e-04 573s
+it 14500 loss 0.0071 gn 0.20 lr 1.6e-04 590s
+it 15000 loss 0.0073 gn 0.25 lr 1.5e-04 607s
+it 15500 loss 0.0071 gn 0.11 lr 1.5e-04 620s
+it 16000 loss 0.0069 gn 0.05 lr 1.4e-04 634s
+it 16500 loss 0.0071 gn 0.05 lr 1.3e-04 648s
+it 17000 loss 0.0069 gn 0.09 lr 1.2e-04 662s
+it 17500 loss 0.0069 gn 0.06 lr 1.2e-04 676s
+it 18000 loss 0.0069 gn 0.06 lr 1.1e-04 690s
+it 18500 loss 0.0067 gn 0.05 lr 1.0e-04 704s
+it 19000 loss 0.0065 gn 0.11 lr 9.5e-05 718s
+it 19500 loss 0.0066 gn 0.13 lr 8.8e-05 732s
+it 20000 loss 0.0063 gn 0.18 lr 8.2e-05 746s
+it 20500 loss 0.0066 gn 0.08 lr 7.5e-05 760s
+it 21000 loss 0.0064 gn 0.14 lr 6.9e-05 774s
+it 21500 loss 0.0063 gn 0.18 lr 6.3e-05 788s
+it 22000 loss 0.0063 gn 0.11 lr 5.7e-05 802s
+it 22500 loss 0.0063 gn 0.04 lr 5.2e-05 816s
+it 23000 loss 0.0064 gn 0.08 lr 4.6e-05 830s
+it 23500 loss 0.0060 gn 0.09 lr 4.1e-05 844s
+it 24000 loss 0.0062 gn 0.09 lr 3.7e-05 858s
+it 24500 loss 0.0061 gn 0.06 lr 3.2e-05 872s
+it 25000 loss 0.0060 gn 0.11 lr 2.9e-05 886s
+it 25500 loss 0.0061 gn 0.07 lr 2.5e-05 900s
+it 26000 loss 0.0060 gn 0.12 lr 2.2e-05 914s
+it 26500 loss 0.0060 gn 0.06 lr 1.9e-05 928s
+it 27000 loss 0.0060 gn 0.08 lr 1.6e-05 942s
+it 27500 loss 0.0060 gn 0.06 lr 1.4e-05 956s
+it 28000 loss 0.0059 gn 0.12 lr 1.2e-05 970s
+it 28500 loss 0.0060 gn 0.08 lr 1.1e-05 984s
+it 29000 loss 0.0059 gn 0.15 lr 9.8e-06 998s
+it 29500 loss 0.0059 gn 0.06 lr 9.2e-06 1012s
+it 30000 loss 0.0059 gn 0.11 lr 9.0e-06 1026s
+val {"noise": {"w2": 10.52, "inside": 0.29, "cover": 0.53, "coll": 0.06, "nn": 1.831, "skill": 0.0}, "classical": {"w2": 1.711, "inside": 1.0, "cover": 0.992, "coll": 0.105, "nn": 0.754, "skill": 0.837}, "K64": {"w2": 1.422, "inside": 0.866, "cover": 0.922, "coll": 0.023, "nn": 0.79, "skill": 0.865}}
+ood_family {"noise": {"w2": 9.199, "inside": 0.294, "cover": 0.525, "coll": 0.063, "nn": 1.766, "skill": 0.0}, "classical": {"w2": 1.96, "inside": 1.0, "cover": 0.971, "coll": 0.093, "nn": 0.802, "skill": 0.787}, "K64": {"w2": 1.852, "inside": 0.782, "cover": 0.856, "coll": 0.022, "nn": 0.815, "skill": 0.799}}
+emoji {"noise": {"w2": 8.77, "inside": 0.311, "cover": 0.548, "coll": 0.066, "nn": 1.66, "skill": 0.0}, "classical": {"w2": 1.601, "inside": 1.0, "cover": 0.998, "coll": 0.08, "nn": 0.802, "skill": 0.817}, "K64": {"w2": 1.529, "inside": 0.826, "cover": 0.897, "coll": 0.02, "nn": 0.809, "skill": 0.826}}
+control wrong-map: w2 vs map fed 1.485 vs other shape 3.702
+control wrong shared state: w2 3.967 coll 0.076
+stats connected {'gen': 0.95703125, 'real': 1.0} best_iou_train {'gen': 0.8297828435897827, 'real': 0.8245832920074463}
+done

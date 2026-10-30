@@ -18,6 +18,7 @@ import torch
 from scipy import ndimage
 from scipy.optimize import linear_sum_assignment
 from scipy.stats import wasserstein_distance
+from scipy.spatial import cKDTree
 from model import make_maps as _make_maps, read_map
 
 COARSE = 0
@@ -109,7 +110,11 @@ def metrics(X, ref, occ, sdf):
     cover = float((dmin < 1.0 * sp).mean())
     D = np.sqrt(((X[:, None] - X[None]) ** 2).sum(-1)); np.fill_diagonal(D, 1e9)
     nn = D.min(1)
-    return dict(w2=w2, inside=inside, cover=cover, coll=float((nn < 0.35 * sp).mean()), nn=float(nn.mean() / sp))
+    # does it LOOK right: footprint of the bots (pixels within 0.7 spacings of a bot) against the target mask
+    d, _ = cKDTree(X).query(np.stack([gx[None, :].repeat(R, 0), gx[:, None].repeat(R, 1)], -1).reshape(-1, 2))
+    foot = (d < 0.7 * sp).reshape(R, R); tgt = occ > 0.5; inter = (foot & tgt).sum()
+    return dict(w2=w2, inside=inside, cover=cover, coll=float((nn < 0.35 * sp).mean()), nn=float(nn.mean() / sp),
+                iou=float(inter / max((foot | tgt).sum(), 1)), prec=float(inter / max(foot.sum(), 1)), rec=float(inter / max(tgt.sum(), 1)))
 
 
 def project(x, maps, iters=1):

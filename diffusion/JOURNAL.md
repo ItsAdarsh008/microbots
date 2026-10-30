@@ -640,3 +640,34 @@ Pre-registered rules (`GLOBAL_STATE_PLAN.md`): "helps" needs a gain of at least 
 **Predictions scored.** 1 (spatial beats pooled vector): wrong for the raw density grid (0.08), unresolved for the learned grid. 2 (mean16 about mean64): not scored (mean16 running). 4 (shuffled control shows no gain): **wrong** (0.17), which is exactly the case the control exists for. 5: not applicable yet.
 
 Hypotheses: H43, the benefit of an extra global path may mostly come from an added normalising or averaging channel (a mean over all nodes), not from swarm-specific information; the shuffled controls for grid8 and isab4x16 decide this. H44, isab's lower familiar-shape performance (1.55) with a better held-out score (1.59) suggests a different trade-off than the grid; per-family breakdown next.
+
+## 2026-10-29 tick 26: CORRECTION. I did not look at the outputs; when I did, the "beats the no-learning baseline" claim fell apart
+
+**What happened.** The user ran the demo and said the results were not good. I then rendered the models' outputs (`demo/render_grid.py`, `demo/render_vs_classical.py`; pictures in the scratchpad, not committed) and looked. Until then I had judged the models almost entirely by numbers (`w2`, inside, cover), looking at pictures only for a few runs.
+
+**What the pictures show.** On the real emoji shapes the trained models make fuzzy blobs of the right size and place. Thin features are lost (anchor, the key's ring, snowflake arms, the fish tail), parts are missing (butterfly wings, wrench ends), and bots spill over the boundary. The reference swarm (pile start, 64-number map) is no better and the snowflake becomes a disc. The no-learning rule (project onto the shape, spread by local repulsion, 200 steps) draws all eight shapes crisply, evenly spaced and in the right outline.
+
+**Why the earlier claim was wrong.** `w2` measures distance to one random evenly-spaced sample of the shape (floor about 0.8). The rule fills shapes evenly and densely along the outline, which a different sample does not match well, so `w2` ranked it behind the learned models; that ranking does not match how the shapes look. Every statement in this journal and README of the form "beats the no-learning baseline" (from tick 1 on) rests on `w2` and is **withdrawn as a statement about shape quality**. What stays: comparisons *between learned variants* by `w2` (radius, clock, broadcast size, pile start, repair, etc.) are internally consistent but have not been checked visually.
+
+**A metric that matches the eye** (`demo/iou_eval.py`): footprint IoU of the bots (pixels within 0.7 spacings of a bot) against the target mask. The ceiling (the data's own independent evenly spaced sample of the same shape): **0.79 emoji / 0.78 held-out family / 0.83 familiar**. Thin shapes, scattered start, 256 bots, 1 model per row, one seed:
+
+| method | emoji | held-out family | familiar |
+| --- | --- | --- | --- |
+| ceiling (perfect even sample) | 0.79 | 0.78 | 0.83 |
+| no-learning rule, 200 steps | 0.63 | 0.61 | 0.67 |
+| global attention, 16 steps | 0.64 | 0.59 | 0.70 |
+| global + 60 steps of the rule as polish | **0.71** | **0.69** | **0.76** |
+| local r=0.6 | 0.58 | 0.61 | 0.67 |
+| local r=0.6 + polish | **0.70** | **0.70** | **0.75** |
+| reference swarm (pile start, 64-number map) | 0.62 | 0.60 | 0.67 |
+
+- By overlap the learned models are **level with the rule, not better** (0.64 vs 0.63; 0.59 vs 0.61 held-out), and well below the ceiling (recall of the target shape is about 0.8 against 0.96 for the ceiling: parts of the shape are not covered).
+- **Learned transport followed by a short run of the rule is best** (+0.07 to +0.10 IoU over either alone, about 90% of the ceiling). Both pieces are local and swarm-realisable (the rule uses the map at the bot's own position and repulsion from near neighbours). One seed per row; not yet replicated.
+- The reference swarm with a 64-number map matches what the rule gets with the full-resolution map. That is a fair, narrower claim; it is not "better than the baseline".
+- The IoU metric is not perfect either (it punishes boundary bots), which is why the ceiling matters.
+
+**Changes made.** `iou`, `prec`, `rec` are now in every evaluation (`evalm.metrics`, shown in `collect.py`); older results lack them. New training option: geometric auxiliary losses on where each bot would end up if it kept going (penalise ending outside the shape, penalise crowding; `aux_in`, `aux_rep`), aimed directly at what the pictures show. Five runs queued (`s6_*`; global and local r=0.6; weights 1 and 5), to be judged by IoU **and by looking at the pictures**.
+
+Hypotheses: H45, the learned flow's errors are mostly near the end (small displacement errors count little in the velocity loss but matter for the outline), so endpoint-aware losses or polishing will help; H46, uneven spacing and bots outside the shape, not wrong placement of the bulk, are what makes the models look bad.
+
+**Process rule from now on:** every claim about shape quality is checked against rendered pictures of the same runs, side by side with the no-learning rule and the ceiling, before it goes in the journal.

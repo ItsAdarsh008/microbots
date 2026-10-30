@@ -750,3 +750,23 @@ By eye the learned models make **readable letters** (A, K, S, E, H, Z, B are cle
 2. The first letters run also started every model from scattered noise, including the reference swarm, which was trained from a centred pile. Its 0.31 was a broken test, not a model result. Fixed: each model now starts as it was trained.
 
 Demo: now has the letters (52 presets, thick and thin), upright emoji, 14 described models including the two geometric-loss models; restarted. Unlisted models stay hidden.
+
+## 2026-10-30 tick 30: the geometric-loss weight is the lever; first learned models that clearly beat the rule
+
+**Weight sweep, thin shapes, scattered start, same protocol (16 steps, footprint IoU; ceiling 0.79 / 0.78 / 0.83); emoji / held-out / familiar, 1 seed each unless noted:**
+
+| model | weight | emoji | held-out | familiar |
+| --- | --- | --- | --- | --- |
+| no-learning rule | | 0.63 | 0.61 | 0.67 |
+| local r=0.6 | 0 | 0.58 | 0.61 | 0.67 |
+| local r=0.6 | 5 (2 seeds: 0.63, 0.64 / 0.65, 0.65 / 0.70, 0.70) | 0.63 | 0.65 | 0.70 |
+| local r=0.6 | **20** | **0.70** | **0.71** | **0.75** |
+| global | 0 | 0.64 | 0.59 | 0.70 |
+| global | 5 | 0.66 | 0.64 | 0.70 |
+| global | **20** | **0.68** | **0.71** | **0.73** |
+
+- Error and IoU improve monotonically with the weight so far (0 -> 5 -> 20). **Looked at the pictures** (rows: rule, local plain / 5 / 20, global plain / 5 / 20, eight emoji, upright): the weight-20 models draw a recognisable anchor (ring, shank, arms), a ring with its stem, the wrench jaws and the six snowflake arms; the plain ones give blobs. Still fuzzier than the rule's outlines and the key's ring end is only partly formed; but this is the first time learned models are clearly better than the rule by overlap (+0.07 to +0.10 on emoji and held-out shapes) **and by eye**. Weight 20 is a single seed per model; the replicate (`s6_r60_aux_in20_rep20_seed1`) and higher weights (50) are running.
+- In the evaluator's own protocol (64 steps) weight 20 gives local IoU 0.74 / 0.70 / 0.69 and global 0.72 / 0.68 / 0.69 (val / held-out / emoji), against 0.69 / 0.63 / 0.64 at weight 5. Late-time emphasis alone (`tpow` 2) did not help: IoU 0.64 / 0.58 / 0.58 (plain 64-step reference unavailable; the weight-5 model is 0.69 / 0.63 / 0.64) and adding it to weight 5 changed nothing (0.69 / 0.64 / 0.64). H45 (the error is mostly at the end of the flow) is not supported as an explanation; the geometric penalty works by directly punishing bots outside and crowding.
+- Reference-swarm recipe (pile start, 64-number map, noisy clock, repair) with weight 5: IoU 0.71 / 0.61 / 0.66 (val / held-out / emoji, 64 steps), collisions 0.00 (1 seed; weight 20 version queued). Not directly comparable with the numbers above (different start and map).
+
+Still to do: replicate weight 20 (1 more seed), higher weights, which of the two penalty terms matters (ablations `in only`, `rep only` at weight 5 and 20 are running), the reference-swarm recipe at weight 20, letters and hand-drawn shapes for the weight-20 models, and a check of whether polish still equalises everything at the new level.

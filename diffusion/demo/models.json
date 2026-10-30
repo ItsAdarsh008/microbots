@@ -59,14 +59,14 @@
   "start": "noise",
   "note": "No map and local only: try several seeds."
  },
- "s6_r60_aux_in5_rep5": {
-  "label": "Local radius 0.6 + geometric losses (best local so far)",
+ "s6_r60_aux_in20_rep20": {
+  "label": "BEST: local radius 0.6 + strong geometric losses (weight 20)",
   "start": "noise",
-  "note": "Trained to stay inside the shape and not crowd. Visibly tighter than the plain local model."
+  "note": "Trained to stay inside the shape and not crowd, weight 20. The anchor, ring, wrench and snowflake are recognisable. Still fuzzier than the hand-written rule."
  },
- "s6_global_aux_in5_rep5": {
-  "label": "Global attention + geometric losses",
+ "s6_global_aux_in20_rep20": {
+  "label": "BEST: global attention + strong geometric losses (weight 20)",
   "start": "noise",
-  "note": "All-to-all attention with the same extra losses."
+  "note": "All-to-all attention with the same losses."
  }
 }

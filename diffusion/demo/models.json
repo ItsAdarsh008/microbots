@@ -60,13 +60,33 @@
   "note": "No map and local only: try several seeds."
  },
  "s6_r60_aux_in20_rep20": {
-  "label": "BEST: local radius 0.6 + strong geometric losses (weight 20)",
+  "label": "Local radius 0.6, geometric losses weight 20",
   "start": "noise",
   "note": "Trained to stay inside the shape and not crowd, weight 20. The anchor, ring, wrench and snowflake are recognisable. Still fuzzier than the hand-written rule."
  },
  "s6_global_aux_in20_rep20": {
-  "label": "BEST: global attention + strong geometric losses (weight 20)",
+  "label": "Global attention, geometric losses weight 20",
   "start": "noise",
   "note": "All-to-all attention with the same losses."
+ },
+ "s6_r60_aux_in50_rep50": {
+  "label": "BEST: local radius 0.6, geometric losses weight 50",
+  "start": "noise",
+  "note": "Each bot senses only about 6 spacings around it. Anchor, ring, wrench, snowflake and letters are recognisable. One training run."
+ },
+ "s6_global_aux_in50_rep50": {
+  "label": "BEST: global attention, geometric losses weight 50",
+  "start": "noise",
+  "note": "All-to-all version of the same recipe."
+ },
+ "s6_r25_aux_in20_rep20_seed1": {
+  "label": "Small sensing radius (0.25) with geometric losses",
+  "start": "noise",
+  "note": "About 2.5 spacings of sensing. Without the new losses this radius gave blobs; now it is close to radius 0.6."
+ },
+ "s6_r40_aux_in20_rep20_seed1": {
+  "label": "Sensing radius 0.4 with geometric losses",
+  "start": "noise",
+  "note": "About 4 spacings of sensing."
  }
 }

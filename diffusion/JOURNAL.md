@@ -808,3 +808,24 @@ The geometric losses help on emoji, letters and held-out families (mean over man
 **New penalty `aux_cov`** (sampled target pixels should have a bot nearby) added; runs queued on the best recipe: local weight 20 + coverage 20 and 5, global weight 20 + coverage 20. Still running: weight 50, reference swarm at weight 20, global weight-20 replicate, crowding-only at weight 5.
 
 Queued (tick 32, to keep every GPU busy and answer a hardware question): `s6_r25_aux_in20_rep20` and `s6_r40_aux_in20_rep20`, two seeds each: do the geometric losses remove the need for a large sensing radius? (Without them: r=0.25 is far behind r=0.6.) Judged by IoU and by pictures.
+
+## 2026-10-30 tick 33: weights 50, radius with geometric losses, reference swarm at weight 20
+
+**Geometric-loss weight, local r=0.6 / global (thin shapes, scattered start; 16 steps; footprint IoU emoji / held-out / familiar; ceiling 0.79 / 0.78 / 0.83; rule 0.63 / 0.61 / 0.67):**
+
+| weight | local r=0.6 | global |
+| --- | --- | --- |
+| 0 | 0.58 / 0.61 / 0.67 | 0.64 / 0.59 / 0.70 |
+| 5 | 0.63 / 0.65 / 0.70 (2 seeds) | 0.66 / 0.64 / 0.70 |
+| 20 | 0.70 / 0.71 / 0.75 (2 seeds, protocol-64: 0.74, 0.73 / 0.70, 0.69 / 0.69, 0.69) | 0.68 / 0.71 / 0.73 (2 seeds in protocol-64: 0.72, 0.71 / 0.68, 0.70 / 0.69, 0.69) |
+| **50** | **0.74 / 0.74 / 0.77** | **0.72 / 0.74 / 0.76** |
+
+Weight 50: **about 94% of the ceiling on held-out shapes**, 1 seed per model (second seed for local queued; weight 100 queued). Monotone in the weight so far. Rendered (eight emoji; scratchpad `w50_grid.png`): anchor, ring with stem, wrench, snowflake and star are recognisable; the butterfly's wings and the key's ring end are the weak spots; the hand-written rule is still crisper and has no such gaps.
+
+**Radius with geometric losses (weight 20; 16 steps; emoji / held-out / familiar; 1 seed each so far for r=0.25 and 0.4, seed 0 running):** r=0.25: 0.70 / 0.68 / 0.74; r=0.4: 0.71 / 0.70 / 0.74; r=0.6: 0.70 / 0.71 / 0.75. Without the losses r=0.25 was far behind r=0.6 (the old `w2` gap 1.97 vs 1.54). In IoU and in the pictures (rows r=0.25 and r=0.4 next to r=0.6) **the sensing radius now matters little: r=0.25 is within 0.03 of r=0.6**. If that holds on the second seed, the geometric losses buy back most of the sensing range a swarm needs (2.5 spacings instead of 6): a hardware-relevant result, not yet replicated.
+
+**Reference-swarm recipe (centred pile, 64-number map, noisy clock, repair batches; 64 steps; val / held-out / emoji; collisions 0.00 in all):** weight 5: 0.71 / 0.61 / 0.66; **weight 20: 0.74 / 0.65 / 0.70** (1 seed each); weight 50 queued.
+
+**Hand-drawn T regression:** coverage-penalty runs and the global weight-20 replicate are still training; the T tests have not been repeated on these models. The weight-50 models have not been tested on hand-drawn shapes yet.
+
+Demo: now lists the weight-50 models (labelled BEST) and the small-radius models; restarted.

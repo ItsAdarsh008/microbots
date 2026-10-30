@@ -24,10 +24,16 @@ for fn in ("shapes2", "shapes"):
     if os.path.exists(p):
         D = np.load(p)
         for i, nm in enumerate(D["em_names"]):
-            PRE.setdefault(str(nm), (D["em_occ"][i], D["em_sdf"][i]))
+            PRE.setdefault(str(nm), (D["em_occ"][i][::-1].copy(), D["em_sdf"][i][::-1].copy()))   # emoji images are stored upside-down: flip for display
         for i in range(6):
             PRE.setdefault(f"held-out {fn} #{i}", (D["ood_occ"][i], D["ood_sdf"][i]))
         break
+LET = os.path.join(ROOT, "data", "letters.npz")
+if os.path.exists(LET):
+    Lt = np.load(LET)
+    for i, nm in enumerate(Lt["names"]):
+        ch, tag = str(nm).split("-")
+        PRE[f"letter {ch} ({'thick' if tag == 'bold' else 'thin'})"] = (Lt["occ"][i], Lt["sdf"][i])
 R = 64
 
 
@@ -112,7 +118,7 @@ class H(BaseHTTPRequestHandler):
             self._send(open(os.path.join(HERE, "index.html"), "rb").read(), "text/html")
         elif self.path == "/api/models":
             self._send(json.dumps([dict(name=n, **DESC.get(n, {}), cfg={k: cfg.get(k) for k in ("radius", "layers", "cond", "time", "start", "coarse", "damage_p", "tnoise", "gstate")})
-                                   for n, (m, cfg) in MODELS.items()]))
+                                   for n, (m, cfg) in MODELS.items() if n in DESC]))
         elif self.path == "/api/shapes":
             self._send(json.dumps({n: np.round(o, 1).tolist() for n, (o, s) in PRE.items()}))
         else:

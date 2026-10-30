@@ -713,3 +713,40 @@ Looked at it (`aux_grid.png` in the scratchpad, next to the plain model and the 
 **Shared-state controls finished (held-out `w2`, one entry per seed; no-learning baseline here 1.97, 2.03, 2.01 on 3 seeds):** grid8 1.62, 1.64 vs its shuffled control 2.09; isab4x16 1.59, 1.59 vs control 1.87; mean64 1.75, 1.85 vs controls 1.83, 2.02; mean16 1.85. Precise reading: in `w2` the learned grid and four-token variants **do** beat their matched controls and the baseline on 2 seeds (so these `w2` gains are real and information-driven, not seed luck); the pooled vector does not beat its control. But `w2` is not shape quality: by IoU and by eye (tick 27) these variants show no visible improvement. So the finding is "shared state changes `w2`, not what the shapes look like", not "shared state does nothing in any sense".
 
 Hypotheses: H47, a stronger geometric weight (20) will tighten further but may trade off with fine structure; the wider test decides. H48, since polish equalises all models at 0.70 to 0.72, the useful split of labour is learned transport plus a local refinement rule, and the learned part should be trained for what the refinement cannot do (reaching far parts, topology).
+
+## 2026-10-30 tick 29: geometric losses replicated, a letters test set, two evaluation mistakes of mine
+
+**Geometric auxiliary losses, same protocol (16 steps, scattered start, footprint IoU; thin-shape models; ceiling 0.79 / 0.78 / 0.83; emoji / held-out / familiar).**
+
+| model | weight | emoji | held-out | familiar | seeds |
+| --- | --- | --- | --- | --- | --- |
+| global, plain | 0 | 0.64 | 0.59 | 0.70 | 1 |
+| global + geometric losses | 1 + 1 | 0.64 | 0.59 | 0.69 | 1 |
+| global + geometric losses | 5 + 5 | 0.66 | 0.64 | 0.70 | 1 |
+| local r=0.6, plain | 0 | 0.58 | 0.61 | 0.67 | 1 |
+| local r=0.6 + geometric losses | 1 + 1 | 0.59 | 0.62 | 0.68 | 1 |
+| local r=0.6 + geometric losses | 5 + 5 | 0.63, 0.64 | 0.65, 0.65 | 0.70, 0.70 | **2** |
+| no-learning rule | | 0.63 | 0.61 | 0.67 | |
+
+- **Weight 5 helps and replicates for the local model (2 seeds: +0.05 to +0.06 emoji, +0.04 held-out, +0.03 familiar); weight 1 does nothing.** For the global model weight 5 gives +0.05 held-out on one seed. After 60 polish steps all of them tie (0.70 to 0.76), so the gain is in what the learned part does on its own.
+- Pictures (8 emoji, plain vs weight 1 vs weight 5, both model types): the weight-5 models are tighter and keep the ring's hole; **the key stays a diagonal blob in every row, the anchor loses its loops, the wrench jaws only half appear**. Better, not crisp. Still running: weight 20 (local, global), 60k iterations, late-time emphasis (`tpow`), ablations of the two penalty terms (`aux_in` only, `aux_rep` only; so I can say which one does the work), second seed for global, and the reference-swarm recipe with the new losses.
+
+**Letters test set (`demo/make_letters.py`: 26 uppercase letters in a thick font (DejaVu Bold) and a thin one (Lato); nobody trained on letters; ceiling IoU 0.76).** Upright letters, each model started the way it was trained, 16 steps, 26 per font, 1 seed per model:
+
+| model | thick letters IoU | thin letters IoU |
+| --- | --- | --- |
+| no-learning rule | 0.59 | 0.56 |
+| global | 0.60 | 0.50 |
+| global + geometric losses | 0.62 | 0.52 |
+| local r=0.6 | 0.62 | 0.46 |
+| local r=0.6 + geometric losses | **0.67** | 0.55 |
+| reference swarm (pile start, 64-number map) | 0.61 | 0.44 |
+| any of these + 60 polish steps | 0.68 to 0.70 | 0.61 to 0.63 |
+
+By eye the learned models make **readable letters** (A, K, S, E, H, Z, B are clearly legible from global and local r=0.6; the reference swarm's bold A collapses to a ring); the rule's outlines are crisper. Thick letters: the best learned model is above the rule (0.67 vs 0.59). Thin letters: most learned models are **below the rule** (0.44 to 0.55 vs 0.56): thin strokes remain the weak spot, as the earlier T result suggested. Polish again equalises everything.
+
+**Two mistakes of mine, both found by looking at the pictures.**
+1. The first letters run used upside-down targets: array rows run bottom-to-top in this code and I did not flip the font images, so "A" was a "V". The emoji images are stored upside-down for the same reason (anchor with its ring at the bottom); that does not change any score (models were trained on randomly oriented shapes) but the demo showed upside-down emoji. Fixed (letters flipped when made; emoji flipped for display in the demo). The first, wrong-orientation letter numbers (e.g. global 0.67 / 0.57) are discarded; the upright numbers are different (0.60 / 0.50): **these models are not orientation-invariant** (a flipped shape is a different test).
+2. The first letters run also started every model from scattered noise, including the reference swarm, which was trained from a centred pile. Its 0.31 was a broken test, not a model result. Fixed: each model now starts as it was trained.
+
+Demo: now has the letters (52 presets, thick and thin), upright emoji, 14 described models including the two geometric-loss models; restarted. Unlisted models stay hidden.

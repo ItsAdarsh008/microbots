@@ -931,3 +931,20 @@ Queued and running: 64-number broadcast at weight 100 (`s12_*`, radii 0.6 and 0.
 - H55: the whole recipe composed (64-number map, noisy clock, repair batches, centred pile, weight 100) at radii 0.4 and 0.25 keeps most of the quality; `s14_refv2_r40`, `s14_refv2_r25` queued now. This is the candidate "reference swarm v2" for Stage 2, to be tested end to end (travel and form, repair after a cut, clock jitter, speed cap, 128 to 512 bots) and looked at by eye, as the first reference swarm was.
 
 **Remaining known weaknesses (looked at by eye):** the butterfly's far wing and the key's ring end; fine outlines are fuzzier than the hand-written rule's; everything so far is 2D and fixed at 256 bots in training.
+
+## 2026-10-30 tick 39: no clock (1 seed): not enough; repair at weight 100 works; reference swarm saturated
+
+Thin shapes, scattered start, weight 100; 16-step fixed-set protocol (emoji / held-out / familiar footprint IoU; recall in brackets; ceiling 0.79 / 0.78 / 0.83):
+
+| model | emoji | held-out | familiar | one piece (64-step run) |
+| --- | --- | --- | --- | --- |
+| local r=0.6, clock | 0.75 (0.90) | 0.75 (0.90) | 0.79 (0.91) | 1.00 |
+| local r=0.6, **no clock** | 0.74 (0.82) | 0.74 (0.80) | 0.78 (0.82) | 0.95 |
+| local r=0.4, **no clock** | 0.71 (0.79) | 0.68 (0.72) | 0.68 (0.71) | 0.84 |
+| local r=0.6, repair batches | 0.74 (0.87) | 0.74 (0.87) | 0.78 (0.89) | 0.99 |
+
+- **H51 (no clock needed with the losses): not supported.** Overlap barely drops (0.74 vs 0.75) but **recall falls from 0.90 to 0.82 and the pictures show why**: the no-clock shapes are undersized and skeletal (bots along the middle of strokes, an empty margin around the outline), and at r=0.4 a few bots stay outside the shape (collisions 0.08 to 0.10, shapes connected 0.84). Overlap hid this because footprints of thin skeletons still fall inside the target. Better than without the losses (7% and 61% connected) but a shared clock stays in the recipe. One seed; a second seed of r=0.6 no-clock is queued. Lesson: **recall and a look at the picture matter alongside IoU**.
+- **H53 (repair batches at weight 100): supported (1 seed).** Formation costs 0.01 (0.74 / 0.74 / 0.78 vs 0.75 / 0.75 / 0.79); repair test (clock restarted at 0): after a cut chunk cover 0.83 to 0.97, after losing 20% of bots 0.98 to 1.00, collisions 0.02. Pictures: the repair-trained model looks the same as the plain one. Second seed queued.
+- **Reference swarm (centred pile, 64-number map, noisy clock, repair batches; 64-step protocol val / held-out / emoji):** weight 5: 0.71 / 0.61 / 0.66; 20: 0.74 / 0.65 / 0.70; 50: 0.76 / 0.67 / 0.72; **100: 0.76 / 0.68 / 0.73**; collisions 0.00. Saturated; held-out 0.68 vs 0.74 for the plain model (full map, scattered start), the gap is the 64-number map and the pile start.
+
+Still running: no-clock second seed and a repair plus no-clock model (`s11_r60_notime_aux100_tn`, composed with repair batches), offset pile (`s11_r60_pfoffset_aux100`), noisy clock (`s13_r60_aux100_tn15`), 64-number broadcast at weight 100 (`s12_*`), the composed reference swarm v2 (`s14_refv2_r40`, `s14_refv2_r25`), global weight-100 second seed.

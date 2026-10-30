@@ -48,3 +48,20 @@ it 23000 loss 0.0345 gn 0.22 lr 4.6e-05 1893s
 it 23500 loss 0.0309 gn 0.20 lr 4.1e-05 1934s
 it 24000 loss 0.0312 gn 0.17 lr 3.7e-05 1975s
 it 24500 loss 0.0348 gn 0.06 lr 3.2e-05 2016s
+it 25000 loss 0.0328 gn 0.21 lr 2.9e-05 2057s
+it 25500 loss 0.0340 gn 0.11 lr 2.5e-05 2098s
+it 26000 loss 0.0351 gn 0.10 lr 2.2e-05 2139s
+it 26500 loss 0.0329 gn 0.18 lr 1.9e-05 2180s
+it 27000 loss 0.0341 gn 0.15 lr 1.6e-05 2221s
+it 27500 loss 0.0304 gn 0.19 lr 1.4e-05 2263s
+it 28000 loss 0.0334 gn 0.19 lr 1.2e-05 2304s
+it 28500 loss 0.0317 gn 0.14 lr 1.1e-05 2344s
+it 29000 loss 0.0306 gn 0.12 lr 9.8e-06 2385s
+it 29500 loss 0.0321 gn 0.24 lr 9.2e-06 2426s
+it 30000 loss 0.0316 gn 0.09 lr 9.0e-06 2468s
+val {"noise": {"w2": 7.823, "inside": 0.472, "cover": 0.671, "coll": 0.0, "nn": 1.187, "iou": 0.327, "prec": 0.432, "rec": 0.526, "skill": 0.0}, "classical": {"w2": 4.574, "inside": 1.0, "cover": 0.897, "coll": 0.227, "nn": 0.72, "iou": 0.628, "prec": 0.797, "rec": 0.743, "skill": 0.415}, "K64": {"w2": 1.104, "inside": 0.995, "cover": 0.975, "coll": 0.013, "nn": 0.765, "iou": 0.798, "prec": 0.869, "rec": 0.901, "skill": 0.859}}
+ood_family {"noise": {"w2": 7.305, "inside": 0.453, "cover": 0.619, "coll": 0.0, "nn": 1.145, "iou": 0.288, "prec": 0.397, "rec": 0.482, "skill": 0.0}, "classical": {"w2": 5.403, "inside": 1.0, "cover": 0.881, "coll": 0.191, "nn": 0.754, "iou": 0.57, "prec": 0.741, "rec": 0.71, "skill": 0.26}, "K64": {"w2": 1.45, "inside": 0.993, "cover": 0.942, "coll": 0.034, "nn": 0.737, "iou": 0.734, "prec": 0.833, "rec": 0.856, "skill": 0.802}}
+emoji {"noise": {"w2": 6.795, "inside": 0.497, "cover": 0.676, "coll": 0.0, "nn": 1.076, "iou": 0.322, "prec": 0.437, "rec": 0.536, "skill": 0.0}, "classical": {"w2": 4.641, "inside": 1.0, "cover": 0.879, "coll": 0.185, "nn": 0.736, "iou": 0.601, "prec": 0.773, "rec": 0.729, "skill": 0.317}, "K64": {"w2": 1.314, "inside": 0.997, "cover": 0.954, "coll": 0.016, "nn": 0.75, "iou": 0.759, "prec": 0.851, "rec": 0.873, "skill": 0.807}}
+control wrong-map: w2 vs map fed 1.152 vs other shape 3.692
+stats connected {'gen': 1.0, 'real': 1.0} best_iou_train {'gen': 0.8270283937454224, 'real': 0.8245832920074463}
+done

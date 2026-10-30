@@ -1043,3 +1043,11 @@ Weak points (seed 0): motion noise (collisions 0.11, hard-core rule untested tog
 - Composed v3 swarm (r=0.25, 16x16 map; pile start), 5 shapes, one seed: inside 0.96 to 1.00 at all counts; shape covered 0.96 to 0.99 at 256 and 512 bots, 0.91 to 0.97 at 1024, **0.85 to 0.94 at 2048**; collisions 0.00 to 0.04 at up to 1024 and 0.00 to 0.11 at 2048 (0.11 only for the thin K). Pictures (six shapes at 256 / 1024 / 2048; scratchpad `scale.png`): the shapes are well formed and sharper at 1024 and 2048 (snowflake arms, anchor, K, B, S); the centre is a little denser at 2048.
 - Plain best model (r=0.6, scattered start): covered 0.96 to 1.00 and collisions 0.07 to 0.12 at 2048.
 - **Harness bug found on the way:** my pile generator drew only 1500 candidate points, so asking for 2048 bots picked duplicates (bots on top of each other, 45% collisions); the first 2048-bot result for the pile-start swarm (cover 0.75 to 0.87) was that bug, not the model. Fixed (the candidate count scales with N). This did not affect any earlier result (all used 256 bots, which needs 256 distinct of 1500 candidates).
+
+## 2026-10-30 tick 45: three more replicates (2 seeds each); second seeds of the arm-reach-radius models queued
+
+Thin shapes, weight 100, 64-step protocol, val / held-out / emoji; one entry per seed:
+- **Offset pile start (H52): 0.80 / 0.74 / 0.76 and 0.80 / 0.73 / 0.76** (scattered start 0.78 / 0.74 / 0.75): a well-spaced pile at a random offset costs nothing at weight 100 (2 seeds); the roughly 0.5 penalty of weight 0 is gone.
+- **64-number map (8x8), local r=0.6, scattered start: 0.73 / 0.65 / 0.70 and 0.73 / 0.65 / 0.69** vs full map 0.78 / 0.74 / 0.75: **a 64-number broadcast costs 0.05 to 0.09 held-out overlap (2 seeds)**; the 256-number map (16x16) cost nothing (1 seed).
+- **Sensing radius: r=0.4 full map 0.78 / 0.74 / 0.75 and 0.78 / 0.74 / 0.74** = r=0.6 (2 seeds each). In spacings (corrected, tick 44): r=0.4 is 6.6, r=0.6 is 9.8.
+- Composed v3 (16x16 map, centred pile, noisy clock, repair batches) second seeds finished training and are scored next tick; r=0.14 (about 2.3 spacings, the real arm reach) and r=0.10 models, plain and composed, are training, each with a second seed queued now.

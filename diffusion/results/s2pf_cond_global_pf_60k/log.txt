@@ -1,0 +1,4 @@
+params 3650470 cfg {"name": "s2pf_cond_global_pf_60k", "cond": "map", "radius": null, "layers": 6, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 60000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "start": "pile_fps"}
+it 500 loss 0.0308 gn 0.64 lr 3.0e-04 42s
+it 1000 loss 0.0136 gn 0.34 lr 3.0e-04 83s
+it 1500 loss 0.0102 gn 0.18 lr 3.0e-04 124s

@@ -415,3 +415,28 @@ Hypotheses:
 - H32: pile-start difficulty is coordination, not sensing: a bigger model or longer training should help the global model if so (queued: global 60k iterations; seed replicates of global and local r=0.6).
 - H33: all the physical pieces together (pile start, 64-number broadcast, noisy clock, local radius 0.6) are within a factor 1.2 of the best Gaussian-start local model (queued: r=0.6, 8x8 broadcast, noisy clock training from a pile).
 - H31 (repair has to be trained in) is being tested: `s3_cond_global_dmg`, `s3_cond_local_r60_L4_dmg`, `s3_cond_local_r40_L4_dmg`, plus a pile-start and repair model.
+
+## 2026-10-29 tick 15: repair works when trained in; CORRECTION of the tick-14 correction
+
+**CORRECTION (of tick 14).** Tick 14 says the repair-trained runs "were not queued" in tick 13 and that all boxes were idle because of it. That was wrong. In tick 13 the jobs were submitted and ran on box 5 (global and local r=0.6 took 20 to 25 minutes each); the "Network is unreachable" error came from my final status check after they were already submitted. The boxes were idle at tick 14 because those runs (and the others) had finished. I then re-queued the same configs, same seed, on box 4, which would only have duplicated work; I stopped them and replaced them with seed-1 replicates (`s3_cond_global_dmg_seed1`, `s3_cond_local_r60_L4_dmg_seed1`). Lesson: check the queue and run directories before writing "not queued".
+
+**Repair-trained models (`damage_p` = 0.5: half of the training batches start from a shape with a chunk of bots removed; Gaussian start otherwise; v1 data; 1 seed each).**
+
+Formation from scratch (held-out-family error, spacings; earlier models: global 1.14 and 1.12, r=0.4 1.29 and 1.25): global 1.18, local r=0.40 1.34, local r=0.60 1.15; familiar 1.35 to 1.37. So training with repair batches costs nothing on formation.
+
+Repair test (`repair.py`, 64 val shapes, 16 steps, cover = fraction of the shape's pixels with a bot within one spacing for the surviving bot count; clock restarted at 0):
+
+| model | damage | cover before | cover after repair | with clock rewound to 0.5 instead |
+| --- | --- | --- | --- | --- |
+| global, repair-trained | cut chunk, 205 bots left | 0.75 | **0.98** | 0.89 |
+| local r=0.60, repair-trained | cut chunk | 0.76 | **0.97** | 0.89 |
+| global, repair-trained | random 20% removed | 0.89 | **0.99** | 0.95 |
+| local r=0.60, repair-trained | random 20% | 0.91 | **0.98** | 0.96 |
+
+H31 is supported (1 seed each; seed 1 replicates are running): once repair is part of training, a swarm with a cut-out chunk, or a fifth of its bots gone, refills the shape to cover 0.97 to 0.99 with the surviving bots, 0.07 above freshly formed shapes (0.90 to 0.91) because the same bots now spread evenly. Without it (earlier models) cover stayed at 0.75 to 0.81. The sampler needs the clock restarted at 0, not rewound.
+
+**Cost: collisions.** The repair-trained models make more close pairs than ordinary ones: 0.15 (global), 0.19 (local r=0.6) and 0.21 (r=0.4) against about 0.03 to 0.06 before, in ordinary formation too. The damage-batch targets are not the cause (1 to 2% close pairs; stored reference 0%). The hard-core spacing rule fixes it again at no cost: global 32 steps 1.33 error and 0.15 collisions without it, 1.31 and 0.00 with it. A speed cap of one spacing per step again costs about 0.15 from Gaussian noise.
+
+Hypotheses:
+- H34: the collision rise comes from the model having to tell a nearly-formed start from noise at t=0 and compromising; a clock reading that distinguishes the two starts (e.g. starting repair at t=0.3 and noise at t=0) would test that.
+- H35: repair should work from a pile-start model too (queued: `s3pf_cond_local_r60_L4_dmg_pf`, running).

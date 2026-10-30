@@ -65,3 +65,11 @@ emoji {"noise": {"w2": 8.77, "inside": 0.311, "cover": 0.548, "coll": 0.066, "nn
 control wrong-map: w2 vs map fed 1.284 vs other shape 3.196
 stats connected {'gen': 0.94921875, 'real': 1.0} best_iou_train {'gen': 0.8409932851791382, 'real': 0.8555002212524414}
 done
+params 2465434 cfg {"name": "s3_cond_local_r40_L4_dmg", "cond": "map", "radius": 0.4, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "damage_p": 0.5}
+resumed at 30000
+val {"noise": {"w2": 9.742, "inside": 0.309, "cover": 0.566, "coll": 0.063, "nn": 1.705, "skill": 0.0}, "classical": {"w2": 1.447, "inside": 1.0, "cover": 0.999, "coll": 0.094, "nn": 0.744, "skill": 0.851}, "K64": {"w2": 1.368, "inside": 0.888, "cover": 0.92, "coll": 0.206, "nn": 0.595, "skill": 0.86}}
+ood_family {"noise": {"w2": 7.081, "inside": 0.343, "cover": 0.594, "coll": 0.076, "nn": 1.496, "skill": 0.0}, "classical": {"w2": 1.314, "inside": 1.0, "cover": 1.0, "coll": 0.049, "nn": 0.817, "skill": 0.814}, "K64": {"w2": 1.336, "inside": 0.891, "cover": 0.926, "coll": 0.193, "nn": 0.616, "skill": 0.811}}
+emoji {"noise": {"w2": 8.77, "inside": 0.311, "cover": 0.548, "coll": 0.066, "nn": 1.66, "skill": 0.0}, "classical": {"w2": 1.601, "inside": 1.0, "cover": 0.998, "coll": 0.08, "nn": 0.802, "skill": 0.817}, "K64": {"w2": 1.554, "inside": 0.848, "cover": 0.895, "coll": 0.194, "nn": 0.623, "skill": 0.823}}
+control wrong-map: w2 vs map fed 1.284 vs other shape 3.196
+stats connected {'gen': 0.94921875, 'real': 1.0} best_iou_train {'gen': 0.8409932851791382, 'real': 0.8555002212524414}
+done

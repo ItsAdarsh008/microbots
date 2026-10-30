@@ -299,6 +299,6 @@
   "damage_p": 0.5
  },
  "git": "bf921af",
- "train_seconds": 1243.392520904541,
- "final_loss": 0.004521161124110222
+ "train_seconds": 1.1920928955078125e-06,
+ "final_loss": null
 }

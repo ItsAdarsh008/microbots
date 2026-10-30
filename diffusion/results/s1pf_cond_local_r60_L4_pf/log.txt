@@ -1,0 +1,4 @@
+params 2465434 cfg {"name": "s1pf_cond_local_r60_L4_pf", "cond": "map", "radius": 0.6, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "start": "pile_fps"}
+it 500 loss 0.0320 gn 0.78 lr 3.0e-04 42s
+it 1000 loss 0.0136 gn 0.31 lr 3.0e-04 83s
+it 1500 loss 0.0106 gn 0.23 lr 3.0e-04 125s

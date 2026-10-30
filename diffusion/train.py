@@ -165,13 +165,22 @@ def main(cfg_path):
             with torch.autocast("cuda", dtype=torch.bfloat16):
                 v = model(xt, t_in, maps)
             loss = F.mse_loss(v.float(), x1 - x0)
-            if (cfg.get("aux_in") or cfg.get("aux_rep")) and cfg["cond"] == "map":
+            if (cfg.get("aux_in") or cfg.get("aux_rep") or cfg.get("aux_cov")) and cfg["cond"] == "map":
                 # geometric losses on where each bot would end up if it kept going: stay inside the shape, do not crowd
                 tt = t if t.dim() == 1 else t.mean(1)
                 x1h = xt + (1 - (t[:, None] if t.dim() == 1 else t))[..., None] * v.float()
                 w = (tt ** 2)
                 if cfg.get("aux_in"):
                     loss = loss + cfg["aux_in"] * (F.relu(sdf_world(x1h, sd)) ** 2).mean(1).mul(w).mean()
+                if cfg.get("aux_cov"):
+                    # coverage: sampled points of the target shape should have a bot nearby (penalise holes)
+                    wgt = o.float().flatten(1) + 1e-6
+                    pick = torch.multinomial(wgt, 256, replacement=True)
+                    ax_ = (torch.arange(64, device=dev) + 0.5) * (2 / 64) - 1
+                    pix = torch.stack([ax_[pick % 64], ax_[pick // 64]], -1)                  # (B, 256, 2): x from column, y from row
+                    spc = torch.sqrt(o.float().sum((1, 2)) * (2 / 64) ** 2 / x1h.shape[1])[:, None]
+                    dmin = torch.cdist(pix, x1h).min(-1).values
+                    loss = loss + cfg["aux_cov"] * (F.relu(dmin - 0.8 * spc) ** 2).mean(1).mul(w).mean()
                 if cfg.get("aux_rep"):
                     spb = torch.sqrt(o.float().sum((1, 2)) * (2 / 64) ** 2 / x1h.shape[1])[:, None, None]
                     dd = (x1h[:, :, None] - x1h[:, None]).norm(dim=-1)

@@ -100,3 +100,10 @@ Local radius 0.6, an 8x8 target grid (64 numbers) as the only broadcast, noisy-c
 ## CORRECTION (journal tick 26): shape quality
 
 Everything above that says a learned model "beats the no-learning baseline" is **withdrawn as a statement about how the shapes look**. It rests on `w2`, the distance to one random sample of the shape, which does not track visual quality. Rendered side by side, a simple rule (project each bot onto the shape, spread by local repulsion) draws crisp, evenly spaced shapes, while the trained models give fuzzy outlines with missing thin parts. By footprint IoU (ceiling 0.78 to 0.83) the learned models are level with the rule (0.59 to 0.70 against 0.61 to 0.67), and **a learned flow followed by 60 steps of the rule is better than both (0.69 to 0.76)**. Comparisons *among learned variants* are internally consistent in `w2` but not yet checked visually. IoU is now in every evaluation, and new runs are judged on pictures as well as numbers.
+
+## Where things stand (journal tick 32, 2026-10-30)
+
+- **Geometric training losses are what made the learned models good.** Penalising bots that would end outside the shape (and, secondarily, crowding) raises footprint IoU from about 0.58 / 0.61 / 0.67 (emoji / held-out / familiar) to 0.70 / 0.71 / 0.75 for a local radius-0.6 model, against 0.63 / 0.61 / 0.67 for the hand-written rule and a ceiling of 0.79 / 0.78 / 0.83 (16 steps, thin-shape data; weight 20; replicated on 2 seeds for the local model). The "stay inside" term carries the gain. Letters (a font test set nobody trained on) are readable, and IoU beats the rule on thick (0.71 vs 0.59) and thin (0.64 vs 0.56) letters.
+- **Known regression:** the same losses make wide hand-drawn T shapes worse for the global model (cover 1.00 to 0.56); a coverage penalty is being tested.
+- Older tables above that are in `w2` should be read with the correction at the top of the journal (tick 26): they compare learned variants with each other, not shape quality against the hand-written rule.
+- The demo (`demo/`) lists the best models, 52 letters and the emoji upright.

@@ -774,3 +774,35 @@ Still to do: replicate weight 20 (1 more seed), higher weights, which of the two
 ## 2026-10-30 tick 31: late-time emphasis settled; replicates running
 
 `s8_global_aux5_tpow2` (global, geometric losses 5 + 5, late-time emphasis 2): IoU 0.69 / 0.65 / 0.65 (val / held-out / emoji, 64 steps), the same as without it (0.69 / 0.64 / 0.65). With the local model (tick 30) the result was the same, so **late-time emphasis does not help, on two models** (it hurts when used alone: local 0.64 / 0.58 / 0.58). Queued to replicate the global weight-20 result: `s6_global_aux_in20_rep20_seed1`. Running: weight 50 (local, global), weight-20 second seed (local), each penalty term alone at 5 and 20, reference swarm at weight 20, 60k iterations at weight 5, global weight 5 second seed.
+
+## 2026-10-30 tick 32: weight 20 replicated; "stay inside" is the useful penalty; a regression on hand-drawn T shapes
+
+**Replicates and ablations (thin shapes, scattered start; footprint IoU in the evaluator's protocol: 64 steps; val / held-out / emoji; ceiling about 0.82 / 0.78 / 0.79):**
+
+| model | val | held-out | emoji | collisions | seeds |
+| --- | --- | --- | --- | --- | --- |
+| local r=0.6, no geometric loss | n/a | n/a | n/a | | (16-step table: 0.67 / 0.61 / 0.58) |
+| local, inside + crowding, weight 5 | 0.69, 0.68 | 0.63, 0.64 | 0.64, 0.63 | 0.05 | 2 |
+| local, inside + crowding, **weight 20** | **0.74, 0.73** | **0.70, 0.69** | **0.69, 0.69** | 0.02 to 0.03 | **2** |
+| local, **inside only**, weight 5 | 0.69 | 0.63 | 0.63 | 0.07 | 1 |
+| local, **inside only**, weight 20 | 0.73 | 0.69 | 0.68 | 0.08 | 1 |
+| local, **crowding only**, weight 20 | 0.66 | 0.59 | 0.60 | 0.03 | 1 |
+| local, weight 5, 60k iterations | 0.70 | 0.65 | 0.64 | 0.02 | 1 |
+| global, weight 5 | 0.69, 0.67 | 0.64, 0.65 | 0.65, 0.65 | 0.03 | 2 |
+| global, weight 20 | 0.72 | 0.68 | 0.69 | 0.04 | 1 (replicate running) |
+
+- **The weight-20 improvement replicates for the local model on 2 seeds.** Global weight 5 replicates (2 seeds).
+- **Attribution:** the "stay inside" penalty alone carries essentially all of the gain (weight 5: same overlap as both together; weight 20: 0.73 / 0.69 / 0.68 vs 0.74 / 0.70 / 0.69). The crowding penalty alone does nothing (0.66 / 0.59 / 0.60, plain level). Crowding's job is collisions: they fall from 0.08 (inside only) to 0.02 (both). One seed for each ablation; consistent across the two weights. More training (60k) adds only 0.01 to 0.02.
+- **Letters (upright; 16 steps; 26 per font; 1 seed):** local r=0.6 weight 20: thick 0.71, thin 0.64; plain local 0.62 and 0.46; no-learning rule 0.59 and 0.56; global weight 20 0.69 and 0.60 (plain 0.60 and 0.50). Rendered: the weight-20 models draw clean, readable letters (E, H, B included, which the plain local model smears); the rule's outlines are still crisper. The weight-20 local model needs no polish (0.71 / 0.64 before and after).
+
+**A regression: hand-drawn T shapes (`demo/test_drawn2.py`; bots inside the shape / shape covered; 16 steps; 1 seed; one drawing each).**
+
+| shape | local plain | local weight 20 | global plain | global weight 20 |
+| --- | --- | --- | --- | --- |
+| fat T | 0.96 / 0.98 | **0.80 / 0.84** | 1.00 / 1.00 | **0.64 / 0.56** |
+| thin T | 0.33 / 0.47 | **0.71 / 0.78** | 0.99 / 0.99 | **0.48 / 0.38** |
+| disc, L, plus, ring | 0.98 to 1.00 | 1.00 | 0.99 to 1.00 | 1.00 |
+
+The geometric losses help on emoji, letters and held-out families (mean over many shapes) but the global model gets **worse** on wide T shapes (cover 0.56), and the local one trades (thin T much better, fat T worse). Reading (hypothesis H49): "stay inside the shape" can be satisfied by sitting in the middle of a large part of the shape, leaving the far ends uncovered; a coverage penalty should fix exactly this. It is also a reminder that averages over a test set can hide a regression on particular shapes; the demo exposes it, which is how it was found.
+
+**New penalty `aux_cov`** (sampled target pixels should have a bot nearby) added; runs queued on the best recipe: local weight 20 + coverage 20 and 5, global weight 20 + coverage 20. Still running: weight 50, reference swarm at weight 20, global weight-20 replicate, crowding-only at weight 5.

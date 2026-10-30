@@ -544,3 +544,21 @@ Hypotheses:
 **Reference swarm for the hand-off to Stage 2 (queued).** One model with everything that worked: local radius 0.60, only a 64-number (8x8) broadcast, noisy-clock training (0.15), repair batches (50%), trained from a centred pile, thin-shape data. Two seeds local, one global as the upper bound. To be evaluated as a whole: formation after rigid travel, repair after cuts, clock jitter, speed cap and hard-core spacing, particle count change; against the no-learning rule from the same start.
 
 **Where Stage 1 stands.** The questions the ladder asked are answered at the level of 1 to 2 seeds: a flow-matching swarm forms unseen shapes from noise or a pile, local sensing needs a radius of about 0.6 (6 particle spacings), a 64-number broadcast is enough, repair needs to be trained in, a clock and a hard-core spacing rule are cheap fixes, and distance, not pile density, is what hurts from a pile. What remains is building the reference swarm and re-checking it end to end. After that, new sweeps would only fill in curves I understand; I propose to pause Stage 1 there and move to Stage 2, which needs the real bot numbers (diameter in particle spacings, top speed, sensing and communication radius, link strength).
+
+## 2026-10-29 tick 22: pile controls replicated
+
+Thin shapes, held-out-family error, one entry per seed. Reference: scattered noise global 1.47, 1.41; local r=0.60 1.54, 1.59. Offset pile (radius 0.7): global 1.93, 1.96; local r=0.60 2.11, 2.10.
+
+| change from the offset-pile baseline | global | local r=0.60 | seeds |
+| --- | --- | --- | --- |
+| larger, sparser pile (radius 0.9) | 1.66, 1.74 | 2.04, 1.94 | 2 |
+| repair batches (50% damaged starts) | 1.82, 1.81 | 2.01, 2.00 | 2 |
+| repair batches 80% | | 1.97 | 1 |
+| 4x wider network | 1.66 | 2.04 | 1 |
+| 60,000 iterations | 1.73 | 2.01 | 1 |
+
+- A larger pile helps by about 0.25 for the global model and 0.1 for the local one (2 seeds each): the pile has to travel less far. Repair batches help by about 0.12 for global and 0.1 for local (2 seeds each). The dose saturates: 80% is no better than 50% (1 seed).
+- Capacity and length help the global model (0.2 to 0.27, 1 seed each) but the local model hardly (0.03 to 0.07), so the local model's pile gap is not a size problem; consistent with the sensing-limit reading. A second seed of the wide global run is queued.
+- None of these reach the centred-pile or two-phase numbers (global 1.40, 1.52 and 1.51, 1.53; local 1.53, 1.47 and 1.79, 1.80), which stay the best handling of the pile start.
+
+Still running: the three reference-swarm models (stage 1 hand-off), the wide-and-long global pile run, and the wide global second seed.

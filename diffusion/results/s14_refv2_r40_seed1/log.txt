@@ -1,0 +1,11 @@
+params 2465434 cfg {"name": "s14_refv2_r40_seed1", "cond": "map", "radius": 0.4, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 1, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "aux_in": 100.0, "aux_rep": 100.0, "coarse": 8, "tnoise": 0.15, "damage_p": 0.5, "start": "pile_fps_c"}
+it 500 loss 0.0487 gn 0.82 lr 3.0e-04 27s
+it 1000 loss 0.0305 gn 0.33 lr 3.0e-04 54s
+it 1500 loss 0.0308 gn 0.31 lr 3.0e-04 81s
+it 2000 loss 0.0286 gn 0.19 lr 3.0e-04 108s
+it 2500 loss 0.0288 gn 0.34 lr 3.0e-04 135s
+it 3000 loss 0.0284 gn 0.28 lr 2.9e-04 162s
+it 3500 loss 0.0250 gn 0.58 lr 2.9e-04 189s
+it 4000 loss 0.0300 gn 0.13 lr 2.9e-04 217s
+it 4500 loss 0.0286 gn 0.78 lr 2.8e-04 243s
+it 5000 loss 0.0250 gn 0.13 lr 2.8e-04 269s

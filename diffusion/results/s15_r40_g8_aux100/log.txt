@@ -1,0 +1,14 @@
+params 2465434 cfg {"name": "s15_r40_g8_aux100", "cond": "map", "radius": 0.4, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "aux_in": 100.0, "aux_rep": 100.0, "coarse": 8}
+it 500 loss 0.2358 gn 0.56 lr 3.0e-04 26s
+it 1000 loss 0.0618 gn 0.77 lr 3.0e-04 47s
+it 1500 loss 0.0561 gn 0.48 lr 3.0e-04 69s
+it 2000 loss 0.0545 gn 0.60 lr 3.0e-04 90s
+it 2500 loss 0.0550 gn 0.44 lr 3.0e-04 112s
+it 3000 loss 0.0519 gn 0.42 lr 2.9e-04 133s
+it 3500 loss 0.0500 gn 0.46 lr 2.9e-04 155s
+it 4000 loss 0.0544 gn 0.59 lr 2.9e-04 176s
+it 4500 loss 0.0453 gn 0.60 lr 2.8e-04 198s
+it 5000 loss 0.0488 gn 0.40 lr 2.8e-04 219s
+it 5500 loss 0.0478 gn 0.61 lr 2.8e-04 241s
+it 6000 loss 0.0428 gn 0.23 lr 2.7e-04 262s
+it 6500 loss 0.0469 gn 0.34 lr 2.7e-04 284s

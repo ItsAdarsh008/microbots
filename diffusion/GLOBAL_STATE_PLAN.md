@@ -63,3 +63,8 @@ Two seeds for every variant that survives the first screen; mean64, dens8 and gr
 ## What this does not claim
 
 Each aggregate here is exact and available at every layer of every step. A real swarm gets approximate aggregates after several gossip rounds; wave F tests how much that matters. Nothing here is a statement about hardware until the physical numbers arrive.
+
+
+## Verdict after re-scoring (journal tick 27)
+
+The decision rules above were written in `w2`, which does not track how the shapes look (see the correction in the journal). Re-scored by footprint IoU and by rendered pictures, **no shared-state variant shows a gain beyond seed spread**: pooled vector 0.54 vs 0.57 to 0.58 held-out (worse), learned grid 0.60 vs 0.57 to 0.58 (+0.02 to +0.03), and after a 60-step polish all models are equal (0.69 to 0.72). Waves B to F are paused. The bandwidth and structure design stays valid for a retest on a model whose own output is crisp.

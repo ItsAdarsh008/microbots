@@ -671,3 +671,29 @@ Hypotheses: H43, the benefit of an extra global path may mostly come from an add
 Hypotheses: H45, the learned flow's errors are mostly near the end (small displacement errors count little in the velocity loss but matter for the outline), so endpoint-aware losses or polishing will help; H46, uneven spacing and bots outside the shape, not wrong placement of the bulk, are what makes the models look bad.
 
 **Process rule from now on:** every claim about shape quality is checked against rendered pictures of the same runs, side by side with the no-learning rule and the ceiling, before it goes in the journal.
+
+## 2026-10-29 tick 27: the shared-global-state wave re-scored by IoU and by eye: no visible gain
+
+(Asked by the user: do I want more GPUs? No: runs take about 25 minutes, 5 GPUs hold 10 at a time, and the constraint has been judging results correctly, not compute.)
+
+**Re-scoring `s5a_*` with footprint IoU (ceiling 0.79 emoji / 0.78 held-out / 0.83 familiar; thin shapes; scattered start; local r=0.25, 16 steps; one model per row, 4 starts for emoji):**
+
+| model | emoji | held-out family | familiar | `w2` held-out (earlier) |
+| --- | --- | --- | --- | --- |
+| no shared state (`s2_cond_local_r25_L4`) | 0.61 | 0.58 | 0.67 | 1.97 |
+| no shared state, seed 1 | 0.60 | 0.57 | 0.67 | 2.03 |
+| mean64 (pooled vector) | 0.57 | 0.54 | 0.63 | 1.75 |
+| mean64_shuf (control) | 0.59 | 0.56 | 0.64 | 1.83 |
+| grid8 (learned grid) | 0.62 | 0.60 | 0.67 | 1.62 |
+| grid8, seed 1 | 0.61 | 0.60 | 0.66 | 1.64 |
+| no-learning rule, 200 steps | 0.63 | 0.61 | 0.67 | |
+
+- **Pooled vector: worse than no shared state by IoU (0.54 vs 0.57 to 0.58 held-out), although `w2` said 0.2 better.** Learned grid: +0.02 to +0.03 held-out on both seeds, i.e. small and about the size of seed spread. Rendered pictures (rows of the same eight emoji; scratchpad, not committed) show no visible improvement from any shared-state variant: the ring fills in, the anchor and key stay clouds; at best the grid keeps a little more of the ring's hole.
+- **After 60 steps of the rule as polish, all six models land within 0.70 to 0.72 (emoji) and 0.69 to 0.70 (held-out)**: the shared state adds nothing once the polish is applied.
+- **The `w2` tables of this wave (tick 25) are withdrawn as evidence for shared state.** The pre-registered decision rules were written in `w2`; they are superseded and, applied to IoU, the answer is: no variant shows a gain beyond seed spread. Waves B to F of `GLOBAL_STATE_PLAN.md` (clock replacement, pile offset, repair, matched r=0.4, noisy aggregates) are **paused**, not run: testing more elaborate uses of a shared state on a base model whose output looks poor is not informative. The runs still in flight (`isab4x16` seed 1 and shuffled controls, `grid8_shuf`, `mean64_shuf` seed 1, a third baseline seed) will be scored by IoU and pictures for completeness.
+
+**Is the rule just under-run? (`demo/rule_steps.py`, IoU of the no-learning rule from scattered noise).** 200 steps 0.63 / 0.60; 600: 0.65 / 0.63; 1500: 0.66 / 0.65; 3000: 0.67 / 0.65 (emoji / held-out). It plateaus. **The learned model plus 60 polish steps (0.71 to 0.72 / 0.70) is better than the rule at any step count and gets there with about 50 times fewer steps** (16 learned plus 60 rule steps against 1500 or more). That is a fair, replicated-across-models finding (six models, polish gives 0.69 to 0.72 for all). Caveat: the polish uses the full-resolution distance map at the bot's own position, so it needs more than the 64-number broadcast that the reference swarm uses.
+
+**What the generative approach contributes, as measured so far:** fast coarse transport to the right region (16 steps instead of 1500), conditioning on a coarse 64-number map (the rule cannot use one), repair when trained for it, an unconditional mode, and a better start for the rule's refinement. It does **not** yet draw crisp shapes on its own.
+
+**Next (in order):** the five geometric-loss runs (`s6_*`) aimed at crisp edges and even spacing, judged by IoU and by looking at pictures; a letters and hand-drawn test set for all models; then, if a model reaches crisp outputs on its own, revisit shared state on that base.

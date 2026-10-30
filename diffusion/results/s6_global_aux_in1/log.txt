@@ -1,0 +1,2 @@
+params 3650470 cfg {"name": "s6_global_aux_in1", "cond": "map", "radius": null, "layers": 6, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "aux_in": 1.0}
+it 500 loss 0.0416 gn 0.45 lr 3.0e-04 32s

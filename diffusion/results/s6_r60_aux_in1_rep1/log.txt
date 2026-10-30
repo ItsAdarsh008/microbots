@@ -1,0 +1,5 @@
+params 2465434 cfg {"name": "s6_r60_aux_in1_rep1", "cond": "map", "radius": 0.6, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "aux_in": 1.0, "aux_rep": 1.0}
+it 500 loss 0.0423 gn 0.56 lr 3.0e-04 24s
+it 1000 loss 0.0140 gn 0.10 lr 3.0e-04 47s
+it 1500 loss 0.0124 gn 0.33 lr 3.0e-04 69s
+it 2000 loss 0.0116 gn 0.53 lr 3.0e-04 92s

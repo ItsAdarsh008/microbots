@@ -34,3 +34,8 @@ it 16000 loss 0.0085 gn 0.14 lr 1.4e-04 785s
 it 16500 loss 0.0091 gn 0.17 lr 1.3e-04 810s
 it 17000 loss 0.0084 gn 0.12 lr 1.2e-04 834s
 it 17500 loss 0.0086 gn 0.20 lr 1.2e-04 859s
+it 18000 loss 0.0086 gn 0.20 lr 1.1e-04 883s
+it 18500 loss 0.0084 gn 0.08 lr 1.0e-04 908s
+it 19000 loss 0.0080 gn 0.14 lr 9.5e-05 932s
+it 19500 loss 0.0084 gn 0.13 lr 8.8e-05 957s
+it 20000 loss 0.0079 gn 0.12 lr 8.2e-05 981s

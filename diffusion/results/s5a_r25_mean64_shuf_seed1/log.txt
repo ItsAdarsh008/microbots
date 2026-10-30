@@ -49,3 +49,10 @@ it 23500 loss 0.0079 gn 0.19 lr 4.1e-05 800s
 it 24000 loss 0.0078 gn 0.28 lr 3.7e-05 814s
 it 24500 loss 0.0078 gn 0.15 lr 3.2e-05 828s
 it 25000 loss 0.0079 gn 0.07 lr 2.9e-05 842s
+it 25500 loss 0.0078 gn 0.03 lr 2.5e-05 856s
+it 26000 loss 0.0079 gn 0.13 lr 2.2e-05 870s
+it 26500 loss 0.0079 gn 0.09 lr 1.9e-05 889s
+it 27000 loss 0.0079 gn 0.06 lr 1.6e-05 912s
+it 27500 loss 0.0079 gn 0.04 lr 1.4e-05 934s
+it 28000 loss 0.0079 gn 0.13 lr 1.2e-05 957s
+it 28500 loss 0.0077 gn 0.12 lr 1.1e-05 980s

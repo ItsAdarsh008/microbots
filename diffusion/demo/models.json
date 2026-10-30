@@ -108,5 +108,15 @@
   "label": "SWARM v3: sensing about 6.6 spacings, 16x16 map, noisy clock, repair-trained, pile start",
   "start": "pile_c",
   "note": "Same recipe with a bit more sensing range."
+ },
+ "s16_refv3_r14_g16": {
+  "label": "SWARM v3 at the real arm reach: sensing about 2.3 spacings, 16x16 map",
+  "start": "pile_c",
+  "note": "Each bot hears only neighbours within about one arm reach of the v1 bot (2.3 spacings). Start from the centred pile. A cut chunk refills poorly at this range (cover 0.83 to 0.85)."
+ },
+ "s16_refv3_r10_g16": {
+  "label": "SWARM v3, sensing 1.6 spacings (less than the arm reach), 16x16 map",
+  "start": "pile_c",
+  "note": "Even shorter sensing; shapes get slightly softer."
  }
 }

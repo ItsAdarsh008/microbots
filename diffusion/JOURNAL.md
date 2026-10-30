@@ -1011,3 +1011,26 @@ Thin shapes, scattered start, weight 100, 64-step protocol, val / held-out / emo
 - **A 64-number broadcast costs 0.05 to 0.09 held-out overlap from scattered noise (r=0.6 and r=0.25); 256 numbers cost nothing.** (At weight 0 the difference was about 0.1 in `w2`.) The composed v2 swarms use an 8x8 map but start from a centred pile, which is why they land at 0.68 to 0.69 held-out rather than 0.63 to 0.65: the starting arrangement carries information the map does not. Second seeds of the 8x8 r=0.6 model and r=0.4 full map are queued.
 - **r=0.4 matches r=0.6 at weight 100** (0.78 / 0.74 / 0.75 both) and r=0.25 is 0.02 to 0.03 behind: a sensing radius of 2.5 spacings, about the arm reach of the v1 bot, loses little.
 - The 16x16 composed variants (`s14_refv3_*`) test whether 256 numbers bring back the snowflake and the key's ring end that the 8x8 composed swarm loses.
+
+## 2026-10-30 tick 43: composed swarm v3 (16x16 map): the candidate reference swarm for Stage 2
+
+**Replicated (2 seeds):** composed v2 (8x8 map; centred pile start; noisy clock; repair batches; weight 100): r=0.25 0.77 / 0.69 / 0.73 and 0.76 / 0.68 / 0.73; r=0.40 0.77 / 0.68 / 0.73 and 0.77 / 0.68 / 0.74 (val / held-out / emoji; collisions 0.00 all four). Noisy-clock training, clean quality (local r=0.6): 0.79 / 0.73 / 0.75 and 0.78 / 0.73 / 0.74; under clock error 0.25: IoU 0.79 and 0.78 (clean 0.83 and 0.82; the model without it fell to 0.66): **H50 on 2 seeds**.
+
+**New, composed v3 = v2 with a 16x16 map (256 numbers), 1 seed each (second seeds running):** r=0.25 **0.79 / 0.74 / 0.77**, r=0.40 **0.80 / 0.75 / 0.77**, collisions 0.00. Held-out 0.74 to 0.75 equals the plain best model that sees the full map from scattered noise (0.74), and it keeps the pile start, noisy clock and repair training. Pictures (16 targets; scratchpad `refv3.png`): the snowflake's arms, the star's points, the anchor, the A's hole and the letters are all there; the key's ring end is still partial; the rule's outlines are still crisper.
+
+**End-to-end test of composed v3 r=0.25 (seed 0; 96 val shapes; 16 steps; sensing 2.5 spacings):**
+
+| check | result |
+| --- | --- |
+| formation: val / held-out `w2` (floor about 0.8) | 0.84 / 1.00; clean IoU 0.84 |
+| travel (offset pile, rigid move to the shape's centre) then form | `w2` 0.83 vs 0.84 from a centred pile (val); 0.98 vs 1.00 (held-out) |
+| clock error 0.25 | IoU 0.83 (clean 0.84) |
+| half the bots update per round | IoU 0.81, collisions 0.06 |
+| motion noise 0.3 spacings per step | IoU 0.79, collisions 0.11 |
+| 128 / 512 bots | IoU 0.82 / 0.84, collisions 0.00 |
+| speed cap 1 spacing per step (mean path 2.3) | unchanged |
+| hard-core rule | collisions 0.000 |
+| repair: cut chunk, cover before / after | 0.84 / **0.94** |
+| repair: 20% of bots lost | 0.98 / 0.99 |
+
+Weak points (seed 0): motion noise (collisions 0.11, hard-core rule untested together with it), repair of a large cut at this small radius (0.94, vs 0.97 at r=0.6), the key's ring end. Demo: both v3 models added (labelled SWARM v3; start them from the centred pile).

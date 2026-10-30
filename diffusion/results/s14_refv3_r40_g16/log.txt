@@ -29,3 +29,39 @@ it 13500 loss 0.0233 gn 0.16 lr 1.8e-04 732s
 it 14000 loss 0.0206 gn 0.25 lr 1.7e-04 760s
 it 14500 loss 0.0219 gn 0.16 lr 1.6e-04 790s
 it 15000 loss 0.0202 gn 0.16 lr 1.5e-04 818s
+it 15500 loss 0.0216 gn 0.22 lr 1.5e-04 848s
+it 16000 loss 0.0218 gn 0.19 lr 1.4e-04 876s
+it 16500 loss 0.0190 gn 0.21 lr 1.3e-04 903s
+it 17000 loss 0.0213 gn 0.12 lr 1.2e-04 932s
+it 17500 loss 0.0195 gn 0.15 lr 1.2e-04 962s
+it 18000 loss 0.0193 gn 0.05 lr 1.1e-04 993s
+it 18500 loss 0.0208 gn 0.14 lr 1.0e-04 1023s
+it 19000 loss 0.0213 gn 0.21 lr 9.5e-05 1053s
+it 19500 loss 0.0192 gn 0.27 lr 8.8e-05 1083s
+it 20000 loss 0.0166 gn 0.30 lr 8.2e-05 1113s
+it 20500 loss 0.0195 gn 0.16 lr 7.5e-05 1143s
+it 21000 loss 0.0199 gn 0.17 lr 6.9e-05 1173s
+it 21500 loss 0.0186 gn 0.13 lr 6.3e-05 1203s
+it 22000 loss 0.0170 gn 0.11 lr 5.7e-05 1233s
+it 22500 loss 0.0160 gn 0.11 lr 5.2e-05 1262s
+it 23000 loss 0.0177 gn 0.25 lr 4.6e-05 1290s
+it 23500 loss 0.0170 gn 0.09 lr 4.1e-05 1320s
+it 24000 loss 0.0175 gn 0.26 lr 3.7e-05 1350s
+it 24500 loss 0.0229 gn 0.19 lr 3.2e-05 1378s
+it 25000 loss 0.0176 gn 0.22 lr 2.9e-05 1407s
+it 25500 loss 0.0191 gn 0.06 lr 2.5e-05 1435s
+it 26000 loss 0.0186 gn 0.04 lr 2.2e-05 1464s
+it 26500 loss 0.0174 gn 0.24 lr 1.9e-05 1492s
+it 27000 loss 0.0213 gn 0.19 lr 1.6e-05 1521s
+it 27500 loss 0.0174 gn 0.17 lr 1.4e-05 1550s
+it 28000 loss 0.0175 gn 0.20 lr 1.2e-05 1578s
+it 28500 loss 0.0195 gn 0.07 lr 1.1e-05 1605s
+it 29000 loss 0.0179 gn 0.12 lr 9.8e-06 1633s
+it 29500 loss 0.0189 gn 0.08 lr 9.2e-06 1661s
+it 30000 loss 0.0178 gn 0.08 lr 9.0e-06 1690s
+val {"noise": {"w2": 2.927, "inside": 0.631, "cover": 0.879, "coll": 0.0, "nn": 1.187, "iou": 0.484, "prec": 0.559, "rec": 0.702, "skill": 0.0}, "classical": {"w2": 2.076, "inside": 0.895, "cover": 0.984, "coll": 0.003, "nn": 1.056, "iou": 0.697, "prec": 0.738, "rec": 0.9, "skill": 0.291}, "K64": {"w2": 0.801, "inside": 0.982, "cover": 0.993, "coll": 0.002, "nn": 0.804, "iou": 0.797, "prec": 0.848, "rec": 0.924, "skill": 0.726}}
+ood_family {"noise": {"w2": 2.662, "inside": 0.604, "cover": 0.83, "coll": 0.0, "nn": 1.145, "iou": 0.435, "prec": 0.521, "rec": 0.654, "skill": 0.0}, "classical": {"w2": 1.556, "inside": 0.922, "cover": 0.967, "coll": 0.03, "nn": 0.974, "iou": 0.662, "prec": 0.719, "rec": 0.873, "skill": 0.415}, "K64": {"w2": 0.932, "inside": 0.972, "cover": 0.986, "coll": 0.002, "nn": 0.798, "iou": 0.754, "prec": 0.816, "rec": 0.902, "skill": 0.65}}
+emoji {"noise": {"w2": 2.734, "inside": 0.638, "cover": 0.862, "coll": 0.0, "nn": 1.076, "iou": 0.451, "prec": 0.547, "rec": 0.69, "skill": 0.0}, "classical": {"w2": 1.803, "inside": 0.919, "cover": 0.994, "coll": 0.003, "nn": 1.024, "iou": 0.682, "prec": 0.73, "rec": 0.902, "skill": 0.341}, "K64": {"w2": 0.919, "inside": 0.985, "cover": 0.992, "coll": 0.003, "nn": 0.8, "iou": 0.775, "prec": 0.834, "rec": 0.914, "skill": 0.664}}
+control wrong-map: w2 vs map fed 0.789 vs other shape 3.711
+stats connected {'gen': 0.99609375, 'real': 1.0} best_iou_train {'gen': 0.8281611204147339, 'real': 0.8245832920074463}
+done

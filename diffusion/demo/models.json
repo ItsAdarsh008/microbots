@@ -98,5 +98,15 @@
   "label": "BEST: global attention, geometric losses weight 100",
   "start": "noise",
   "note": "All-to-all version of the same recipe."
+ },
+ "s14_refv3_r25_g16": {
+  "label": "SWARM v3: sensing 2.5 spacings, 16x16 map, noisy clock, repair-trained, pile start",
+  "start": "pile_c",
+  "note": "The most hardware-like model: each bot hears only neighbours within about one arm reach and is told a 256-number map. Start it from the centred pile. Try cut a chunk then repair."
+ },
+ "s14_refv3_r40_g16": {
+  "label": "SWARM v3: sensing 4 spacings, 16x16 map, noisy clock, repair-trained, pile start",
+  "start": "pile_c",
+  "note": "Same recipe with a bit more sensing range."
  }
 }

@@ -64,3 +64,4 @@ ood_family {"noise": {"w2": 9.199, "inside": 0.294, "cover": 0.525, "coll": 0.06
 emoji {"noise": {"w2": 8.77, "inside": 0.311, "cover": 0.548, "coll": 0.066, "nn": 1.66, "iou": 0.211, "prec": 0.353, "rec": 0.332, "skill": 0.0}, "classical": {"w2": 1.601, "inside": 1.0, "cover": 0.998, "coll": 0.08, "nn": 0.802, "iou": 0.624, "prec": 0.73, "rec": 0.809, "skill": 0.817}, "K64": {"w2": 1.15, "inside": 0.95, "cover": 0.96, "coll": 0.026, "nn": 0.769, "iou": 0.698, "prec": 0.789, "rec": 0.853, "skill": 0.869}}
 control wrong-map: w2 vs map fed 1.063 vs other shape 3.748
 stats connected {'gen': 0.96875, 'real': 1.0} best_iou_train {'gen': 0.8197757601737976, 'real': 0.8245832920074463}
+done

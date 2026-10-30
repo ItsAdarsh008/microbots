@@ -829,3 +829,17 @@ Weight 50: **about 94% of the ceiling on held-out shapes**, 1 seed per model (se
 **Hand-drawn T regression:** coverage-penalty runs and the global weight-20 replicate are still training; the T tests have not been repeated on these models. The weight-50 models have not been tested on hand-drawn shapes yet.
 
 Demo: now lists the weight-50 models (labelled BEST) and the small-radius models; restarted.
+
+## 2026-10-30 tick 34: the coverage penalty (1 seed): modest gain, partial fix of the T-shape regression
+
+Local r=0.6, thin shapes, scattered start; footprint IoU at 16 steps (emoji / held-out / familiar): inside + crowding weight 20: 0.70 / 0.71 / 0.75; **+ coverage weight 5: 0.71 / 0.72 / 0.76; + coverage weight 20: 0.72 / 0.72 / 0.76** (+0.01 to +0.02, one seed each; the seed-to-seed spread of the weight-20 model was about 0.01, so this is at the edge of what I can call real). Hand-drawn shapes (inside / covered; one drawing each; 16 steps):
+
+| shape | local plain | weight 20 | + coverage 5 | + coverage 20 |
+| --- | --- | --- | --- | --- |
+| fat T | 0.96 / 0.98 | 0.80 / 0.84 | 0.82 / 0.88 | **0.87 / 0.94** |
+| thin T | 0.33 / 0.47 | 0.71 / 0.78 | **0.87 / 0.91** | **0.86 / 0.93** |
+| disc, L, plus, ring | 0.98 to 1.00 | 1.00 | 1.00 | 0.98 to 1.00 |
+
+Looked at (eight emoji; scratchpad `cov_grid.png`): fuller star points, a complete anchor ring, slightly more complete snowflake arms; the butterfly's left wing is still missed in every row. **H49 is partly supported**: coverage repairs most of the thin T and part of the fat T, but the fat T is still below the plain model (0.87 vs 0.96) and the global model with coverage is still training. Treat as provisional until a second seed and the global result exist.
+
+Next, in order: second seed of weight 50 (local) and weight 100; weight 50 + coverage; hand-drawn tests for the weight-50 models; the radius result (r=0.25 / 0.4 second seeds); the reference swarm at weight 50.

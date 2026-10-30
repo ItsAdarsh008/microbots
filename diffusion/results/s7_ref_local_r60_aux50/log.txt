@@ -1,0 +1,17 @@
+params 2465434 cfg {"name": "s7_ref_local_r60_aux50", "cond": "map", "radius": 0.6, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "coarse": 8, "tnoise": 0.15, "damage_p": 0.5, "start": "pile_fps_c", "aux_in": 50.0, "aux_rep": 50.0}
+it 500 loss 0.0278 gn 0.55 lr 3.0e-04 28s
+it 1000 loss 0.0211 gn 0.14 lr 3.0e-04 55s
+it 1500 loss 0.0222 gn 0.23 lr 3.0e-04 82s
+it 2000 loss 0.0183 gn 0.38 lr 3.0e-04 109s
+it 2500 loss 0.0183 gn 0.36 lr 3.0e-04 135s
+it 3000 loss 0.0181 gn 0.29 lr 2.9e-04 162s
+it 3500 loss 0.0174 gn 0.31 lr 2.9e-04 188s
+it 4000 loss 0.0174 gn 0.24 lr 2.9e-04 215s
+it 4500 loss 0.0163 gn 0.31 lr 2.8e-04 242s
+it 5000 loss 0.0174 gn 0.10 lr 2.8e-04 269s
+it 5500 loss 0.0168 gn 0.20 lr 2.8e-04 297s
+it 6000 loss 0.0175 gn 0.32 lr 2.7e-04 324s
+it 6500 loss 0.0162 gn 0.20 lr 2.7e-04 350s
+it 7000 loss 0.0177 gn 0.29 lr 2.6e-04 377s
+it 7500 loss 0.0162 gn 0.26 lr 2.6e-04 404s
+it 8000 loss 0.0166 gn 0.36 lr 2.5e-04 430s

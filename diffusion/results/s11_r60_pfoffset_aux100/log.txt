@@ -1,0 +1,15 @@
+params 2465434 cfg {"name": "s11_r60_pfoffset_aux100", "cond": "map", "radius": 0.6, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "aux_in": 100.0, "aux_rep": 100.0, "start": "pile_fps"}
+it 500 loss 0.1015 gn 1.47 lr 3.0e-04 42s
+it 1000 loss 0.0525 gn 0.72 lr 3.0e-04 83s
+it 1500 loss 0.0497 gn 0.29 lr 3.0e-04 125s
+it 2000 loss 0.0451 gn 0.87 lr 3.0e-04 166s
+it 2500 loss 0.0419 gn 0.35 lr 3.0e-04 207s
+it 3000 loss 0.0408 gn 0.22 lr 2.9e-04 248s
+it 3500 loss 0.0417 gn 0.61 lr 2.9e-04 289s
+it 4000 loss 0.0419 gn 0.98 lr 2.9e-04 331s
+it 4500 loss 0.0407 gn 0.64 lr 2.8e-04 372s
+it 5000 loss 0.0403 gn 0.20 lr 2.8e-04 414s
+it 5500 loss 0.0393 gn 0.32 lr 2.8e-04 454s
+it 6000 loss 0.0363 gn 0.86 lr 2.7e-04 496s
+it 6500 loss 0.0391 gn 0.41 lr 2.7e-04 537s
+it 7000 loss 0.0356 gn 0.42 lr 2.6e-04 578s

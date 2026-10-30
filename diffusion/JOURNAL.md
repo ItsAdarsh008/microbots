@@ -893,3 +893,27 @@ Running: weight 100 (local, global), weight 50 + coverage 50 (local, global), re
 Demo: the weight-100 models are listed as BEST (restarted).
 
 Queued (tick 36), each changing one thing from the weight-100 local recipe (`s6_r60_aux_in100_rep100`; thin shapes): `s11_r60_notime_aux100` and `s11_r40_notime_aux100` (no clock; earlier without these losses the no-clock local models fragmented: 7% / 61% connected), `s11_r60_pfoffset_aux100` (well-spaced pile at a random offset; earlier +0.5 error), `s11_r60_dmg_aux100` (repair batches in training). Hardware-relevant questions: do the losses make the shared clock, the rigid travel phase and the separate repair mode unnecessary?
+
+## 2026-10-30 tick 37: weight 100 replicated; coverage not needed; stress test of the best model
+
+**Weight 100 replicated (local r=0.6, 2 seeds):** 0.78, 0.78 / 0.74, 0.74 / 0.75, 0.75 (val / held-out / emoji; 64-step protocol). Global weight 100 (1 seed) the same; a second seed is queued. Weight 200 is running.
+
+**The coverage penalty is not needed at high weight (1 seed each, 64-step protocol, val / held-out / emoji):** local r=0.6 weight 50 plus coverage 50: 0.77 / 0.72 / 0.73 vs weight 50 alone 0.77, 0.77 / 0.73, 0.73 / 0.73, 0.73; global 0.77 / 0.73 / 0.73 vs 0.75 / 0.73 / 0.73; r=0.25 0.76 / 0.71 / 0.73 vs 0.76 / 0.70 / 0.72. The earlier gain from coverage (weight 20) disappears once the inside weight is high; the T shapes are fixed by the weight, not by coverage. Dropped from the recipe.
+
+**Reference swarm (centred pile, 64-number map, noisy clock, repair; val / held-out / emoji; collisions 0.00):** weight 5: 0.71 / 0.61 / 0.66; 20: 0.74 / 0.65 / 0.70; 50: 0.76 / 0.67 / 0.72; 100 running. Monotone but smaller gains than the plain model; its held-out score is limited by the 64-number map.
+
+**Stress test of the best model (`s6_r60_aux_in100_rep100`, local radius 0.6, 96 val shapes, 16 steps, 1 model):**
+
+| condition | inside | covered | collisions | IoU |
+| --- | --- | --- | --- | --- |
+| clean | 1.00 | 0.99 | 0.01 | **0.81** (ceiling about 0.82) |
+| clock error 0.1 / 0.25 (per bot) | 0.93 / 0.86 | 0.98 / 0.97 | 0.03 / 0.04 | 0.74 / 0.66 |
+| half the bots update per round | 0.96 | 0.97 | 0.10 | 0.76 |
+| motion noise 0.3 spacings per step | 0.99 | 0.99 | 0.02 | 0.80 |
+| 128 / 512 bots | 1.00 / 0.99 | 0.98 / 0.99 | 0.01 / 0.03 | 0.77 / 0.83 |
+| hard-core spacing rule | 1.00 | 0.99 | **0.000** | unchanged |
+| speed cap 1 spacing per step (from scattered noise) | 0.98 | 0.98 | 0.01 | `w2` 0.87 to 1.26 |
+
+In clean conditions this model reaches `w2` 0.80, the floor, which means its placement is as good as an independent perfect sample. Weak spots: **clock errors** (not trained for: IoU 0.66 at the large setting) and a tight **speed cap from a scattered start** (the move averages 8 spacings and the far bots are capped; the pile start removes most of this). Asynchronous updates give 10% collisions. Motion noise and the bot count are fine. Hypothesis H50: noisy-clock training (as in the reference swarm) fixes the clock sensitivity at no cost in clean quality; `s13_r60_aux100_tn15` queued.
+
+Queued and running: 64-number broadcast at weight 100 (`s12_*`, radii 0.6 and 0.25, and an 16x16 grid), r=0.4 at weight 100, global weight 100 seed 1, no-clock (`s11_*notime`), offset pile and repair-in-training (`s11_*`), reference swarm at weight 100, r=0.25 at weight 100, weight 200.

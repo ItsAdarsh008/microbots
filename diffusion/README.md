@@ -1,5 +1,7 @@
 # Diffusion / flow matching for swarms: from noise to shape
 
+**Current state: see [STAGE1_SUMMARY.md](STAGE1_SUMMARY.md)** (what works, what does not, with seeds and the corrections). `JOURNAL.md` has every entry. Older tables below predate several corrections.
+
 **Question.** Can particles that start as noise end up as a structured shape if each one follows a learned flow-matching velocity field, and how much of that can be made *local* (what a real swarm could do)?
 
 **Why flow matching fits.** Sampling a flow-matching model *is* a swarm dynamic: N particles start at random positions and each takes small steps along a velocity field. The step count is the physical time. A teammate trains plain MLP policies from a teacher on the same shape set; this folder is the generative side, so the two can be compared on the same shapes.

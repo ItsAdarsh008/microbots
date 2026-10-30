@@ -1083,3 +1083,19 @@ Thin shapes, weight 100, 64-step protocol, val / held-out / emoji; one entry per
 (Process note: a robustness-script edit moved a no-grad decorator onto the wrong function and made the first run run out of memory; fixed and rerun. No result was affected.)
 
 Queued for the remaining arm-reach weakness (a cut chunk refills only from 0.83 to 0.85 cover): more repair batches (80% instead of 50%; two seeds) and the 64-number map at the arm reach. Running: swarm-density state tests (`s17_*`: density state with a second seed, the matched control with the density state from another swarm, a learned grid).
+
+## 2026-10-30 tick 48: shared swarm-density state helps repair at the arm reach: first controlled positive, but partial
+
+Composed v3 swarm at r=0.14 (2.3 spacings, the v1 arm reach; 16x16 map; centred pile; noisy clock; repair batches; weight 100). Repair test (`repair.py`; 64 val shapes; clock restarted at 0): cover after cutting a chunk (disc of radius 0.3; about 50 bots), before / after repair; 20% random loss for comparison.
+
+| model | cut chunk | 20% random loss | formation (val / held-out / emoji IoU) |
+| --- | --- | --- | --- |
+| base, no shared state | 0.83 / 0.85 | 0.98 / 0.98 | 0.79 / 0.74 / 0.76 (2 seeds) |
+| + swarm-density state (8x8 histogram of where the bots are, read at each bot's position), seed 0 | 0.84 / **0.91** | 0.98 / 0.98 | 0.79 / 0.74 / 0.76 |
+| + same, seed 1 | 0.84 / **0.91** | 0.98 / 0.98 | 0.79 / 0.75 / 0.77 |
+| + same state **from another swarm** (control: same parameters, no information about this swarm) | 0.84 / 0.86 | 0.98 / 0.98 | 0.79 / 0.74 / 0.76 |
+| + learned 8x8 grid state | 0.84 / 0.90 | 0.98 / 0.98 | 0.79 / 0.73 / 0.76 |
+
+- **Supported on 2 seeds with a matched control (H56):** the density state raises repair of a cut chunk from 0.85 to 0.91 cover; the same architecture fed another swarm's density gives 0.86 (base level), so the gain comes from information about this swarm. Formation is unchanged; the wrong-state swap barely changes formation error (1.11 to 1.14) but is what the repair relies on. This is the first shared-state result that survives a matched control, and it is in the case predicted in advance (a short-range bot cannot see a hole elsewhere).
+- **Looked at** (`repair_pics.png`: anchor, snowflake, thick B, thin S; cut, then repaired; rows base / control / density state): the base and the control leave the cut regions mostly empty; the density-state model fills part of them (a few bots reach the anchor's ring and the top of the B). **A partial improvement, not a full refill**: cover 0.91 is still far below the 0.97 that radius 0.6 reaches, and large cuts are visibly not repaired.
+- Not tried: a larger density grid, several rounds of density feedback, repair batches with larger cuts (`s18_*` with 80% repair batches and a 64-number map are running).

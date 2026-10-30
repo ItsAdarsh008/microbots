@@ -1137,3 +1137,30 @@ Composed v3 swarm at r=0.14 (2.3 spacings = the v1 arm reach; 16x16 map; centred
 - **The shared density state adds a small controlled amount (+0.02 on 2 seeds: 0.94 against 0.92; the control stays at 0.92)** and is **smaller than the effect of the training data (+0.05)**. Combining it with bigger cuts was not tried (the room above 0.97 is small). Conclusion: a shared state is **not needed** for repair at this range; the earlier "first shared-state result" (ticks 48 and 49) is reduced to a +0.02 effect.
 - **Looked at** (`repair_pics2.png`: anchor, snowflake, thick B, thin S; cut then repaired; rows base and big-cut model): the big-cut model refills visibly more; the thick B is nearly complete, the snowflake gets back a missing arm, the S gets more of its upper arc; **thin parts still only partly refill** (the anchor's ring, the S's far tip), so "cover 0.97" slightly overstates what is seen.
 - Demo: the big-cut model added ("trained to repair BIG cuts"). The demo tunnel had dropped; restarted.
+
+## 2026-10-30 tick 52: Stage 2 version 0 (physical bodies, speed limit, sensing = arm reach), no retraining
+
+**Control seed closes the repair story:** `s19_refv3_r14_dens8_dmg08_shuf_seed1` repairs to 0.93 (seed 0 control 0.92) against the density state's 0.94: the shared state's +0.02 sits within the noise of its own control on 2 seeds. A shared state is not needed for repair.
+
+**Stage 2 v0 (`stage2_eval.py`; composed v3 swarm at r=0.14 = 2.3 spacings = the v1 arm reach; centred pile start; 96 val shapes; one seed per model).** Each round every bot moves by the model's step but at most `vmax` spacings, then bodies of diameter `b` (in spacings; the v1 bot is 30 mm, touching at 34.5 mm, so about 0.87 to 1.0) are pushed apart until none overlap. Footprint IoU (free swarm without bodies: 0.80):
+
+| rounds | max step per round | body 1.0 spacing (touching) | note |
+| --- | --- | --- | --- |
+| 16 | none / 1.0 / 0.5 / 0.25 | 0.79 / 0.79 / 0.78 / 0.74 | |
+| 32 | none / 1.0 / 0.5 / 0.25 | 0.79 / 0.79 / 0.79 / 0.77 | |
+| 64 | none / 1.0 / 0.5 / 0.25 | 0.79 / 0.79 / 0.79 / 0.79 | |
+
+- **Physical bodies cost 0.01 of overlap (0.79 vs 0.80); overlapping pairs 0.** A speed limit of 0.25 spacings per round only matters below 32 rounds. The whole move is about 2 spacings of travel per bot from the centred pile. The model needs no retraining for finite bodies and a speed limit. Same for the big-cut repair model (`s19_refv3_r14_dmg08_big`) in the contact test below. Caveat: the sim moves bots in discrete rounds with no tunnelling check (at 1 spacing per round a bot could hop over a neighbour; at 0.5 or less it cannot).
+
+**Do the finished bots hold together? (`stage2_contacts.py`; 32 rounds, max step 0.5, body 1.0; largest connected piece / mean candidate links per bot):**
+
+| a link can span | base arm-reach swarm | big-cut repair model |
+| --- | --- | --- |
+| 1.15 body diameters (touching) | 0.86 / 3.3 | 0.88 / 3.3 |
+| 1.5 | 0.95 / 4.9 | 0.97 / 4.8 |
+| 2.0 | 0.99 / 9.4 | 1.00 / 9.6 |
+| 2.35 (the v1 arm reach) | 1.00 / 12.6 | 1.00 / 12.7 |
+
+If bonds needed body contact, 12 to 14% of the bots would hang loose; with the arm-linking range of the v1 design the swarm is fully connected. **Not yet tested: the connector limit** (6 per bot: 2 tips and 4 ports) and which links a real docking would pick (a rigid 2D frame needs about 4 links per bot on average, which fits within 6); that is Stage 2 version 1.
+
+Stage 2 plan in `STAGE2_PLAN.md`.

@@ -161,6 +161,12 @@ input[type="text"] {
         <button id="brainRules" type="button" aria-pressed="true">Rules</button>
         <button id="brainModel" type="button" aria-pressed="false">Trained model</button>
       </div>
+      <span class="label">Number of bots</span>
+      <div class="row" role="group" aria-label="Number of bots">
+        <button id="mult1" type="button" aria-pressed="true">Normal</button>
+        <button id="mult3" type="button" aria-pressed="false">3×</button>
+        <button id="mult5" type="button" aria-pressed="false">5×</button>
+      </div>
       <span class="label">Physics</span>
       <label class="toggle" for="v1">
         <input id="v1" type="checkbox">
@@ -237,6 +243,7 @@ const ARMS = {
   floor: true,         // any bot on the bottom layer counts as attached to the floor
 };
 let MODEL = "arms";      // "arms" or "faces"
+let BOT_MULT = 1;        // 1, 3 or 5: how many times the usual number of bots
 
 
 // ------------------------------------------------------------------ shapes
@@ -398,7 +405,7 @@ function newSwarm(name) {
   const occ = new Uint8Array(N), locked = new Uint8Array(N), idAt = new Int32Array(N).fill(-1);
   const axisAt = new Int8Array(N).fill(-1);          // arm direction of the bot in each cell (0 x, 1 y, 2 z)
   const pos = [];
-  let n = need + def.spares;
+  let n = (need + def.spares) * BOT_MULT;            // 3x / 5x: a bigger pile, same shape
   outer: for (let z = 0; z < NZ; z++) for (let x = 1; x < 14; x++) for (let y = 2; y < 30; y++) {
     if (n === 0) break outer;
     const i = idx(x, y, z); occ[i] = 1; idAt[i] = pos.length; pos.push(i); n--;
@@ -407,9 +414,16 @@ function newSwarm(name) {
   // Parking pad: floor slots filled in a fixed order, the column farthest from
   // the shape first, each column from the middle out, so arriving bots never
   // have to climb over bots that are already parked.
+  // With more bots than fit on the pad's floor, spares stack on the parked
+  // ones, one layer at a time (as many layers as the starting pile had).
   const slots = [];
-  for (let x = 1; x < 14; x++) for (let y = 2; y < 30; y++) if (!target[idx(x, y, 0)]) slots.push(idx(x, y, 0));
-  slots.sort((a, b) => xOf(a) - xOf(b) || Math.abs(yOf(a) - 15.5) - Math.abs(yOf(b) - 15.5));
+  const layers = Math.min(NZ, Math.ceil(pos.length / 364) + 1);
+  for (let z = 0; z < Math.min(layers, NZ); z++) {
+    const layer = [];
+    for (let x = 1; x < 14; x++) for (let y = 2; y < 30; y++) if (!target[idx(x, y, z)]) layer.push(idx(x, y, z));
+    layer.sort((a, b) => xOf(a) - xOf(b) || Math.abs(yOf(a) - 15.5) - Math.abs(yOf(b) - 15.5));
+    slots.push(...layer);
+  }
   const nb = pos.length;
   return {
     name, def, target, need, occ, locked, idAt, axisAt, slots, support, nSupport, keepOut, parkLock: new Uint8Array(N),
@@ -766,8 +780,22 @@ function goalCells() {
     if (readyAt(i)) { goal[i] = 1; any = true; }
   }
   if (!left) return null;
-  if (!any) {                 // shouldn't happen for a shape on the floor; open anything touching the structure
+  if (!any) {
+    // Nothing is ready: some part of the shape hangs from above (the flag on a
+    // "1", say), so the rule above waits forever. Open the empty shape cells
+    // next to a locked bot (sharing a face or an edge) that don't have an
+    // empty shape cell under them, so nothing gets sealed in.
     for (let i = 0; i < N; i++) {
+      if (!S.target[i] || S.occ[i]) continue;
+      const x = xOf(i), y = yOf(i), z = zOf(i);
+      if (z > 0 && S.target[i - LAYER] && !S.occ[i - LAYER]) continue;
+      for (const d of ONE_MOVE) {
+        const a = x + d[0], b = y + d[1], c = z + d[2];
+        if (inG(a, b, c) && S.locked[idx(a, b, c)]) { goal[i] = 1; break; }
+      }
+    }
+    any = goal.some(v => v);
+    if (!any) for (let i = 0; i < N; i++) {          // last resort: anything touching the structure
       if (!S.target[i] || S.occ[i]) continue;
       const x = xOf(i), y = yOf(i), z = zOf(i);
       for (const d of FACES) if (solid(x + d[0], y + d[1], z + d[2])) { goal[i] = 1; break; }
@@ -907,12 +935,27 @@ function parked() {
   for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !fixedAt(S.pos[b])) return false;
   return true;
 }
-// Next few empty slots in order. Spares already sitting on earlier slots park there.
+// Parking. A spare resting on the pad, on the floor or on top of a parked bot,
+// is parked where it is (bottom layer first, so a stack parks in one pass).
+// The rest head for the next few empty slots that have something under them.
 function parkingGoal() {
-  const goal = new Uint8Array(N); let wanted = 3, gapSeen = false;
+  for (const i of S.slots) if (S.occ[i] && !S.locked[i] && (zOf(i) === 0 || S.parkLock[i - LAYER])) S.parkLock[i] = 1;
+  // with 3x / 5x there are more spares than the pad holds: any spare outside
+  // the shape that stands on the floor, or on a parked spare, also counts as
+  // parked (bottom layer first)
+  if (BOT_MULT > 1) for (let i = 0; i < N; i++) {
+    if (!S.occ[i] || S.locked[i] || S.target[i] || S.keepOut[i]) continue;
+    if (i < LAYER || S.parkLock[i - LAYER]) S.parkLock[i] = 1;
+  }
+  if (BOT_MULT > 1) {           // and the rest just climb down to the nearest bit of floor
+    const goal = new Uint8Array(N);
+    for (let i = 0; i < LAYER; i++) if (!S.occ[i] && !S.target[i] && !S.keepOut[i]) goal[i] = 1;
+    return goal;
+  }
+  const goal = new Uint8Array(N); let wanted = 3 * BOT_MULT;     // more bots, more slots open at once
   for (const i of S.slots) {
-    if (S.occ[i]) { if (!gapSeen && !S.locked[i]) S.parkLock[i] = 1; continue; }
-    gapSeen = true; goal[i] = 1; if (--wanted === 0) break;
+    if (S.occ[i] || (zOf(i) > 0 && !S.parkLock[i - LAYER])) continue;
+    goal[i] = 1; if (--wanted === 0) break;
   }
   return goal;
 }
@@ -1067,8 +1110,17 @@ function tick() {
   let holes = [];
   if (building) { const g = goalCells(); goal = g.goal; holes = g.holes; }
   else if (parked()) { S.step++; S.stalls = 0; return 0; }
-  else goal = parkingGoal();
-  if (building) S.parkLock.fill(0);           // shape needs work: every spare helps
+  else {
+    // Parking. Spares that still haven't found a spot after a long while
+    // (perched up on the shape, say) give up and stay where they are.
+    S.parkSteps = (S.parkSteps || 0) + 1;
+    if (S.parkSteps > 300) {
+      for (let b = 0; b < S.pos.length; b++) if (S.alive[b] && !fixedAt(S.pos[b])) S.parkLock[S.pos[b]] = 1;
+      S.step++; return 0;
+    }
+    goal = parkingGoal();
+  }
+  if (building) { S.parkLock.fill(0); S.parkSteps = 0; }           // shape needs work: every spare helps
   const busy = Uint8Array.from(S.occ);
   if (SAFETY === "tree") treeRelax();
   const order = [];
@@ -1088,8 +1140,27 @@ function tick() {
     for (let i = 0; i < LAYER; i++) if (!S.occ[i] && !S.target[i] && !S.keepOut[i]) floorGoal[i] = 1;
     downField = distanceField(floorGoal);
   }
+  // Plenty of bots (3x / 5x): only the ones nearest the work go to it, a few
+  // per open cell; the rest wait where they are instead of crowding round the
+  // last few holes. If things stall anyway, the waiting ones climb down to the
+  // floor, so a heap of spares piled against the shape thins out.
+  let idle = null, idleField = null;
+  if (building && !useModel) {
+    let left = 0; for (let i = 0; i < N; i++) if (S.target[i] && !S.occ[i]) left++;
+    const cap = Math.max(60, 4 * left);
+    if (order.length > cap) {
+      const ranked = order.map(b => [fieldOf(b)[S.pos[b]], b]).sort((a, c) => a[0] - c[0]);
+      idle = new Set(ranked.slice(cap).map(r => r[1]));
+      if (S.stalls >= 15) {
+        const floorGoal = new Uint8Array(N);
+        for (let i = 0; i < LAYER; i++) if (!S.occ[i] && !S.target[i] && !S.keepOut[i]) floorGoal[i] = 1;
+        idleField = distanceField(floorGoal);
+      }
+    }
+  }
   for (const b of order) {
-    let dist = useModel ? null : (downField && !under(S.pos[b]) ? downField : fieldOf(b));
+    if (idle && idle.has(b) && !idleField) continue;
+    let dist = useModel ? null : idle && idle.has(b) ? idleField : (downField && !under(S.pos[b]) ? downField : fieldOf(b));
     const p = S.pos[b];
     let opts = [];
     if (useModel) {
@@ -1225,7 +1296,7 @@ function buildFloor() {
   grid.add(new THREE.LineSegments(g, mat)); world.add(grid);
 }
 
-const CUBE = 0.8, MAXB = 2500;
+const CUBE = 0.8, MAXB = 6000;   // room for 5x the bots (the biggest, the arch with real strength, is ~5,200)
 const cubeGeo = new THREE.BoxGeometry(CUBE, CUBE, CUBE);
 const cubes = new THREE.InstancedMesh(cubeGeo, new THREE.MeshLambertMaterial(), MAXB);
 cubes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); world.add(cubes);
@@ -1362,7 +1433,7 @@ function draw(s) {
   const coloured = botLook ? BOT.ball : cubes;
   if (coloured.instanceColor) coloured.instanceColor.needsUpdate = true;
   let f = 0;
-  for (const c of S.falling) { v.set(c.x, c.y, Z(c.z)); m4.compose(v, q.identity(), one); falls.setMatrixAt(f++, m4); }
+  for (const c of S.falling) { if (f >= MAXB) break; v.set(c.x, c.y, Z(c.z)); m4.compose(v, q.identity(), one); falls.setMatrixAt(f++, m4); }
   falls.count = f; falls.instanceMatrix.needsUpdate = true;
 }
 const instToBot = new Int32Array(MAXB);
@@ -1660,6 +1731,14 @@ function setBrain(b) {
   $("brainRules").setAttribute("aria-pressed", String(b === "rules")); $("brainModel").setAttribute("aria-pressed", String(b === "model"));
   reset();
 }
+// More bots: the same shape from a bigger pile. The shape takes the same
+// number; the rest are spares, which speed things up and then stack on the pad.
+function setMult(m) {
+  BOT_MULT = m;
+  for (const k of [1, 3, 5]) $("mult" + k).setAttribute("aria-pressed", String(k === m));
+  reset();
+}
+for (const k of [1, 3, 5]) $("mult" + k).addEventListener("click", () => setMult(k));
 $("brainRules").addEventListener("click", () => setBrain("rules"));
 $("brainModel").addEventListener("click", () => setBrain("model"));
 $("lookCube").addEventListener("click", () => setLook(false));

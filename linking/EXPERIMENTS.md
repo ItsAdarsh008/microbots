@@ -135,6 +135,17 @@ Step counts from `sandbox/tests/run_shapes.js` (one run each) and `learn/evaluat
 
 **Arch "Cut the middle".** The cut removed the whole crown (~182 bots, with only 90 spares), so the repair could never finish (stuck at ~88%, also before today). Narrowed to a 2-cell slice (~56 bots): repaired in 85–93 steps with cubes, 105–124 with arm links.
 
+**3x / 5x bots** (sandbox "Number of bots"): same shape, a bigger pile (up to ~5,200 bots). Builds get faster (long bridge ~130 steps at 3x/5x vs ~200) at 15–25 ms per step.
+
+| Tried | Result |
+| --- | --- |
+| Every spare goes to work | Arm-model dome at 3x stalled at 99% in 2 of 3 runs: a heap of spares piled against the walls, many holding each other up, round the last holes. |
+| Only the nearest bots work (4 per open cell, at least 60); if it stalls, the rest climb down to the floor | Dome 3x 4/4; every shape finishes at 3x and 5x, including arms + real strength (arch 3x: 255 steps). |
+| Parking: pad only | A few hundred spares never fit. Now with more bots, spares outside the shape stack on the floor or on parked spares; after 300 steps any still wandering stay put. |
+| Rendering | Over 2,500 bots the 3D view went blank (instance buffers were sized for 2,500); now 6,000. |
+
+**Shapes that hang from above.** The "1" in the default text has a flag that hangs off the top bar, so nothing in it can ever be "ready" from below, and the build stalled (also before the readiness rule, 1 run in 2). When nothing is ready, cells next to a locked bot (face or edge) with no empty shape cell under them now open. "123" builds 3/3.
+
 **Training log.** `dagger.py` now writes `policy_log.json`; `plot_training.py` draws `media/linking_training.png`. Retrained on the local rules: Python wall/arch/tower 15/15 (arch 96–116 steps, rules 97–151).
 
 ## Still open

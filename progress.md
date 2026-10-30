@@ -117,6 +117,33 @@ Some of the most interesting moments were behaviours that came out of simple rul
 
 ---
 
+## The big question: why no central brain, and why a learned model?
+
+These are two separate questions, with different answers.
+
+### Why local control instead of a central brain?
+
+Mostly physics and scale, not philosophy.
+
+- **Communication doesn't scale.** A central controller has to hear from every bot and send each one orders, every step. With 1,000 bots that's a lot of traffic; with a million microbots it's impossible. Tiny bots have tiny radios that reach a few neighbours, and that's the hard limit.
+- **No single point of failure.** If the brain dies, or its link to the swarm drops, everything stops. A local swarm loses a few bots and keeps going. That's what makes repair and broken-bot detection work: nobody has to be told the structure is damaged; the bots next to the hole notice.
+- **Bots can't know exactly where they are.** A central planner needs every bot's exact position. Real microbots only know roughly where their neighbours are, and local rules are built around what a bot can actually sense.
+- **It scales for free.** The same rule works for 10 bots or 10,000; adding bots doesn't make anyone's job harder.
+
+The honest caveat: real systems usually aren't purely local. Many robot swarms are hybrids, where a central computer hands out the high-level goal ("build this bridge here") and the bots make the moment-to-moment decisions themselves. This project does that too: every bot is given the shape map (global), while how to move and when it's safe to let go are decided locally. Going *fully* local is a deliberate constraint: it's the hard, interesting version, and it's what tiny physical bots will eventually need.
+
+### Why a learned model instead of hand-written rules?
+
+That's a different axis. Hand-written rules can be just as local as a neural network (the holder tree and the readiness rule are local and fully deterministic). The real choice is who writes the rules: a person, or training.
+
+- **Rules win where you can write them.** They're predictable, explainable and safe, which is why the safety check stays hand-written and is never left to the network.
+- **Learning helps where nobody knows the right rule:** when to start building support pillars, how to avoid jams, how to get 1,000 bots cooperating efficiently. Rules for those get long and brittle (the arm-link jam needed fix after fix). A trained policy can find strategies nobody would think to write, which is the point of the reinforcement-learning stage.
+- **Today the model doesn't beat the rules; it copies them.** So far the model has bought the infrastructure (inputs, outputs, a training loop), not better behaviour. Whether it's worth it depends on reinforcement learning finding something better.
+
+**In short:** local control is close to a necessity if real microbots are the goal, because nothing else survives the physics. A learned model is a bet that only pays off if training finds behaviour nobody could hand-write. Keeping safety as plain rules and letting the model handle strategy is the sensible split, and it's the one this project uses.
+
+---
+
 ## Next
 
 Reinforcement learning: let the trained model try things and keep what works, to see whether it can beat the hand-written rules (for example, using fewer support pillars on the long bridge). Before that, a few shortcuts in the simulation need fixing. Both are in [Linking 2, Part 9](textbook/L2-from-rules-to-a-model.md).

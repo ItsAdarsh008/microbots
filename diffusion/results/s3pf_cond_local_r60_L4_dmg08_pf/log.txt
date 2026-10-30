@@ -1,0 +1,9 @@
+params 2465434 cfg {"name": "s3pf_cond_local_r60_L4_dmg08_pf", "cond": "map", "radius": 0.6, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "start": "pile_fps", "damage_p": 0.8}
+it 500 loss 0.0186 gn 0.15 lr 3.0e-04 29s
+it 1000 loss 0.0127 gn 0.66 lr 3.0e-04 58s
+it 1500 loss 0.0109 gn 0.23 lr 3.0e-04 86s
+it 2000 loss 0.0096 gn 0.35 lr 3.0e-04 114s
+it 2500 loss 0.0090 gn 0.23 lr 3.0e-04 142s
+it 3000 loss 0.0082 gn 0.69 lr 2.9e-04 172s
+it 3500 loss 0.0085 gn 0.20 lr 2.9e-04 199s
+it 4000 loss 0.0077 gn 0.19 lr 2.9e-04 227s

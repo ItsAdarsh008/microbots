@@ -515,3 +515,13 @@ Travel then form beats learning the whole move from an offset pile on held-out s
 Hypotheses:
 - H39: for a real swarm the right decomposition is rigid travel plus local formation, not one network doing both; the travel distance is small (about 7 spacings on average here) and needs no learning.
 - H40: forming from a pile placed anywhere would be solved by translation equivariance in the model (give the model positions relative to the pile centre instead of absolute positions); to test after the capacity results.
+
+## 2026-10-29 tick 20: v1 pile replicated, larger pile, repair batches with a global model
+
+**v1 shapes, well-spaced pile at a random offset (2 seeds):** global 1.38 / 1.47 / 1.78 and 1.37 / 1.42 / 1.76 (familiar / held-out family / emoji); local r=0.60 1.39 / 1.74 / 1.82 (1 seed, second queued earlier). Gaussian start: global 1.24, 1.33 / 1.14, 1.12 / 1.40, 1.41. The pile cost on blobby shapes is about 0.3 on held-out ones and 0.37 on emoji, replicated for global.
+
+**Larger, sparser pile (radius 0.9, thin shapes, offset as before; 1 seed each; radius-0.7 pile in brackets):** global 1.53 / 1.66 / 1.58 (1.57, 1.62 / 1.93, 1.96 / 1.82, 1.84); local r=0.60 1.65 / 2.04 / 1.75 (1.71, 1.68 / 2.11, 2.10 / 1.86). A bigger pile starts closer to every part of the shape and costs less (global 0.3, local 0.07 on held-out). Consistent with the distance reading (H37); second seeds queued.
+
+**Repair batches with a global model from a pile (thin shapes, 1 seed):** 1.55 / 1.82 / 1.73 against 1.57, 1.62 / 1.93, 1.96 / 1.82, 1.84 without. Again about 0.1 better on held-out shapes, as for the local model (2 seeds); replicate queued.
+
+**Capacity, length, dose still running:** wider global model for 60k, wider local model, local 60k, repair share 0.8; centred-pile seed 1.

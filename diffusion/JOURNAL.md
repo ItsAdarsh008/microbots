@@ -484,3 +484,34 @@ Thin shapes, local r=0.60, well-spaced pile start, with repair batches (`damage_
 H38: the damaged-start batches teach the "refine a nearly formed shape" half of the flow, which the pile start needs at the end. Queued to test the dose and the model type: damage fraction 0.8 (local r=0.60) and a global model with repair batches from a pile.
 
 Still running: pile variants (centred pile, larger pile), wider network (d=384), 60k iterations (global and local), second seeds on v1 data, and r=0.40 second seed from a pile.
+
+## 2026-10-29 tick 19: the pile cost is mostly distance, not density; a two-phase swarm closes it
+
+Compute: 5 A100 GPUs, 10 job slots, all in use.
+
+**Pile variants (thin shapes, v2; 1 seed each unless noted). Held-out-family error:**
+
+| start | global | local r=0.60 |
+| --- | --- | --- |
+| scattered noise (Gaussian) | 1.47, 1.41 | 1.54, 1.59 |
+| pile at a random offset (radius 0.7) | 1.93, 1.96 | 2.11, 2.10 |
+| pile centred on the arena | **1.40** | **1.53** |
+
+(Familiar-shape error from a centred pile: global 1.36, local 1.33.) The pile's density and compactness are not what costs error: a compact pile centred on the shape forms held-out shapes as well as scattered noise (1 seed; centred seed 1 queued). What costs 0.5 is that the random-offset pile starts up to 0.7 away from where the shape sits. H36 (extrusion of thin legs) is mostly **not** the explanation; the thin spiders were hard because they were far away.
+
+**Two-phase swarm (`travel_eval.py`, no retraining, thin shapes, 32 steps, 96 shapes per set, 1 seed per model).** Phase 1: the offset pile travels as a rigid body to the shape's centre (read from the map; mean travel 6.8 spacings, longest 17.6). Phase 2: the model trained on a *centred* pile forms the shape.
+
+| model | set | offset pile, no travel | offset pile after travel | centred pile (as trained) | trained directly on offset piles (earlier) |
+| --- | --- | --- | --- | --- | --- |
+| global | familiar | 9.49 | 1.60 | 1.38 | 1.57, 1.62 |
+| global | held-out family | 9.04 | **1.53** | 1.32 | 1.93, 1.96 |
+| local r=0.60 | familiar | 11.24 | 1.84 | 1.39 | 1.71, 1.68 |
+| local r=0.60 | held-out family | 10.86 | **1.80** | 1.43 | 2.11, 2.10 |
+
+Travel then form beats learning the whole move from an offset pile on held-out shapes by 0.3 to 0.4 (about the same on familiar shapes for global, 0.1 worse for local). Without the travel phase it fails completely, as expected from a model trained on centred piles. Collisions stay at 0.001 to 0.01. This is the cleanest controller for a real swarm so far: a trivial common travel (move towards the target site) followed by local shape formation.
+
+**Capacity and length controls for the pile start (global, offset pile, 1 seed each; held-out family; baseline runs 1.93, 1.96):** 4x wider network 1.66 (familiar 1.49); 60,000 iterations 1.73 (1.42). So about half of the offset-pile penalty also goes away with capacity or training length. Wider plus 60k and a wider local model are running.
+
+Hypotheses:
+- H39: for a real swarm the right decomposition is rigid travel plus local formation, not one network doing both; the travel distance is small (about 7 spacings on average here) and needs no learning.
+- H40: forming from a pile placed anywhere would be solved by translation equivariance in the model (give the model positions relative to the pile centre instead of absolute positions); to test after the capacity results.

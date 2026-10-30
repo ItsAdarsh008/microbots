@@ -46,6 +46,12 @@ Two seeds for every variant that survives the first screen; mean64, dens8 and gr
 - TarMAC reports that more communication rounds helped more than wider messages. Added: `s5a_r25_mean64_rounds1` and `s5a_r25_grid8_rounds1` (shared state used in the last layer only instead of all four). Comparing mean64 / grid8 with their rounds1 versions separates rounds from bandwidth.
 - Evidence that shared messages are sometimes ignored exists (Lowe et al. 2019); that is what the wrong-shared-state swap control is for.
 
+## Adjustments after the second literature report (note E)
+
+- Every physical aggregate (consensus, push-sum, gossip, hop-count relays) needs about as many rounds as the graph diameter (the report's estimate: about 4 hops at a radius of 6 spacings for 256 bots, more at smaller radius; an inference, not a measurement). So the realistic cost of a shared state is **latency per step, not bandwidth**. Wave F therefore models stale and noisy aggregates, not just fewer floats.
+- Density mismatch (target density minus current swarm density) is known to be sufficient information for repair in density-based swarm guidance (Acikmese and Bayard). That makes `dens8` the most principled variant for waves C and D.
+- Time-free denoiser papers argue the noise level is only recoverable from high-dimensional residual statistics, which a local window lacks. That is the motivation for wave B: a pooled progress statistic should repair the no-clock failure.
+
 ## Follow-up waves (each changes one thing relative to the first wave)
 
 - B. Without a clock (v1 data, where r=0.40 no-clock has a baseline: 1.44 / 1.55, 60% of shapes in one piece): does a shared state replace the clock (progress is readable from the pooled state)?

@@ -1117,3 +1117,5 @@ Composed v3 swarm at r=0.14 (2.3 spacings; 16x16 map; centred pile; noisy clock;
 **The decisive pair, queued (all other settings identical):** repair batches 80% **with** the density state (seed 0 and 1) and its matched shuffled control, against 80% without it (0.92, 2 seeds). If the density state adds nothing above 0.92 it is not needed. Also queued: bigger cuts in training (the training cut removes at most 64 bots, the test removes about 50; `dmg_lo` 128 allows up to 128), 80%, two seeds.
 
 The 64-number map at the arm reach costs about 0.06 held-out overlap (0.68 vs 0.74) and repairs worse (0.83): a second data point against the small map.
+
+Tick 50: nothing finished. The decisive repair runs (`s19_*`: 80% repair batches with the density state, seeds 0 and 1; the matched control; bigger training cuts, 2 seeds) are mid-training. Added the second seed of the matched control (`s19_refv3_r14_dens8_dmg08_shuf_seed1`) so the comparison has a control on both seeds. No claims until they are scored.

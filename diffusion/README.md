@@ -92,3 +92,7 @@ Read, with what is replicated (2 seeds) marked:
 ## Stage 1 reference swarm (journal tick 23)
 
 Local radius 0.6, an 8x8 target grid (64 numbers) as the only broadcast, noisy-clock training, repair batches, centred-pile start, thin-shape data, 2 seeds. Held-out-family error 1.67 and 1.61 (no-learning baseline 1.96), collisions 0.00, repair cover 0.97 after a cut chunk, tolerant of clock jitter, speed caps and 128 to 512 bots; motion noise gives 10% collisions. The shared-global-state experiments that follow (`GLOBAL_STATE_PLAN.md`) start from the r=0.25 local model, where the gap to the all-to-all model is largest.
+
+## Try the models (demo)
+
+`demo/serve.py` serves 12 trained models behind a small web page: pick a model, pick or draw a target shape, choose the start (scattered, centred pile, offset pile with rigid travel), steps, bot count, clock error, motion noise and the hard-core spacing rule, then cut a chunk out and press repair. Models run on one GPU box (about 0.1 to 0.2 s per run; CPU also works, the models have 2.5M to 3.6M parameters). On the box: `python demo/serve.py --port 8000` (binds to localhost); from your machine: `ssh -L 8000:localhost:8000 ubuntu@<box>` and open http://localhost:8000. `demo/export.py` packs the EMA weights of runs into `demo_models/` (about 10 to 15 MB each; not in git).

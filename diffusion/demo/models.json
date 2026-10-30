@@ -1,0 +1,14 @@
+{
+ "s4_ref_local_r60_g8_tn15_dmg_pfc": {"label": "Reference swarm (local, radius 0.6, 64-number map, repair-trained)", "start": "pile_c", "note": "Each bot sees only neighbours within about 6 spacings plus an 8x8 map of the target. Trained from a centred pile with noisy clocks and damage."},
+ "s4_ref_global_g8_tn15_dmg_pfc": {"label": "Reference swarm, global attention (upper bound)", "start": "pile_c", "note": "Same training, but every bot sees every other bot."},
+ "s2_cond_global": {"label": "Global attention, full map, scattered start", "start": "noise", "note": "All-to-all attention. Trained from scattered noise on thin and branching shapes."},
+ "s2_cond_local_r60_L4": {"label": "Local radius 0.6, full map, scattered start", "start": "noise", "note": "Sensing radius about 6 spacings."},
+ "s2_cond_local_r40_L4": {"label": "Local radius 0.4, full map, scattered start", "start": "noise", "note": "Sensing radius about 4 spacings; watch thin shapes."},
+ "s2_cond_local_r25_L4": {"label": "Local radius 0.25, full map, scattered start", "start": "noise", "note": "The weak local model; holes and fragments on thin shapes."},
+ "s1_cond_local_r40_L4_notime": {"label": "Local radius 0.4, NO clock", "start": "noise", "note": "Without a clock the swarm forms bodies but leaves strays."},
+ "s3_cond_global_dmg": {"label": "Repair-trained global model", "start": "noise", "note": "Form a shape, then cut a chunk and press repair."},
+ "s2pf_cond_global_pf": {"label": "Global, trained from a pile at a random offset", "start": "pile_off", "note": "Pile starts anywhere; the demo moves it rigidly first."},
+ "s3pf_cond_local_r60_L4_dmg_pf": {"label": "Local radius 0.6, pile start plus repair training", "start": "pile_off", "note": "Pile and repair together."},
+ "s1_uncond_global_60k": {"label": "Unconditional (no target map): invents a shape", "start": "noise", "note": "Ignores the drawn shape. Every seed gives a new compact shape."},
+ "s1_uncond_local_r40_L4": {"label": "Unconditional, local radius 0.4", "start": "noise", "note": "No map and local only: try several seeds."}
+}

@@ -600,3 +600,22 @@ The three extras (64-number broadcast, noisy-clock training, repair batches) tog
 **Not tested:** the actual bot dynamics (finite size and links, arm reach, strength), real aggregation latency, anything in 3D. The thin-shape data is my own generator.
 
 Hypothesis: H41, hard-core spacing removes the motion-noise collisions as it removed the others (to test in Stage 2 with the real body model).
+
+## 2026-10-29 tick 24: interactive demo; first hand-drawn shapes expose a gap (1 seed per model, 1 run per cell)
+
+**Demo.** `diffusion/demo/` serves 12 trained models behind a small web page (pick a model, pick or draw a shape, choose start, steps, bot count, clock error, motion noise, hard-core rule; cut a chunk and repair). It runs on one of the GPU boxes (about 0.1 to 0.2 s per run on the GPU; 6 to 18 s on that box's CPU because training saturates it), bound to localhost and reached through an SSH tunnel. No GPU rental is needed: the models are 2.5M to 3.6M parameters.
+
+**What hand-drawn shapes show** (`demo/test_drawn.py`; fraction of bots inside the shape / fraction of the shape covered; one seed per model; shapes drawn on the 64x64 grid, then centred and scaled like training shapes; `s2_*` models start from scattered noise, `s4_*` from a centred pile):
+
+| shape | reference swarm (local r=0.6, pile) | reference swarm, global | global, scattered start | local r=0.6, scattered start |
+| --- | --- | --- | --- | --- |
+| disc | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 1.00 | 1.00 / 1.00 |
+| fat T | 0.55 / 0.70 | 0.46 / 0.56 | 1.00 / 1.00 | 0.96 / 0.98 |
+| thin T | 0.33 / 0.50 | 0.70 / 0.98 | 0.99 / 0.99 | 0.33 / 0.47 |
+| L | 0.78 / 0.95 | 0.89 / 0.98 | 0.99 / 0.99 | 0.98 / 0.99 |
+| ring | 0.92 / 1.00 | 0.95 / 1.00 | 1.00 / 1.00 | 0.99 / 0.99 |
+| preset star via the drawing path | 0.86 / 0.95 | 0.95 / 0.99 | 1.00 / 1.00 | 0.78 / 0.88 |
+| preset ring via the drawing path | 0.70 / 0.94 | 0.75 / 0.97 | 0.98 / 0.98 | 0.62 / 0.76 |
+
+The drawing path is not the cause (discs, rings and presets work through it, and the global scattered-start model forms every drawn shape). The models differ: the pile-start reference swarms fail on wide T-shapes (inside 0.46 to 0.55) and the local r=0.6 model with scattered start fails on a thin T (inside 0.33). None of my held-out families (stars, rings, spiders, emoji) exposed this. H42: the pile start (radius 0.7) cannot supply bots to the extremities of wide bars, and thin parts need either a larger sensing radius or all-to-all attention.
+**Next:** a hand-drawn/letter test suite evaluated on 2 seeds of every model (letters A to Z drawn from a font, plus T, L, plus, arrow), so this becomes a measured result rather than a handful of anecdotes.

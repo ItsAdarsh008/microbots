@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Swarm shape lab</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1c1c1a;--mut:#6b6b66;--card:#fff;--line:#dcdcd4;--acc:#0f6e5b;--bot:#d1432b;--tgt:#e4e4dc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161615;--fg:#ececE6;--mut:#9a9a92;--card:#1f1f1d;--line:#3a3a36;--acc:#4cc2a5;--bot:#ff7a5c;--tgt:#2b2b28}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:16px;display:grid;gap:16px;grid-template-columns:minmax(260px,320px) 1fr}
+@media(max-width:760px){main{grid-template-columns:1fr}}
+h1{font-size:20px;margin:0 0 4px}p.s{color:var(--mut);margin:0 0 10px;font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 3px}select,input[type=range]{width:100%}
+select,button{font:inherit;padding:6px 8px;border-radius:7px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+button{cursor:pointer}button.p{background:var(--acc);color:#fff;border-color:var(--acc)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.row button{flex:1}
+canvas{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;max-width:100%}
+#note{font-size:12.5px;color:var(--mut);margin-top:6px}#met{font-size:13px;margin-top:8px;font-variant-numeric:tabular-nums}
+.tt{font-size:12px;color:var(--mut)}
+</style></head><body><main>
+<div class="card">
+<h1>Swarm shape lab</h1><p class="s">256 identical bots move from noise or a pile into a target shape. Pick a trained model, pick or draw a shape, press run.</p>
+<label>Model</label><select id="model"></select><div id="note"></div>
+<label>Target shape (click a preset, then paint on the grid to change it)</label><select id="preset"></select>
+<canvas id="draw" width="192" height="192" style="margin-top:6px;cursor:crosshair"></canvas>
+<div class="row"><button id="clear">Clear drawing</button></div>
+<label>Start</label><select id="start"><option value="noise">scattered noise</option><option value="pile_c">pile at the centre</option><option value="pile_off">pile at an offset, rigid travel first</option></select>
+<label>Steps <span id="kv">16</span></label><input id="k" type="range" min="2" max="64" value="16">
+<label>Bots <span id="nv">256</span></label><input id="n" type="range" min="64" max="512" step="64" value="256">
+<label>Clock error (per bot) <span id="jv">0</span></label><input id="jit" type="range" min="0" max="0.4" step="0.05" value="0">
+<label>Motion noise <span id="mv">0</span> spacings</label><input id="mot" type="range" min="0" max="0.6" step="0.1" value="0">
+<label><input type="checkbox" id="hard"> hard-core spacing rule (bots never overlap)</label>
+<label>Seed</label><select id="seed"></select>
+<div class="row"><button class="p" id="run">Run</button><button id="cut">Cut a chunk</button><button id="rep">Repair</button></div>
+</div>
+<div><canvas id="main" width="620" height="620"></canvas><div id="met"></div>
+<p class="tt">Grey = target shape, red = bots. "Cut a chunk" removes the bots near a random spot of the finished shape; "Repair" restarts the clock and lets the same model refill it (only models trained with damage do). Shapes you draw are centred and scaled to the training range. Models run on CPU on a research box.</p></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);let models=[],shapes={},grid=new Float32Array(64*64),dirty=false,frames=[],anim=null,occ=null,last=null,damaged=null,travel=0;
+for(let i=0;i<8;i++){const o=document.createElement('option');o.value=i;o.textContent='seed '+i;$('seed').appendChild(o)}
+for(const[id,lab]of[['k','kv'],['n','nv'],['jit','jv'],['mot','mv']])$(id).oninput=()=>$(lab).textContent=$(id).value;
+function drawGrid(){const c=$('draw').getContext('2d');c.fillStyle=getComputedStyle(document.body).backgroundColor;c.fillRect(0,0,192,192);c.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--acc');
+ for(let r=0;r<64;r++)for(let q=0;q<64;q++)if(grid[r*64+q]>0.5)c.fillRect(q*3,(63-r)*3,3,3)}
+function setPreset(n){const o=shapes[n];for(let r=0;r<64;r++)for(let q=0;q<64;q++)grid[r*64+q]=o[r][q];dirty=false;drawGrid()}
+let painting=false;function paint(e){const b=$('draw').getBoundingClientRect(),q=Math.floor((e.clientX-b.left)/b.width*64),r=63-Math.floor((e.clientY-b.top)/b.height*64);
+ for(let dr=-2;dr<=2;dr++)for(let dq=-2;dq<=2;dq++){const rr=r+dr,qq=q+dq;if(rr>=0&&rr<64&&qq>=0&&qq<64&&dr*dr+dq*dq<=5)grid[rr*64+qq]=e.shiftKey?0:1}dirty=true;drawGrid()}
+$('draw').onmousedown=e=>{painting=true;paint(e)};window.onmouseup=()=>painting=false;$('draw').onmousemove=e=>{if(painting)paint(e)};
+$('clear').onclick=()=>{grid.fill(0);dirty=true;drawGrid()};$('preset').onchange=()=>setPreset($('preset').value);
+$('model').onchange=()=>{const m=models.find(x=>x.name==$('model').value);$('note').textContent=(m.note||'')+'  ['+['radius',m.cfg.radius||'all-to-all',' map:',m.cfg.coarse?m.cfg.coarse+'x'+m.cfg.coarse+' grid':'full','clock:',m.cfg.time].join(' ')+']';if(m.start)$('start').value=m.start};
+const W=620,S=W/2.6,X=x=>(x+1.3)*S,Y=y=>(1.3-y)*S;
+function render(f){const c=$('main').getContext('2d');c.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--card');c.fillRect(0,0,W,W);
+ if(occ){c.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--tgt');for(let r=0;r<64;r++)for(let q=0;q<64;q++)if(occ[r][q]>0.5)c.fillRect(X((q)*2/64-1),Y((r+1)*2/64-1),S*2/64+1,S*2/64+1)}
+ c.fillStyle=getComputedStyle(document.documentElement).getPropertyValue('--bot');for(const p of f){c.beginPath();c.arc(X(p[0]),Y(p[1]),3.2,0,7);c.fill()}}
+function play(fr,after){clearInterval(anim);let i=0;anim=setInterval(()=>{render(fr[i]);i++;if(i>=fr.length){clearInterval(anim);if(after)after()}},45)}
+async function call(extra){const body={model:$('model').value,start:$('start').value,k:+$('k').value,n:+$('n').value,seed:+$('seed').value,jitter:+$('jit').value,motion:+$('mot').value,hardcore:$('hard').checked,...extra};
+ if(dirty)body.mask=Array.from(grid).map(v=>v>0.5?1:0);else body.shape=$('preset').value;
+ $('met').textContent='running...';const r=await fetch('/api/run',{method:'POST',body:JSON.stringify(body)});const j=await r.json();if(j.error){$('met').textContent='error: '+j.error;return null}return j}
+function show(j){occ=j.occ;frames=j.frames;last=frames[frames.length-1];play(frames);$('met').textContent=`bots ${j.n} | inside the shape ${(100*j.inside).toFixed(0)}% | shape covered ${(100*j.cover).toFixed(0)}% | bots closer than 0.35 spacings to a neighbour ${(100*j.coll).toFixed(1)}%`}
+$('run').onclick=async()=>{const j=await call({});if(j){show(j);damaged=null}};
+$('cut').onclick=()=>{if(!last||!occ)return;const pts=[];for(let r=0;r<64;r++)for(let q=0;q<64;q++)if(occ[r][q]>0.5)pts.push([(q+.5)*2/64-1,(r+.5)*2/64-1]);const c=pts[Math.floor(Math.random()*pts.length)];
+ damaged=last.filter(p=>Math.hypot(p[0]-c[0],p[1]-c[1])>0.3);render(damaged);$('met').textContent=`cut: ${last.length-damaged.length} bots removed, ${damaged.length} left`};
+$('rep').onclick=async()=>{if(!damaged)return;const j=await call({x0:damaged,t0:0,n:damaged.length});if(j){show(j)}};
+(async()=>{models=await (await fetch('/api/models')).json();shapes=await (await fetch('/api/shapes')).json();
+ for(const m of models){const o=document.createElement('option');o.value=m.name;o.textContent=m.label||m.name;$('model').appendChild(o)}
+ for(const n of Object.keys(shapes)){const o=document.createElement('option');o.value=n;o.textContent=n;$('preset').appendChild(o)}
+ $('preset').value=shapes.star?'star':Object.keys(shapes)[0];setPreset($('preset').value);$('model').onchange()})();
+</script></body></html>

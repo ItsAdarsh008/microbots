@@ -149,6 +149,8 @@ def main(cfg_path):
                 o, sd = aug_maps(tr_occ[mi], tr_sdf[mi], k, flip)
                 maps = make_maps(o, sd, cfg.get("coarse", 0))
             t = torch.rand(x0.shape[0], device=dev)
+            if cfg.get("tpow"):
+                t = 1 - t ** cfg["tpow"]      # tpow > 1 puts more training on late times, where final positions are decided
             if cfg.get("tjit", 0):
                 # every particle gets its own slightly wrong clock; the straight-line target is unchanged
                 t = (t[:, None] + torch.randn(x0.shape[:2], device=dev) * cfg["tjit"]).clamp(0, 1)

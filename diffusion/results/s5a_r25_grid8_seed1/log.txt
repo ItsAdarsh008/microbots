@@ -1,0 +1,25 @@
+params 2498462 cfg {"name": "s5a_r25_grid8_seed1", "cond": "map", "radius": 0.25, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 1, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "gstate": "grid", "ggrid": 8, "gc": 1}
+it 500 loss 0.0438 gn 0.23 lr 3.0e-04 22s
+it 1000 loss 0.0168 gn 0.55 lr 3.0e-04 38s
+it 1500 loss 0.0137 gn 0.21 lr 3.0e-04 54s
+it 2000 loss 0.0124 gn 0.23 lr 3.0e-04 70s
+it 2500 loss 0.0114 gn 0.31 lr 3.0e-04 87s
+it 3000 loss 0.0111 gn 0.47 lr 2.9e-04 104s
+it 3500 loss 0.0108 gn 0.27 lr 2.9e-04 119s
+it 4000 loss 0.0103 gn 0.22 lr 2.9e-04 134s
+it 4500 loss 0.0099 gn 0.48 lr 2.8e-04 150s
+it 5000 loss 0.0096 gn 0.36 lr 2.8e-04 167s
+it 5500 loss 0.0094 gn 0.12 lr 2.8e-04 183s
+it 6000 loss 0.0093 gn 0.32 lr 2.7e-04 199s
+it 6500 loss 0.0088 gn 0.31 lr 2.7e-04 216s
+it 7000 loss 0.0086 gn 0.23 lr 2.6e-04 233s
+it 7500 loss 0.0086 gn 0.25 lr 2.6e-04 250s
+it 8000 loss 0.0084 gn 0.30 lr 2.5e-04 267s
+it 8500 loss 0.0081 gn 0.42 lr 2.5e-04 283s
+it 9000 loss 0.0081 gn 0.09 lr 2.4e-04 299s
+it 9500 loss 0.0080 gn 0.18 lr 2.3e-04 315s
+it 10000 loss 0.0079 gn 0.17 lr 2.3e-04 331s
+it 10500 loss 0.0077 gn 0.05 lr 2.2e-04 348s
+it 11000 loss 0.0076 gn 0.11 lr 2.1e-04 364s
+it 11500 loss 0.0075 gn 0.36 lr 2.1e-04 380s
+it 12000 loss 0.0075 gn 0.24 lr 2.0e-04 397s

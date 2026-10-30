@@ -619,3 +619,24 @@ Hypothesis: H41, hard-core spacing removes the motion-noise collisions as it rem
 
 The drawing path is not the cause (discs, rings and presets work through it, and the global scattered-start model forms every drawn shape). The models differ: the pile-start reference swarms fail on wide T-shapes (inside 0.46 to 0.55) and the local r=0.6 model with scattered start fails on a thin T (inside 0.33). None of my held-out families (stars, rings, spiders, emoji) exposed this. H42: the pile start (radius 0.7) cannot supply bots to the extremities of wide bars, and thin parts need either a larger sensing radius or all-to-all attention.
 **Next:** a hand-drawn/letter test suite evaluated on 2 seeds of every model (letters A to Z drawn from a font, plus T, L, plus, arrow), so this becomes a measured result rather than a handful of anecdotes.
+
+## 2026-10-29 tick 25: first wave of shared global state, scored against the pre-registered rules (partial; NOT a finding yet)
+
+Base: thin shapes, scattered-noise start, full map, local r=0.25, 4 rounds, clock given. Error in spacings, held-out family (familiar shapes in brackets); lower is better. Baseline r=0.25 (no shared state): **1.97, 2.03** (seed 0, 1; familiar 1.51, 1.56). Seed spread of the baseline: 0.06 (a third seed is running). Reference: local r=0.40 1.69, 1.68; global attention 1.47, 1.41.
+
+| variant (floats shared per round) | seed 0 | seed 1 | wrong-state swap at test (seed 0): familiar-shape error | verdict so far |
+| --- | --- | --- | --- | --- |
+| mean64 (64) | 1.75 (1.38) | 1.85 (1.47) | 4.12 (from 1.38) | gain about 0.20, **but see the control** |
+| mean64_shuf, **control**: broadcast from another swarm | 1.83 (1.44) | queued | n/a | **gain 0.17 with no information about this swarm** |
+| dens8 (64, raw density grid) | 1.90 (1.43) | 1.94 (1.48) | 2.24 (from 1.43) | gain 0.08 (below the 0.15 threshold); used, but barely helps |
+| grid8 (64, learned grid) | 1.62 (1.49) | running | 3.09 (from 1.49) | gain 0.38, one seed, **no matched control yet** |
+| isab4x16 (64, four tokens) | 1.59 (1.55) | queued | 4.88 (from 1.55) | gain 0.41 on held-out, but familiar shapes and emoji not better (1.55 vs 1.51; 1.71 vs 1.65), one seed, **no matched control yet** |
+
+Pre-registered rules (`GLOBAL_STATE_PLAN.md`): "helps" needs a gain of at least 0.15 on both seeds, a rise of at least 0.10 when the shared state is swapped, and a control without a comparable gain.
+- **mean64: not established.** The swap rises a lot (the model uses the broadcast), but the control that receives another swarm's broadcast also gains 0.17, nearly the same as mean64's 0.20. So the gain is capacity or regularisation of an extra path, or seed luck, not coordination.
+- **dens8: fails** the size threshold (0.08) on both seeds, although it is used.
+- **grid8, isab4x16: promising and untested**: bigger gains (0.38 and 0.41) but one seed each and no matched shuffled control. Queued now: shuffled controls for both (`s5a_r25_grid8_shuf`, `s5a_r25_isab4x16_shuf`), second seeds, a second shuffled mean64, and a third baseline seed.
+
+**Predictions scored.** 1 (spatial beats pooled vector): wrong for the raw density grid (0.08), unresolved for the learned grid. 2 (mean16 about mean64): not scored (mean16 running). 4 (shuffled control shows no gain): **wrong** (0.17), which is exactly the case the control exists for. 5: not applicable yet.
+
+Hypotheses: H43, the benefit of an extra global path may mostly come from an added normalising or averaging channel (a mean over all nodes), not from swarm-specific information; the shuffled controls for grid8 and isab4x16 decide this. H44, isab's lower familiar-shape performance (1.55) with a better held-out score (1.59) suggests a different trade-off than the grid; per-family breakdown next.

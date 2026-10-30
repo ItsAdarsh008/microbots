@@ -994,3 +994,20 @@ Local models, thin shapes, weight 100, evaluator's protocol (64 steps; val / hel
 **Replicated (2 seeds, thin shapes, weight 100, 64-step protocol, val / held-out / emoji):** repair batches 0.77 / 0.73 / 0.73 and 0.77 / 0.73 / 0.74 (plain: 0.78 / 0.74 / 0.75): **repair training costs about 0.01 of formation quality, on 2 seeds**. No clock, local r=0.6: 0.76 / 0.71 / 0.72 and 0.76 / 0.72 / 0.73, 95% connected both times: the by-eye finding of tick 39 (undersized, skeletal shapes; lower recall) holds on both seeds. Combining no clock with repair batches (`s11_r60_notime_aux100_tn`) is worse than either (0.68 / 0.63 / 0.65, collisions 0.14): not combined. Still running: composed v2 second seeds, 8x8 and 16x16 maps at other radii, offset-pile and noisy-clock second seeds (now queued), r=0.4 at weight 100.
 
 **Correction: I asked for physical bot numbers that the repo already has.** `assets/microbots/microbot_v1/DESIGN.md` gives: ball diameter 30 mm (touching distance 34.5 mm), tip-to-tip 81 mm (arm reach), mass 19.3 g, 6 genderless connectors per bot, 3 N assumed per connector (to be measured), only one bot can cantilever sideways, lattice cell 28 x 28 x 81 mm. In my units one particle spacing is about one bot diameter, so **the 81 mm arm reach is about 2.3 to 2.7 spacings, almost exactly my radius-0.25 sensing model** (and the hard-core radius 0.7 spacings is about one body). What the note does not give, and what I still need: how neighbours are sensed (IR or BLE range and rate), how fast a bot moves per step (arm crawl or roll), and how many bots the target swarm has. With the repo numbers I can already make Stage 2's first model: finite-size bodies (hard-core rule), sensing = arm reach (r=0.25), connectors only where bots touch; the cantilever limit and docking are properties of the 3D lattice work in `linking/`.
+
+## 2026-10-30 tick 42: broadcast size at weight 100; radius 0.4 equals 0.6 (1 seed each)
+
+Thin shapes, scattered start, weight 100, 64-step protocol, val / held-out / emoji footprint IoU:
+
+| model | map told to every bot | val | held-out | emoji | seeds |
+| --- | --- | --- | --- | --- | --- |
+| local r=0.6 | full map | 0.78 | 0.74 | 0.75 | 2 |
+| local r=0.6 | 16x16 grid (256 numbers) | 0.78 | 0.73 | 0.75 | 1 |
+| local r=0.6 | **8x8 grid (64 numbers)** | **0.73** | **0.65** | **0.70** | 1 |
+| local r=0.4 | full map | 0.78 | 0.74 | 0.75 | 1 |
+| local r=0.25 | full map | 0.77 | 0.72 | 0.73 | 1 |
+| local r=0.25 | 8x8 grid | 0.71 | 0.63 | 0.67 | 1 |
+
+- **A 64-number broadcast costs 0.05 to 0.09 held-out overlap from scattered noise (r=0.6 and r=0.25); 256 numbers cost nothing.** (At weight 0 the difference was about 0.1 in `w2`.) The composed v2 swarms use an 8x8 map but start from a centred pile, which is why they land at 0.68 to 0.69 held-out rather than 0.63 to 0.65: the starting arrangement carries information the map does not. Second seeds of the 8x8 r=0.6 model and r=0.4 full map are queued.
+- **r=0.4 matches r=0.6 at weight 100** (0.78 / 0.74 / 0.75 both) and r=0.25 is 0.02 to 0.03 behind: a sensing radius of 2.5 spacings, about the arm reach of the v1 bot, loses little.
+- The 16x16 composed variants (`s14_refv3_*`) test whether 256 numbers bring back the snowflake and the key's ring end that the 8x8 composed swarm loses.

@@ -1,0 +1,5 @@
+params 2465434 cfg {"name": "s10_r60_aux20_v3", "cond": "map", "radius": 0.6, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 0, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes3", "aux_in": 20.0, "aux_rep": 20.0}
+it 500 loss 0.0770 gn 0.23 lr 3.0e-04 14s
+it 1000 loss 0.0238 gn 0.40 lr 3.0e-04 28s
+it 1500 loss 0.0223 gn 0.24 lr 3.0e-04 42s
+it 2000 loss 0.0218 gn 0.33 lr 3.0e-04 57s

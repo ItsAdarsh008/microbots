@@ -845,3 +845,27 @@ Looked at (eight emoji; scratchpad `cov_grid.png`): fuller star points, a comple
 Next, in order: second seed of weight 50 (local) and weight 100; weight 50 + coverage; hand-drawn tests for the weight-50 models; the radius result (r=0.25 / 0.4 second seeds); the reference swarm at weight 50.
 
 Data test queued (tick 34): `shapes3` adds a union-of-rectangles family (T-, L-, E-, plus-like boxy shapes; **not letters**; letters stay a pure test set) to the thin-shape data. `s10_r60_aux20_v3` and `s10_global_aux20_v3` use exactly the weight-20 recipe of `s6_*_aux_in20_rep20`, changing only the data. Because the in-run evaluation sets come from the dataset, **compare these runs only on the fixed test sets** (emoji, the v2 held-out families, letters, hand-drawn shapes through `demo/iou_models.py`, `letters_eval.py`, `test_drawn2.py`), not on the numbers in `collect.py`. Seeds: 1 each; a gain would need a second seed before being claimed.
+
+## 2026-10-30 tick 35: radius with geometric losses replicated; weight 50 replicated
+
+Footprint IoU in the evaluator's protocol (64 steps; val / held-out / emoji; thin shapes; scattered start); one entry per seed. Ceiling about 0.82 / 0.78 / 0.79.
+
+| model | weight | val | held-out | emoji | collisions | seeds |
+| --- | --- | --- | --- | --- | --- | --- |
+| local r=0.25 | 20 | 0.73, 0.73 | 0.67, 0.67 | 0.69, 0.68 | 0.02 | **2** |
+| local r=0.40 | 20 | 0.73, 0.73 | 0.69, 0.69 | 0.70, 0.69 | 0.03 | **2** |
+| local r=0.60 | 20 | 0.74, 0.73 | 0.70, 0.69 | 0.69, 0.69 | 0.02 to 0.03 | **2** |
+| local r=0.25 | 50 | 0.76 | 0.70 | 0.72 | 0.01 | 1 |
+| local r=0.60 | 50 | 0.77, 0.77 | 0.73, 0.73 | 0.73, 0.73 | 0.02 | **2** |
+| global | 20 | 0.72, 0.71 | 0.68, 0.70 | 0.69, 0.69 | 0.03 to 0.04 | 2 |
+| global | 50 | 0.75 | 0.73 | 0.73 | 0.02 | 1 |
+| global, weight 20 + coverage 20 | | 0.74 | 0.72 | 0.71 | 0.03 | 1 |
+| reference swarm (pile, 64-number map) | 5 / 20 | 0.71 / 0.74 | 0.61 / 0.65 | 0.66 / 0.70 | 0.00 | 1 each |
+
+- **Replicated (2 seeds): with geometric losses the sensing radius matters little.** At weight 20 the held-out IoU is 0.67 (r=0.25), 0.69 (r=0.4), 0.69 to 0.70 (r=0.6): a gap of 0.02 to 0.03 between 2.5 and 6 spacings of sensing, where before the losses the same models differed by a large margin (old `w2`: 1.97 vs 1.54). At weight 50, r=0.25 is 0.03 below r=0.6 (1 seed for r=0.25; second seed queued). For a physical swarm this matters: smaller sensing radius means fewer neighbours to hear from and a cheaper robot.
+- **Weight 50 replicated (2 seeds, local r=0.6)**: 0.77 / 0.73 / 0.73 both times (about 94% of the ceiling on held-out shapes).
+- Coverage penalty on top of weight 20 for the global model: held-out 0.72 vs 0.68 to 0.70 (1 seed), the same direction as for the local model.
+- The reference-swarm recipe (centred pile, 64-number map, noisy clock, repair batches) reaches 0.74 / 0.65 / 0.70 at weight 20 with no collisions; weight 50 is running.
+- Not yet checked this tick by eye: the weight-50 and r=0.25 models on the hand-drawn T/L/plus shapes and letters.
+
+Running: weight 100 (local, global), weight 50 + coverage 50 (local, global), reference swarm at weight 50, the rectangle-shapes data test (local, global), and now `s6_r25_aux_in50_rep50_seed1` and `s9_r25_in50_rep50_cov50`.

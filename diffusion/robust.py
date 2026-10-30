@@ -30,8 +30,16 @@ def fps(o, n, rng):
     return c[s]
 
 
+def separate(x, dmin, iters=3):
+    for _ in range(iters):
+        d = x[:, :, None] - x[:, None]
+        dist = d.norm(dim=-1, keepdim=True).clamp_min(1e-6)
+        x = x + (torch.relu(dmin[..., None] - dist) / 2 * d / dist * (dist > 1e-5)).sum(2)
+    return x
+
+
 @torch.no_grad()
-def run_variant(N=256, jitter=0.0, async_p=1.0, motion=0.0, seed=7):
+def run_variant(N=256, jitter=0.0, async_p=1.0, motion=0.0, seed=7, hard=False):
     g = torch.Generator().manual_seed(seed)
     x = evalm.init_noise((n_sets, N, 2), g, cfg)
     steps = int(round(K / async_p))
@@ -46,13 +54,15 @@ def run_variant(N=256, jitter=0.0, async_p=1.0, motion=0.0, seed=7):
         if motion:
             sp = torch.tensor([spacing(o, N) for o in occ], device="cuda")[:, None, None]
             x = x + torch.randn_like(x) * motion * sp / np.sqrt(steps)
+        if hard:
+            x = separate(x, 0.7 * torch.tensor([spacing(o, N) for o in occ], device="cuda")[:, None, None])
     return x.cpu().numpy()
 
 
 rng = np.random.default_rng(0)
 rows = {}
 variants = {"base": {}, "jitter0.1": dict(jitter=0.1), "jitter0.25": dict(jitter=0.25), "async0.5": dict(async_p=0.5),
-            "motion0.3sp": dict(motion=0.3), "N128": dict(N=128), "N512": dict(N=512)}
+            "motion0.3sp": dict(motion=0.3), "motion0.3sp+hardcore": dict(motion=0.3, hard=True), "async0.5+hardcore": dict(async_p=0.5, hard=True), "N128": dict(N=128), "N512": dict(N=512)}
 for name, kw in variants.items():
     X = run_variant(**kw)
     N = kw.get("N", 256)

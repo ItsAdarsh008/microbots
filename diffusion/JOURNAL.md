@@ -1061,3 +1061,25 @@ Thin shapes, weight 100, 64-step protocol, val / held-out / emoji; one entry per
 **End-to-end test at r=0.14 (arm reach; seed 0; 96 val shapes; 16 steps):** formation `w2` 1.01 / 1.17 (val / held-out; floor about 0.8), clean IoU 0.83; rigid travel then form identical (1.00 vs 1.01); clock error 0.25 IoU 0.82; half the bots updating 0.81 with collisions 0.05; motion noise 0.3 spacings IoU 0.78, collisions 0.11; 128 / 512 bots IoU 0.81 / 0.84, collisions 0.00; speed cap no change; hard-core spacing rule collisions 0.000. **Repair is the clear weakness at this range:** a cut chunk refills only from 0.83 to **0.85** cover (r=0.25: 0.84 to 0.94; r=0.6: 0.83 to 0.97), while losing 20% of the bots at random is fine (0.98 to 0.98). Pictures (16 targets; scratchpad `arm.png`; rows: rule, v3 at 4.1, 2.3 and 1.6 spacings): shapes and letters recognisable at all three ranges; at 1.6 spacings the butterfly wing and key ring soften.
 
 **H56 (new, with controls):** a bot that cannot see the hole cannot know bots are missing; a coarse swarm-density signal (8x8 histogram of where bots are, read at each bot's position) should let a short-range swarm refill a cut chunk. This revives the shared-state idea of ticks 25 to 27, which did not improve *formation* once judged by overlap and pictures; this time the base model is good and the gap is specific. Runs queued on the composed r=0.14 recipe: `s17_refv3_r14_dens8` (and a second seed), `s17_refv3_r14_dens8_shuf` (control: the density state comes from a different swarm; same parameters, no information about this one), `s17_refv3_r14_grid8` (learned grid). Judged by the repair test and by pictures, not by `w2`; the wrong-shared-state swap is reported for every run. Demo: the arm-reach swarms added.
+
+## 2026-10-30 tick 47: arm-reach range replicated; the hard-core rule removes the collisions under noise
+
+**Replicated (2 seeds; thin shapes, weight 100; 64-step protocol; val / held-out / emoji):**
+
+| model | sensing | val | held-out | emoji |
+| --- | --- | --- | --- | --- |
+| composed v3, pile start, 16x16 map | 4.1 spacings (r=0.25) | 0.79, 0.79 | 0.74, 0.74 | 0.77, 0.77 |
+| composed v3 | **2.3 spacings (r=0.14; the v1 arm reach)** | **0.79, 0.78** | **0.74, 0.74** | **0.76, 0.76** |
+| composed v3 | 1.6 spacings (r=0.10) | 0.78, 0.77 | 0.72, 0.72 | 0.75, 0.75 |
+| plain, scattered start, full map | 2.3 spacings | 0.73, 0.72 | 0.68, 0.68 | 0.68, 0.68 |
+| plain | 1.6 spacings | 0.70, 0.69 | 0.67, 0.66 | 0.66, 0.65 |
+
+**At the v1 bot's arm reach the composed swarm loses nothing on held-out shapes, and the plain model loses about 0.05 (both on 2 seeds).** The recipe (pile start, noisy clock, repair batches, 16x16 map) is what makes short sensing work.
+
+**Hand-drawn shapes through the demo (disc, fat T, thin T, L, plus, ring; one drawing each; inside / covered 0.98 to 1.00 in every cell):** the swarm at 4.1 spacings, the swarm at 2.3 spacings and the plain best model all form every one of them.
+
+**H41 supported (arm-reach swarm, seed 0; 96 val shapes):** the hard-core spacing rule, applied together with the noise, takes collisions from 0.11 to **0.00** with motion noise 0.3 spacings per step (overlap 0.78 to 0.80) and from 0.05 to 0.00 with half the bots updating per round (0.81 to 0.82). All collision weak points seen so far are removed by that one local rule.
+
+(Process note: a robustness-script edit moved a no-grad decorator onto the wrong function and made the first run run out of memory; fixed and rerun. No result was affected.)
+
+Queued for the remaining arm-reach weakness (a cut chunk refills only from 0.83 to 0.85 cover): more repair batches (80% instead of 50%; two seeds) and the 64-number map at the arm reach. Running: swarm-density state tests (`s17_*`: density state with a second seed, the matched control with the density state from another swarm, a learned grid).

@@ -948,3 +948,43 @@ Thin shapes, scattered start, weight 100; 16-step fixed-set protocol (emoji / he
 - **Reference swarm (centred pile, 64-number map, noisy clock, repair batches; 64-step protocol val / held-out / emoji):** weight 5: 0.71 / 0.61 / 0.66; 20: 0.74 / 0.65 / 0.70; 50: 0.76 / 0.67 / 0.72; **100: 0.76 / 0.68 / 0.73**; collisions 0.00. Saturated; held-out 0.68 vs 0.74 for the plain model (full map, scattered start), the gap is the 64-number map and the pile start.
 
 Still running: no-clock second seed and a repair plus no-clock model (`s11_r60_notime_aux100_tn`, composed with repair batches), offset pile (`s11_r60_pfoffset_aux100`), noisy clock (`s13_r60_aux100_tn15`), 64-number broadcast at weight 100 (`s12_*`), the composed reference swarm v2 (`s14_refv2_r40`, `s14_refv2_r25`), global weight-100 second seed.
+
+## 2026-10-30 tick 40: hardware hypotheses H50 to H55 scored; composed reference swarm v2 works end to end (seed 0)
+
+Local models, thin shapes, weight 100, evaluator's protocol (64 steps; val / held-out / emoji footprint IoU; the start named in the row; ceiling 0.82 / 0.78 / 0.79):
+
+| model | start | val | held-out | emoji | collisions | seeds |
+| --- | --- | --- | --- | --- | --- | --- |
+| plain best, r=0.6 (reference) | scattered | 0.78 | 0.74 | 0.75 | 0.01 | 2 |
+| **noisy-clock training** (H50) | scattered | 0.79 | 0.73 | 0.75 | 0.02 | 1 |
+| **offset pile**, well spaced (H52) | pile at random offset | **0.80** | 0.74 | 0.76 | 0.01 to 0.03 | 1 |
+| repair batches (H53) | scattered | 0.77 | 0.73 | 0.73 | 0.03 | 1 (+1 queued) |
+| 16x16 map (256 numbers) | scattered | 0.78 | 0.73 | 0.75 | 0.01 to 0.02 | 1 |
+| 8x8 map (64 numbers), r=0.25 | scattered | 0.71 | 0.63 | 0.67 | 0.04 to 0.05 | 1 |
+| **composed v2**, r=0.40 (64-number map, noisy clock, repair, centred pile) | centred pile | 0.77 | 0.68 | 0.73 | 0.00 | 1 (+1 queued) |
+| **composed v2**, r=0.25 | centred pile | 0.77 | 0.69 | 0.73 | 0.00 | 1 (+1 queued) |
+| global, weight 100 | scattered | 0.78 | 0.74 | 0.74 | 0.01 | **2** |
+
+- **H50 supported (1 seed):** the noisy-clock model keeps full quality under clock errors: IoU 0.83 clean, 0.83 at clock error 0.1, **0.79 at 0.25** (the plain model: 0.81 / 0.74 / 0.66), at no cost when clean.
+- **H52 supported (1 seed):** with weight 100 a well-spaced pile at a random offset forms shapes as well as scattered noise (0.80 / 0.74 / 0.76 vs 0.78 / 0.74 / 0.75); the roughly 0.5 penalty of weight 0 is gone. (The rigid travel phase may no longer be necessary; not tested directly.)
+- **H53 supported (1 seed):** formation costs 0.01.
+- **H54:** a 16x16 map (256 numbers) is as good as the full map; an 8x8 map at r=0.25 from scattered noise is clearly weaker (held-out 0.63 vs 0.72 with a full map). The composed v2 r=0.25 with the same 8x8 map but a centred pile start reaches 0.69, so the pile start helps the small map; starts differ between these rows.
+- **H55 supported (seed 0):** the composed recipe loses little at small radius (r=0.25: 0.69 held-out vs 0.68 at r=0.4; the first reference swarm at r=0.6 without the new losses: 0.61). Held-out 0.68 to 0.69 vs 0.74 for the plain best model: the gap is the 64-number map.
+
+**End-to-end test of composed v2 r=0.25 (seed 0; 96 val shapes; 16 steps; 2.5 spacings of sensing):**
+
+| check | result |
+| --- | --- |
+| travel (offset pile moves rigidly to the shape's centre), then form vs forming from the centred pile | `w2` 0.92 vs 0.92 (val), 1.08 vs 1.09 (held-out): the travel phase works and changes nothing |
+| clock error 0.1 / 0.25 | IoU 0.83 / 0.82 (clean 0.83) |
+| half the bots update per round | IoU 0.81, collisions 0.06 |
+| motion noise 0.3 spacings per step | IoU 0.78, collisions 0.11 (weakest point; the hard-core rule is expected to fix) |
+| 128 / 512 bots | IoU 0.81 / 0.83, collisions 0.00 |
+| speed cap 1 spacing per step; mean path 2.2 spacings | no change |
+| hard-core spacing rule | collisions 0.000 |
+| repair: cover after a cut chunk, before / after | 0.83 / **0.91** (weaker than the radius-0.6 model's 0.97) |
+| repair: cover after losing 20% of the bots | 0.97 / 0.97 |
+
+**Looked at** (16 targets: 8 emoji, 8 letters; scratchpad `refv2.png`; rows: rule, plain best, composed v2 at r=0.4 and r=0.25, first reference swarm): the composed v2 models draw recognisable stars, rings, anchors, wrench, fish and clean letters; far better than the first reference swarm (blobs); slightly softer than the plain best model; **the snowflake collapses to a rounded blob** (an 8x8 map cannot carry six arms) and the key's ring end is only partly formed; the rule's outlines are still crisper.
+
+**Replicates:** global weight 100 second seed 0.78 / 0.74 / 0.74 (first 0.78 / 0.74 / 0.75). Second seeds of composed v2 (both radii), 16x16 map at r=0.25, 8x8 at r=0.4, offset-pile and noisy-clock variants are queued or running; the no-clock and repair second seeds are running. Until they land H50, H52, H53, H55 are single-seed.

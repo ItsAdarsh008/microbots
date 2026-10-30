@@ -1164,3 +1164,20 @@ Composed v3 swarm at r=0.14 (2.3 spacings = the v1 arm reach; 16x16 map; centred
 If bonds needed body contact, 12 to 14% of the bots would hang loose; with the arm-linking range of the v1 design the swarm is fully connected. **Not yet tested: the connector limit** (6 per bot: 2 tips and 4 ports) and which links a real docking would pick (a rigid 2D frame needs about 4 links per bot on average, which fits within 6); that is Stage 2 version 1.
 
 Stage 2 plan in `STAGE2_PLAN.md`.
+
+## 2026-10-30 tick 53: Stage 2 version 1: the finished swarm can be linked rigidly with the v1 bot's connectors (graph level)
+
+`stage2_links.py`: after the physical rounds (32 rounds, at most 0.5 spacings per round, touching bodies of one spacing; 24 val shapes; composed v3 swarm at r=0.14), links are assigned greedily, shortest first, under the v1 resource model (**4 ports and 2 arm tips per bot**: a touching link uses one connector at each end; a longer link needs an arm tip at one or both ends). Rigidity: rank of the 2D rigidity matrix against 2N - 3 (N = 256 bots, so 509); 1.00 means a rigid pin-jointed frame.
+
+| longest allowed link (body diameters) | largest connected piece | links per bot | rigidity rank / (2N-3) | links |
+| --- | --- | --- | --- | --- |
+| 1.2 (touching only) | 0.95 | 3.66 | **0.90** | 468 |
+| 1.6 | 1.00 | 5.12 | **1.00** | 656 |
+| 2.0 | 1.00 | 5.61 | 1.00 | 718 |
+| 2.35 (the v1 arm reach) | 1.00 | 5.74 | 1.00 | 735 |
+
+The big-cut repair model gives the same at 2.35 (connected 1.00, rank 1.00, 734 links). **Touching alone does not make a rigid structure (0.90); letting arms reach 1.6 body diameters does.** Within the connector limit of 6 the greedy assignment uses 5.1 to 5.7 per bot.
+
+**What this does and does not show.** Graph-level feasibility only (seed 0 of each model; one run). It ignores arm geometry (the 100-degree arm cone, arms crossing, the 15-degree docking angles, whether an arm can physically reach the port that the greedy choice wants), assumes pin joints (the v1 note says squares and hexagons are rigid only with joints locked), and uses far more links than the minimum (about 4 per bot would suffice; the greedy uses 5.7). Also not tested: strength (3 N per connector is an assumption) and whether bots can dock in time. So: no evidence yet against a rigid linked structure, and no proof of one.
+
+**Next (Stage 2 version 2):** a docking geometry check (can the chosen links be made with arms in their allowed cone?) and a minimal-link, triangulated assignment; then the link-aware repair question (a bot cannot walk through a docked structure). A decision point for the owner of the design: 2D plane docking (no gravity) or move to the 3D lattice in `linking/`.

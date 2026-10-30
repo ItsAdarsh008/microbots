@@ -1,0 +1,67 @@
+params 2465434 cfg {"name": "s2_cond_local_r60_L4_seed1", "cond": "map", "radius": 0.6, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 1, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2"}
+it 500 loss 0.0401 gn 0.53 lr 3.0e-04 16s
+it 1000 loss 0.0131 gn 0.74 lr 3.0e-04 32s
+it 1500 loss 0.0117 gn 0.21 lr 3.0e-04 47s
+it 2000 loss 0.0108 gn 0.47 lr 3.0e-04 62s
+it 2500 loss 0.0102 gn 0.12 lr 3.0e-04 78s
+it 3000 loss 0.0099 gn 0.10 lr 2.9e-04 93s
+it 3500 loss 0.0096 gn 0.23 lr 2.9e-04 108s
+it 4000 loss 0.0095 gn 0.17 lr 2.9e-04 123s
+it 4500 loss 0.0091 gn 0.21 lr 2.8e-04 138s
+it 5000 loss 0.0089 gn 0.09 lr 2.8e-04 154s
+it 5500 loss 0.0089 gn 0.14 lr 2.8e-04 169s
+it 6000 loss 0.0088 gn 0.15 lr 2.7e-04 184s
+it 6500 loss 0.0085 gn 0.14 lr 2.7e-04 199s
+it 7000 loss 0.0084 gn 0.32 lr 2.6e-04 215s
+it 7500 loss 0.0083 gn 0.20 lr 2.6e-04 230s
+it 8000 loss 0.0082 gn 0.22 lr 2.5e-04 245s
+it 8500 loss 0.0080 gn 0.23 lr 2.5e-04 260s
+it 9000 loss 0.0081 gn 0.19 lr 2.4e-04 276s
+it 9500 loss 0.0079 gn 0.16 lr 2.3e-04 291s
+it 10000 loss 0.0078 gn 0.17 lr 2.3e-04 306s
+it 10500 loss 0.0076 gn 0.16 lr 2.2e-04 321s
+it 11000 loss 0.0076 gn 0.08 lr 2.1e-04 336s
+it 11500 loss 0.0075 gn 0.30 lr 2.1e-04 352s
+it 12000 loss 0.0074 gn 0.16 lr 2.0e-04 367s
+it 12500 loss 0.0072 gn 0.07 lr 1.9e-04 382s
+it 13000 loss 0.0071 gn 0.15 lr 1.8e-04 397s
+it 13500 loss 0.0072 gn 0.25 lr 1.8e-04 413s
+it 14000 loss 0.0070 gn 0.24 lr 1.7e-04 428s
+it 14500 loss 0.0068 gn 0.13 lr 1.6e-04 443s
+it 15000 loss 0.0069 gn 0.11 lr 1.5e-04 458s
+it 15500 loss 0.0067 gn 0.13 lr 1.5e-04 473s
+it 16000 loss 0.0065 gn 0.23 lr 1.4e-04 489s
+it 16500 loss 0.0065 gn 0.18 lr 1.3e-04 504s
+it 17000 loss 0.0065 gn 0.11 lr 1.2e-04 519s
+it 17500 loss 0.0064 gn 0.14 lr 1.2e-04 535s
+it 18000 loss 0.0063 gn 0.24 lr 1.1e-04 550s
+it 18500 loss 0.0062 gn 0.09 lr 1.0e-04 565s
+it 19000 loss 0.0062 gn 0.12 lr 9.5e-05 580s
+it 19500 loss 0.0061 gn 0.09 lr 8.8e-05 595s
+it 20000 loss 0.0061 gn 0.09 lr 8.2e-05 611s
+it 20500 loss 0.0061 gn 0.07 lr 7.5e-05 626s
+it 21000 loss 0.0058 gn 0.20 lr 6.9e-05 641s
+it 21500 loss 0.0059 gn 0.07 lr 6.3e-05 656s
+it 22000 loss 0.0059 gn 0.13 lr 5.7e-05 670s
+it 22500 loss 0.0058 gn 0.10 lr 5.2e-05 684s
+it 23000 loss 0.0058 gn 0.12 lr 4.6e-05 698s
+it 23500 loss 0.0057 gn 0.05 lr 4.1e-05 713s
+it 24000 loss 0.0057 gn 0.12 lr 3.7e-05 727s
+it 24500 loss 0.0056 gn 0.17 lr 3.2e-05 741s
+it 25000 loss 0.0057 gn 0.08 lr 2.9e-05 755s
+it 25500 loss 0.0056 gn 0.13 lr 2.5e-05 769s
+it 26000 loss 0.0056 gn 0.06 lr 2.2e-05 784s
+it 26500 loss 0.0056 gn 0.15 lr 1.9e-05 798s
+it 27000 loss 0.0056 gn 0.05 lr 1.6e-05 812s
+it 27500 loss 0.0055 gn 0.05 lr 1.4e-05 826s
+it 28000 loss 0.0055 gn 0.16 lr 1.2e-05 840s
+it 28500 loss 0.0055 gn 0.10 lr 1.1e-05 854s
+it 29000 loss 0.0055 gn 0.07 lr 9.8e-06 868s
+it 29500 loss 0.0054 gn 0.06 lr 9.2e-06 882s
+it 30000 loss 0.0054 gn 0.07 lr 9.0e-06 896s
+val {"noise": {"w2": 10.52, "inside": 0.29, "cover": 0.53, "coll": 0.06, "nn": 1.831, "skill": 0.0}, "classical": {"w2": 1.711, "inside": 1.0, "cover": 0.992, "coll": 0.105, "nn": 0.754, "skill": 0.837}, "K64": {"w2": 1.527, "inside": 0.852, "cover": 0.908, "coll": 0.062, "nn": 0.729, "skill": 0.855}}
+ood_family {"noise": {"w2": 9.199, "inside": 0.294, "cover": 0.525, "coll": 0.063, "nn": 1.766, "skill": 0.0}, "classical": {"w2": 1.96, "inside": 1.0, "cover": 0.971, "coll": 0.093, "nn": 0.802, "skill": 0.787}, "K64": {"w2": 1.591, "inside": 0.82, "cover": 0.898, "coll": 0.065, "nn": 0.749, "skill": 0.827}}
+emoji {"noise": {"w2": 8.77, "inside": 0.311, "cover": 0.548, "coll": 0.066, "nn": 1.66, "skill": 0.0}, "classical": {"w2": 1.601, "inside": 1.0, "cover": 0.998, "coll": 0.08, "nn": 0.802, "skill": 0.817}, "K64": {"w2": 1.571, "inside": 0.824, "cover": 0.895, "coll": 0.062, "nn": 0.744, "skill": 0.821}}
+control wrong-map: w2 vs map fed 1.454 vs other shape 3.712
+stats connected {'gen': 0.953125, 'real': 1.0} best_iou_train {'gen': 0.832492470741272, 'real': 0.8245832920074463}
+done

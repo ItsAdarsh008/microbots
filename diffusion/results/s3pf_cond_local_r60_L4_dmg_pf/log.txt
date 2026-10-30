@@ -2,3 +2,66 @@ params 2465434 cfg {"name": "s3pf_cond_local_r60_L4_dmg_pf", "cond": "map", "rad
 it 500 loss 0.0260 gn 0.34 lr 3.0e-04 34s
 it 1000 loss 0.0153 gn 0.74 lr 3.0e-04 67s
 it 1500 loss 0.0130 gn 0.58 lr 3.0e-04 101s
+it 2000 loss 0.0120 gn 0.36 lr 3.0e-04 133s
+it 2500 loss 0.0112 gn 0.43 lr 3.0e-04 166s
+it 3000 loss 0.0100 gn 0.59 lr 2.9e-04 200s
+it 3500 loss 0.0098 gn 0.23 lr 2.9e-04 232s
+it 4000 loss 0.0097 gn 0.25 lr 2.9e-04 265s
+it 4500 loss 0.0094 gn 0.37 lr 2.8e-04 298s
+it 5000 loss 0.0085 gn 0.61 lr 2.8e-04 331s
+it 5500 loss 0.0081 gn 0.28 lr 2.8e-04 366s
+it 6000 loss 0.0082 gn 0.38 lr 2.7e-04 399s
+it 6500 loss 0.0077 gn 0.17 lr 2.7e-04 432s
+it 7000 loss 0.0075 gn 0.23 lr 2.6e-04 466s
+it 7500 loss 0.0073 gn 0.36 lr 2.6e-04 499s
+it 8000 loss 0.0072 gn 0.25 lr 2.5e-04 531s
+it 8500 loss 0.0065 gn 0.08 lr 2.5e-04 564s
+it 9000 loss 0.0065 gn 0.23 lr 2.4e-04 598s
+it 9500 loss 0.0062 gn 0.25 lr 2.3e-04 630s
+it 10000 loss 0.0061 gn 0.13 lr 2.3e-04 664s
+it 10500 loss 0.0058 gn 0.27 lr 2.2e-04 697s
+it 11000 loss 0.0061 gn 0.18 lr 2.1e-04 731s
+it 11500 loss 0.0055 gn 0.10 lr 2.1e-04 765s
+it 12000 loss 0.0055 gn 0.13 lr 2.0e-04 798s
+it 12500 loss 0.0057 gn 0.07 lr 1.9e-04 831s
+it 13000 loss 0.0054 gn 0.20 lr 1.8e-04 866s
+it 13500 loss 0.0052 gn 0.18 lr 1.8e-04 901s
+it 14000 loss 0.0053 gn 0.20 lr 1.7e-04 934s
+it 14500 loss 0.0053 gn 0.12 lr 1.6e-04 967s
+it 15000 loss 0.0050 gn 0.29 lr 1.5e-04 1001s
+it 15500 loss 0.0049 gn 0.11 lr 1.5e-04 1033s
+it 16000 loss 0.0049 gn 0.11 lr 1.4e-04 1066s
+it 16500 loss 0.0046 gn 0.07 lr 1.3e-04 1099s
+it 17000 loss 0.0048 gn 0.12 lr 1.2e-04 1132s
+it 17500 loss 0.0043 gn 0.19 lr 1.2e-04 1164s
+it 18000 loss 0.0045 gn 0.12 lr 1.1e-04 1200s
+it 18500 loss 0.0043 gn 0.09 lr 1.0e-04 1233s
+it 19000 loss 0.0042 gn 0.09 lr 9.5e-05 1267s
+it 19500 loss 0.0043 gn 0.06 lr 8.8e-05 1299s
+it 20000 loss 0.0039 gn 0.14 lr 8.2e-05 1332s
+it 20500 loss 0.0041 gn 0.17 lr 7.5e-05 1365s
+it 21000 loss 0.0041 gn 0.06 lr 6.9e-05 1398s
+it 21500 loss 0.0040 gn 0.08 lr 6.3e-05 1432s
+it 22000 loss 0.0038 gn 0.16 lr 5.7e-05 1465s
+it 22500 loss 0.0039 gn 0.07 lr 5.2e-05 1499s
+it 23000 loss 0.0036 gn 0.11 lr 4.6e-05 1533s
+it 23500 loss 0.0036 gn 0.16 lr 4.1e-05 1566s
+it 24000 loss 0.0036 gn 0.11 lr 3.7e-05 1599s
+it 24500 loss 0.0037 gn 0.05 lr 3.2e-05 1632s
+it 25000 loss 0.0036 gn 0.17 lr 2.9e-05 1667s
+it 25500 loss 0.0035 gn 0.05 lr 2.5e-05 1701s
+it 26000 loss 0.0035 gn 0.07 lr 2.2e-05 1733s
+it 26500 loss 0.0034 gn 0.13 lr 1.9e-05 1766s
+it 27000 loss 0.0035 gn 0.03 lr 1.6e-05 1799s
+it 27500 loss 0.0034 gn 0.05 lr 1.4e-05 1834s
+it 28000 loss 0.0034 gn 0.06 lr 1.2e-05 1865s
+it 28500 loss 0.0035 gn 0.06 lr 1.1e-05 1899s
+it 29000 loss 0.0034 gn 0.05 lr 9.8e-06 1932s
+it 29500 loss 0.0034 gn 0.09 lr 9.2e-06 1966s
+it 30000 loss 0.0035 gn 0.14 lr 9.0e-06 1998s
+val {"noise": {"w2": 7.823, "inside": 0.472, "cover": 0.671, "coll": 0.0, "nn": 1.187, "skill": 0.0}, "classical": {"w2": 4.574, "inside": 1.0, "cover": 0.897, "coll": 0.227, "nn": 0.72, "skill": 0.415}, "K64": {"w2": 1.632, "inside": 0.813, "cover": 0.931, "coll": 0.002, "nn": 0.879, "skill": 0.791}}
+ood_family {"noise": {"w2": 7.305, "inside": 0.453, "cover": 0.619, "coll": 0.0, "nn": 1.145, "skill": 0.0}, "classical": {"w2": 5.403, "inside": 1.0, "cover": 0.881, "coll": 0.191, "nn": 0.754, "skill": 0.26}, "K64": {"w2": 2.014, "inside": 0.707, "cover": 0.901, "coll": 0.001, "nn": 0.986, "skill": 0.724}}
+emoji {"noise": {"w2": 6.795, "inside": 0.497, "cover": 0.676, "coll": 0.0, "nn": 1.076, "skill": 0.0}, "classical": {"w2": 4.641, "inside": 1.0, "cover": 0.879, "coll": 0.185, "nn": 0.736, "skill": 0.317}, "K64": {"w2": 1.667, "inside": 0.798, "cover": 0.925, "coll": 0.002, "nn": 0.898, "skill": 0.755}}
+control wrong-map: w2 vs map fed 1.693 vs other shape 3.622
+stats connected {'gen': 1.0, 'real': 1.0} best_iou_train {'gen': 0.8728252053260803, 'real': 0.8245832920074463}
+done

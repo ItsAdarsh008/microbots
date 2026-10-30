@@ -440,3 +440,24 @@ H31 is supported (1 seed each; seed 1 replicates are running): once repair is pa
 Hypotheses:
 - H34: the collision rise comes from the model having to tell a nearly-formed start from noise at t=0 and compromising; a clock reading that distinguishes the two starts (e.g. starting repair at t=0.3 and noise at t=0) would test that.
 - H35: repair should work from a pile-start model too (queued: `s3pf_cond_local_r60_L4_dmg_pf`, running).
+
+## 2026-10-29 tick 16: repair replicated (2 seeds), pile start with repair, thin-shape radius trend replicated
+
+Compute: 5 A100 GPUs, 10 job slots, all in use after this tick's refill.
+
+**Thin shapes (v2), radius trend replicated.** Held-out-family error, one entry per seed (no-learning baseline with full map 1.96): global 1.47 and 1.41; local r=0.60 1.54 and 1.59; r=0.40 1.69 and 1.68; r=0.25 1.97 (1 seed). Familiar-shape error r=0.60: 1.41 and 1.53. The radius ordering holds on two seeds for r=0.4 and 0.6; r=0.6 is within about 0.15 of global and beats the baseline by 19%.
+
+**Repair-trained models, replicated (Gaussian start, v1 data; 2 seeds each).** Formation from scratch, held-out family: global 1.18 and 1.18; local r=0.60 1.15 and 1.17 (earlier ordinary models: 1.12 to 1.14 and 1.16). Repair test (cover after cutting a chunk, clock restarted at 0; before repair was 0.75 to 0.76):
+
+| model | seed | cover after repair, chunk cut | cover after repair, random 20% |
+| --- | --- | --- | --- |
+| global | 0 | 0.98 | 0.99 |
+| global | 1 | 0.98 | 0.99 |
+| local r=0.60 | 0 | 0.97 | 0.98 |
+| local r=0.60 | 1 | 0.97 | 0.99 |
+
+**H31 is replicated (2 seeds, two model types): training with damaged starts gives a swarm that refills a cut-out chunk to cover about 0.97 to 0.98 with 20% fewer bots, at no cost to ordinary formation.** Also replicated: these models have 0.15 to 0.21 collisions in ordinary formation (global seeds 0.15 and 0.17), removed completely by the hard-core spacing rule.
+
+**Pile start plus repair (thin shapes, local r=0.60, well-spaced pile start, 1 seed).** Formation from the pile: 1.63 familiar / 2.01 held-out family / 1.67 emoji with collisions 0.00 (without repair training: 1.71 / 2.11 / 1.86). Repair test on it: cover after cutting a chunk 0.79 -> 0.97, after random 20% 0.92 -> 0.99, collisions 0.02 to 0.03. So repair from a physically realisable start works, and repair training did not hurt formation from the pile (slightly better, 1 seed; replicate queued).
+
+**Queued to separate "coordination" from "capacity or length" for the pile start (H32):** global model with hidden width 384 (4x the parameters), local r=0.60 at 60,000 iterations, local r=0.40 second seed, and a second seed of the pile-plus-repair model. Still running: global 60k from a pile (first look at the end of this tick), pile seed 1 replicates, v1-data pile runs, and the everything-physical run.

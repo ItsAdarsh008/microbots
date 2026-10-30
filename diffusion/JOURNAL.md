@@ -562,3 +562,41 @@ Thin shapes, held-out-family error, one entry per seed. Reference: scattered noi
 - None of these reach the centred-pile or two-phase numbers (global 1.40, 1.52 and 1.51, 1.53; local 1.53, 1.47 and 1.79, 1.80), which stay the best handling of the pile start.
 
 Still running: the three reference-swarm models (stage 1 hand-off), the wide-and-long global pile run, and the wide global second seed.
+
+## 2026-10-29 tick 23: the Stage 1 reference swarm, tested end to end (2 seeds)
+
+(The first wave of shared-global-state runs, `s5a_*`, is still training; nothing from it is reported here. Plan and predictions: `GLOBAL_STATE_PLAN.md`.)
+
+**The reference swarm** = local radius 0.60, 4 message rounds, only an 8x8 occupancy grid (64 numbers) as the target description, noisy-clock training (0.15), repair batches (50%), trained from a pile centred on the arena, thin-shape data. Trained with two seeds (local) plus one global version as an upper bound.
+
+**Formation from the centred pile (familiar / held-out family / emoji; no-learning baseline with the full map from scattered noise 1.71 / 1.96 / 1.60):**
+
+| model | familiar | held-out family | emoji | collisions |
+| --- | --- | --- | --- | --- |
+| reference swarm, local r=0.60, seed 0 | 1.37 | 1.67 | 1.46 | 0.00 |
+| reference swarm, local r=0.60, seed 1 | 1.39 | 1.61 | 1.47 | 0.00 |
+| reference swarm, global (upper bound), 1 seed | 1.36 | 1.57 | 1.36 | 0.00 |
+| same local model without the extras (full map, no noisy clock, no repair), 2 seeds | 1.33, 1.34 | 1.53, 1.47 | 1.44, 1.45 | 0.00 |
+
+The three extras (64-number broadcast, noisy-clock training, repair batches) together cost about 0.1 on held-out shapes.
+
+**End-to-end checks on the reference swarm (seed 0 / seed 1; 96 val shapes; 16 to 32 steps).**
+
+| check | seed 0 | seed 1 |
+| --- | --- | --- |
+| travel (offset pile moves rigidly to the shape's centre), then form: familiar / held-out error | 1.42 / 1.64 | 1.49 / 1.61 |
+| forming from the centred pile as trained | 1.45 / 1.58 | 1.46 / 1.55 |
+| repair: cover after a cut chunk, before / after | 0.80 / 0.97 | 0.80 / 0.97 |
+| repair: cover after 20% random loss, before / after | 0.93 / 0.97 | 0.93 / 0.97 |
+| clock jitter 0.25: error / collisions | 1.24 / 0.00 | 1.23 / 0.00 |
+| half the bots update per round: error / collisions | 1.27 / 0.05 | 1.28 / 0.05 |
+| motion noise (0.3 spacings per step): error / collisions | 1.23 / 0.10 | 1.25 / 0.11 |
+| 128 and 512 bots instead of 256: collisions | 0.00, 0.00 | 0.00, 0.00 |
+| speed cap 1 spacing per step: error vs uncapped (32 steps) | 1.41 vs 1.41 | 1.42 vs 1.42 |
+| hard-core spacing 0.7: collisions | 0.000 | 0.000 |
+
+**What this shows (2 seeds):** one local network, given a 64-number target description and only neighbours within 6 spacings, forms unseen thin shapes after a trivial rigid travel, refills a cut-out chunk or lost bots to cover 0.97, tolerates clock errors, a changed bot count and a speed cap, with no collisions in ordinary formation. The moves are short (mean path 2.2 spacings from the centred pile), so the speed cap is free.
+**Weak point:** random motion noise (0.3 spacings per step) gives 10 to 11% collisions; the hard-core rule has not yet been tested together with motion noise. Half-asynchronous updates also give 5%.
+**Not tested:** the actual bot dynamics (finite size and links, arm reach, strength), real aggregation latency, anything in 3D. The thin-shape data is my own generator.
+
+Hypothesis: H41, hard-core spacing removes the motion-noise collisions as it removed the others (to test in Stage 2 with the real body model).

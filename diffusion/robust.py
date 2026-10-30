@@ -33,7 +33,7 @@ def fps(o, n, rng):
 @torch.no_grad()
 def run_variant(N=256, jitter=0.0, async_p=1.0, motion=0.0, seed=7):
     g = torch.Generator().manual_seed(seed)
-    x = (torch.randn((n_sets, N, 2), generator=g) * cfg["sigma"]).cuda()
+    x = evalm.init_noise((n_sets, N, 2), g, cfg)
     steps = int(round(K / async_p))
     for i in range(steps):
         t = torch.full((n_sets, N), i / steps, device="cuda")

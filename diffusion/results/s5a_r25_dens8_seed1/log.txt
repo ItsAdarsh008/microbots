@@ -1,0 +1,18 @@
+params 2466010 cfg {"name": "s5a_r25_dens8_seed1", "cond": "map", "radius": 0.25, "layers": 4, "d": 192, "heads": 6, "time": true, "n_train": 10000, "iters": 30000, "bs": 32, "lr": 0.0003, "seed": 1, "sigma": 0.7, "shuffle_labels": false, "ot": true, "eval_steps": [4, 8, 16, 32, 64], "n_eval": 128, "data": "shapes2", "gstate": "dens", "ggrid": 8}
+it 500 loss 0.0393 gn 0.43 lr 3.0e-04 24s
+it 1000 loss 0.0146 gn 0.29 lr 3.0e-04 46s
+it 1500 loss 0.0133 gn 0.25 lr 3.0e-04 67s
+it 2000 loss 0.0127 gn 0.19 lr 3.0e-04 89s
+it 2500 loss 0.0120 gn 0.16 lr 3.0e-04 110s
+it 3000 loss 0.0119 gn 0.40 lr 2.9e-04 131s
+it 3500 loss 0.0116 gn 0.16 lr 2.9e-04 152s
+it 4000 loss 0.0112 gn 0.18 lr 2.9e-04 174s
+it 4500 loss 0.0109 gn 0.44 lr 2.8e-04 196s
+it 5000 loss 0.0105 gn 0.15 lr 2.8e-04 216s
+it 5500 loss 0.0105 gn 0.14 lr 2.8e-04 237s
+it 6000 loss 0.0104 gn 0.19 lr 2.7e-04 259s
+it 6500 loss 0.0100 gn 0.30 lr 2.7e-04 282s
+it 7000 loss 0.0098 gn 0.21 lr 2.6e-04 303s
+it 7500 loss 0.0099 gn 0.22 lr 2.6e-04 324s
+it 8000 loss 0.0097 gn 0.17 lr 2.5e-04 345s
+it 8500 loss 0.0096 gn 0.22 lr 2.5e-04 366s

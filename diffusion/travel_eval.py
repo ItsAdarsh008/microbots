@@ -9,6 +9,7 @@ import evalm
 from evalm import metrics, agg, spacing
 run = sys.argv[1]
 cfg = json.load(open(f"{run}/result.json"))["config"]
+evalm.COARSE = cfg.get("coarse", 0)
 D = np.load(f"data/{cfg.get('data','shapes')}.npz")
 m = build(cfg).cuda().eval()
 m.load_state_dict(torch.load(f"{run}/ckpt.pt")["ema"])

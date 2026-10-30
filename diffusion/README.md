@@ -88,3 +88,7 @@ Read, with what is replicated (2 seeds) marked:
 - Self-repair is not free: rewinding the clock does not refill a cut chunk, and a model that keeps stepping without a clock collapses into a clump. Repair-trained models are running.
 - From a compact pile at a random offset, held-out error is 0.5 worse than from scattered noise (2 seeds), but almost all of that is distance: a pile centred on the shape forms shapes as well as scattered noise does (1 seed), and a two-phase swarm (rigid travel to the target site, then local formation) gets 1.53 (global) and 1.80 (local r=0.6) on held-out thin shapes, against 1.93 and 2.11 for a model trained on the whole move (1 seed per model for the two-phase test).
 - Training with damaged starts in the mix gives repair (cover 0.97 to 0.99 after a cut chunk; 2 seeds) and, from a pile, also 0.1 better formation (2 seeds). It raises collisions (0.15 to 0.21 from scattered noise), which a hard-core spacing rule removes.
+
+## Stage 1 reference swarm (journal tick 23)
+
+Local radius 0.6, an 8x8 target grid (64 numbers) as the only broadcast, noisy-clock training, repair batches, centred-pile start, thin-shape data, 2 seeds. Held-out-family error 1.67 and 1.61 (no-learning baseline 1.96), collisions 0.00, repair cover 0.97 after a cut chunk, tolerant of clock jitter, speed caps and 128 to 512 bots; motion noise gives 10% collisions. The shared-global-state experiments that follow (`GLOBAL_STATE_PLAN.md`) start from the r=0.25 local model, where the gap to the all-to-all model is largest.

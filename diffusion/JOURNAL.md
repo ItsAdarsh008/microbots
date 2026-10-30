@@ -891,3 +891,5 @@ Running: weight 100 (local, global), weight 50 + coverage 50 (local, global), re
 **Reference swarm (pile start, 64-number map, noisy clock, repair) weight 50:** 0.76 / 0.67 / 0.72 (64-step protocol, val / held-out / emoji), zero collisions; weight 20: 0.74 / 0.65 / 0.70; weight 100 running.
 
 Demo: the weight-100 models are listed as BEST (restarted).
+
+Queued (tick 36), each changing one thing from the weight-100 local recipe (`s6_r60_aux_in100_rep100`; thin shapes): `s11_r60_notime_aux100` and `s11_r40_notime_aux100` (no clock; earlier without these losses the no-clock local models fragmented: 7% / 61% connected), `s11_r60_pfoffset_aux100` (well-spaced pile at a random offset; earlier +0.5 error), `s11_r60_dmg_aux100` (repair batches in training). Hardware-relevant questions: do the losses make the shared clock, the rigid travel phase and the separate repair mode unnecessary?

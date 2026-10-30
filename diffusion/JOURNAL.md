@@ -1119,3 +1119,21 @@ Composed v3 swarm at r=0.14 (2.3 spacings; 16x16 map; centred pile; noisy clock;
 The 64-number map at the arm reach costs about 0.06 held-out overlap (0.68 vs 0.74) and repairs worse (0.83): a second data point against the small map.
 
 Tick 50: nothing finished. The decisive repair runs (`s19_*`: 80% repair batches with the density state, seeds 0 and 1; the matched control; bigger training cuts, 2 seeds) are mid-training. Added the second seed of the matched control (`s19_refv3_r14_dens8_dmg08_shuf_seed1`) so the comparison has a control on both seeds. No claims until they are scored.
+
+## 2026-10-30 tick 51: the repair question is settled: training on bigger cuts, not a shared state
+
+Composed v3 swarm at r=0.14 (2.3 spacings = the v1 arm reach; 16x16 map; centred pile; noisy clock; weight 100). Repair test: cover after cutting a chunk of about 50 bots, before 0.83 to 0.84 for every model; after repair:
+
+| model | after repair (cut chunk) | after repair (20% random loss) | formation (val / held-out / emoji IoU) | seeds |
+| --- | --- | --- | --- | --- |
+| repair batches 50% (base) | 0.85 | 0.98 | 0.79 / 0.74 / 0.76 | 2 |
+| + density state, 50% | 0.91, 0.91 | 0.98 | 0.79 / 0.74 / 0.76 | 2 |
+| repair batches 80%, no shared state | 0.92, 0.92 | 0.99 | 0.78 / 0.74 / 0.76 | 2 |
+| 80% + density state | 0.94, 0.94 | 0.99 | 0.79 / 0.74 / 0.76 | 2 |
+| 80% + density state **from another swarm** (matched control) | 0.92 | 0.99 | 0.79 / 0.74 / 0.77 | 1 (second seed running) |
+| **80% with bigger training cuts (up to 128 bots removed, instead of 64), no shared state** | **0.97, 0.97** | 0.99 | 0.78 / 0.74 / 0.75 | **2** |
+
+- **The lever is the size of the cuts seen in training.** More repair batches: 0.85 to 0.92; bigger training cuts as well: 0.97 on both seeds, the same as the radius-0.6 models reached, at the arm-reach sensing range. Formation costs 0.01.
+- **The shared density state adds a small controlled amount (+0.02 on 2 seeds: 0.94 against 0.92; the control stays at 0.92)** and is **smaller than the effect of the training data (+0.05)**. Combining it with bigger cuts was not tried (the room above 0.97 is small). Conclusion: a shared state is **not needed** for repair at this range; the earlier "first shared-state result" (ticks 48 and 49) is reduced to a +0.02 effect.
+- **Looked at** (`repair_pics2.png`: anchor, snowflake, thick B, thin S; cut then repaired; rows base and big-cut model): the big-cut model refills visibly more; the thick B is nearly complete, the snowflake gets back a missing arm, the S gets more of its upper arc; **thin parts still only partly refill** (the anchor's ring, the S's far tip), so "cover 0.97" slightly overstates what is seen.
+- Demo: the big-cut model added ("trained to repair BIG cuts"). The demo tunnel had dropped; restarted.

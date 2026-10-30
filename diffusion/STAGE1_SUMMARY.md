@@ -14,11 +14,11 @@ Written for someone who has not followed the journal. Every number is from `JOUR
 4. **Scales to more bots without retraining** (trained with 256; sensing kept fixed in spacings): well formed at 1024 and 2048 bots (1 model, 1 seed).
 5. **Collisions are removed by one local rule** (push apart pairs closer than 0.7 spacings): 0.00 collisions under motion noise and asynchronous updates (1 seed).
 6. **Repair has to be trained in** (cover 0.75 to 0.97 after a cut chunk at large range; 2 seeds); it costs about 0.01 of formation quality (2 seeds).
-7. **Repair at the shortest range improves with more repair practice** (50% to 80% repair batches in training: cover 0.85 to 0.92; 2 seeds). A shared swarm-density state gave 0.91 against the 50% base (2 seeds, matched control 0.86), but that gain may be the same effect: the test with 80% repair batches plus the density state, and its control, is running (journal ticks 48 and 49).
+7. **Repair at the arm-reach sensing range comes from what the swarm sees in training**: 50% to 80% repair batches lifts cover after a cut chunk from 0.85 to 0.92; training on bigger cuts as well gives **0.97** (2 seeds each), as good as at long range. A shared swarm-density state adds only +0.02 on top of 80% repair batches (0.94 vs 0.92, matched control 0.92; 2 seeds) and is not needed. Pictures: much more refilled, thin parts only partly.
 
 ## What does not work, or is not enough
 - A 64-number map costs 0.05 to 0.09 of held-out overlap from scattered noise (2 seeds); 256 numbers cost nothing (1 seed). Removing the shared clock gives undersized, skeletal shapes (2 seeds).
-- Repair of a large cut at short range is still incomplete (0.92 cover at best; the density-state pictures showed unfilled regions).
+- Thin parts (anchor ring, far tips of letters) refill only partly after a large cut, even at 0.97 cover.
 - Motion noise is only handled with the hard-core rule. Everything is 2D with idealised moves (no arms, no docking, no link strength).
 
 ## Things that turned out wrong (kept in the journal)

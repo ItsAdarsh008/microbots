@@ -118,5 +118,10 @@
   "label": "SWARM v3, sensing 1.6 spacings (less than the arm reach), 16x16 map",
   "start": "pile_c",
   "note": "Even shorter sensing; shapes get slightly softer."
+ },
+ "s19_refv3_r14_dmg08_big": {
+  "label": "SWARM v3 at the arm reach, trained to repair BIG cuts (best repair)",
+  "start": "pile_c",
+  "note": "Sensing about 2.3 spacings (the v1 arm reach), 16x16 map, trained with large cuts. Form the shape from the centred pile, press Cut a chunk, then Repair. Thin parts refill only partly."
  }
 }

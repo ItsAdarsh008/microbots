@@ -5,7 +5,7 @@ import json, sys
 import numpy as np, torch
 from scipy.spatial import ConvexHull
 from scipy.stats import wasserstein_distance
-from model import Denoiser
+from model import Denoiser, build
 import evalm
 D = np.load("data/shapes.npz")
 
@@ -26,7 +26,7 @@ real = np.array([solidity(x) for x in D["va_pts"]])
 print(f"real val: solidity mean {real.mean():.3f}  10th pct {np.percentile(real,10):.3f}  frac<0.8 {np.mean(real<0.8):.2f}")
 for run in sys.argv[1:]:
     cfg = json.load(open(f"{run}/result.json"))["config"]
-    m = Denoiser(cfg["d"], cfg["heads"], cfg["layers"], cfg["radius"], cfg["cond"], cfg["time"]).cuda().eval()
+    m = build(cfg).cuda().eval()
     m.load_state_dict(torch.load(f"{run}/ckpt.pt")["ema"])
     g = torch.Generator().manual_seed(21)
     x0 = (torch.randn((256, 256, 2), generator=g) * cfg["sigma"]).cuda()

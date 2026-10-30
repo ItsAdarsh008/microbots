@@ -6,14 +6,14 @@ Metrics use the surviving particle count for spacing (cover = pixels with a part
 before / damaged / repaired (rewound to t0 = 0.5 and 0.8)."""
 import json, sys
 import numpy as np, torch
-from model import Denoiser
+from model import Denoiser, build
 import evalm
 from evalm import metrics, agg
 run = sys.argv[1]
 cfg = json.load(open(f"{run}/result.json"))["config"]
 evalm.COARSE = cfg.get("coarse", 0)
 D = np.load(f"data/{cfg.get('data','shapes')}.npz")
-m = Denoiser(cfg["d"], cfg["heads"], cfg["layers"], cfg["radius"], cfg["cond"], cfg["time"]).cuda().eval()
+m = build(cfg).cuda().eval()
 m.load_state_dict(torch.load(f"{run}/ckpt.pt")["ema"])
 n = 64
 occ, sdf, ref = D["va_occ"][:n], D["va_sdf"][:n], D["va_pts"][:n]

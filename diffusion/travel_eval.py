@@ -4,13 +4,13 @@ centre (read from the map), (2) the model trained on a CENTRED pile forms the sh
 Compared: offset pile with no travel phase, offset pile after travel, and the centred pile the model was trained on."""
 import json, sys
 import numpy as np, torch
-from model import Denoiser
+from model import Denoiser, build
 import evalm
 from evalm import metrics, agg, spacing
 run = sys.argv[1]
 cfg = json.load(open(f"{run}/result.json"))["config"]
 D = np.load(f"data/{cfg.get('data','shapes')}.npz")
-m = Denoiser(cfg["d"], cfg["heads"], cfg["layers"], cfg["radius"], cfg["cond"], cfg["time"]).cuda().eval()
+m = build(cfg).cuda().eval()
 m.load_state_dict(torch.load(f"{run}/ckpt.pt")["ema"])
 AX = (np.arange(64) + 0.5) * evalm.PX - 1
 for name, p in (("val", "va"), ("held-out family", "ood")):

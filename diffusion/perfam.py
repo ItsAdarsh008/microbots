@@ -1,7 +1,7 @@
 """Held-out-family errors one family at a time.   python perfam.py runs/<name>"""
 import json, sys
 import numpy as np, torch
-from model import Denoiser
+from model import Denoiser, build
 import evalm
 from evalm import metrics, agg
 run = sys.argv[1]
@@ -9,7 +9,7 @@ cfg = json.load(open(f"{run}/result.json"))["config"]
 evalm.COARSE = cfg.get("coarse", 0)
 D = np.load(f"data/{cfg.get('data','shapes')}.npz")
 fams = list(D["families"])
-m = Denoiser(cfg["d"], cfg["heads"], cfg["layers"], cfg["radius"], cfg["cond"], cfg["time"]).cuda().eval()
+m = build(cfg).cuda().eval()
 m.load_state_dict(torch.load(f"{run}/ckpt.pt")["ema"])
 idx = np.arange(len(D["ood_pts"]))
 g = torch.Generator().manual_seed(7)

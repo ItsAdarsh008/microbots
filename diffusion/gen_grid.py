@@ -5,12 +5,12 @@ import json, os, sys
 import numpy as np, torch
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from model import Denoiser
+from model import Denoiser, build
 import evalm
 run, K = sys.argv[1], int(sys.argv[2]) if len(sys.argv) > 2 else 32
 cfg = json.load(open(f"{run}/result.json"))["config"]
 D = np.load("data/shapes.npz")
-m = Denoiser(cfg["d"], cfg["heads"], cfg["layers"], cfg["radius"], cfg["cond"], cfg["time"]).cuda().eval()
+m = build(cfg).cuda().eval()
 m.load_state_dict(torch.load(f"{run}/ckpt.pt")["ema"])
 g = torch.Generator().manual_seed(99)
 x0 = (torch.randn((48, 256, 2), generator=g) * cfg["sigma"]).cuda()

@@ -3,14 +3,14 @@ model was TRAINED on (first n_train), versus the same number for real validation
 Copying shows as generated >> real.    python memo.py runs/<name>"""
 import json, sys
 import numpy as np, torch
-from model import Denoiser
+from model import Denoiser, build
 import evalm
 run = sys.argv[1]
 cfg = json.load(open(f"{run}/result.json"))["config"]
 D = np.load(f"data/{cfg.get('data','shapes')}.npz")
 n = cfg["n_train"]
 mt = torch.tensor(D["tr_occ"][:n].reshape(n, -1) > 0.5).cuda().float()
-m = Denoiser(cfg["d"], cfg["heads"], cfg["layers"], cfg["radius"], cfg["cond"], cfg["time"]).cuda().eval()
+m = build(cfg).cuda().eval()
 m.load_state_dict(torch.load(f"{run}/ckpt.pt")["ema"])
 g = torch.Generator().manual_seed(5)
 x0 = (torch.randn((256, 256, 2), generator=g) * cfg["sigma"]).cuda()

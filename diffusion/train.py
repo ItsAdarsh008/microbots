@@ -12,7 +12,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from scipy.optimize import linear_sum_assignment
-from model import Denoiser, make_maps, read_map
+from model import Denoiser, build, make_maps, read_map
 import evalm
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -114,7 +114,7 @@ def main(cfg_path):
     ntr = cfg["n_train"]
     tr_pts = D["tr_pts"][:ntr]
     tr_occ = torch.tensor(D["tr_occ"][:ntr], device=dev); tr_sdf = torch.tensor(D["tr_sdf"][:ntr], device=dev)
-    model = Denoiser(cfg["d"], cfg["heads"], cfg["layers"], cfg["radius"], cfg["cond"], cfg["time"]).to(dev)
+    model = build(cfg).to(dev)
     ema = copy.deepcopy(model).eval()
     for p in ema.parameters():
         p.requires_grad_(False)

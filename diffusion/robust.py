@@ -6,7 +6,7 @@ Reported per variant: inside / cover / coll / nn (spacing units; sp uses the act
 w2 where the count is 256 (the reference has 256 points)."""
 import json, sys
 import numpy as np, torch
-from model import Denoiser
+from model import Denoiser, build
 import evalm
 from evalm import metrics, spacing, agg
 run, K = sys.argv[1], int(sys.argv[2]) if len(sys.argv) > 2 else 16
@@ -14,7 +14,7 @@ cfg = json.load(open(f"{run}/result.json"))["config"]
 assert cfg["cond"] == "map"
 evalm.COARSE = cfg.get("coarse", 0)
 D = np.load("data/shapes.npz")
-m = Denoiser(cfg["d"], cfg["heads"], cfg["layers"], cfg["radius"], cfg["cond"], cfg["time"]).cuda().eval()
+m = build(cfg).cuda().eval()
 m.load_state_dict(torch.load(f"{run}/ckpt.pt")["ema"])
 n_sets = 96
 occ, sdf, ref = D["va_occ"][:n_sets], D["va_sdf"][:n_sets], D["va_pts"][:n_sets]

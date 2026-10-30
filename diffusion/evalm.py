@@ -224,6 +224,20 @@ def evaluate(model, cfg, D, out, log):
         res["control_wrong_map"] = dict(w2_vs_fed_map=fed["w2"], w2_vs_other_shape=asked["w2"])
         log("control wrong-map: w2 vs map fed", round(fed["w2"], 3), "vs other shape", round(asked["w2"], 3))
 
+    # control: does the model use the shared state of THIS swarm?  swap it for another swarm's.
+    if cond and getattr(model, "gkind", "none") != "none" and not cfg.get("gshuffle"):
+        ref = np.stack([s[0] for s in sets["val"]]); occ = np.stack([s[1] for s in sets["val"]]); sdf = np.stack([s[2] for s in sets["val"]])
+        g = torch.Generator().manual_seed(7)
+        x0 = init_noise(ref.shape, g, cfg)
+        maps = make_maps(torch.tensor(occ, device=dev), torch.tensor(sdf, device=dev))
+        K = max(cfg["eval_steps"])
+        model.gswap = True
+        X = torch.cat([sample(model, x0[i:i + 64], maps[i:i + 64], K) for i in range(0, len(x0), 64)]).cpu().numpy()
+        model.gswap = False
+        r = agg([metrics(X[i], ref[i], occ[i], sdf[i]) for i in range(len(X))])
+        res["control_wrong_global"] = dict(w2=r["w2"], coll=r["coll"], cover=r["cover"], one_piece_proxy=r["inside"])
+        log("control wrong shared state: w2", round(r["w2"], 3), "coll", round(r["coll"], 3))
+
     # shape-level statistics: generated vs real descriptor distributions (works for every model)
     g = torch.Generator().manual_seed(11)
     n = 256

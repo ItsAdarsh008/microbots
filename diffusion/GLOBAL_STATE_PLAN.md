@@ -40,6 +40,12 @@ Two seeds for every variant that survives the first screen; mean64, dens8 and gr
 - "It is ignored" if the swap changes error by less than 0.03 (posterior-collapse-like behaviour).
 - Where two variants differ by less than the seed spread (about 0.1 to 0.15) they are not ranked.
 
+## Adjustments after the first literature report (note D)
+
+- A pooled vector can carry centroid, count and progress but, by a set-function expressivity argument (Wagstaff et al. 2019), not "which region is a hole"; a spatial field can. This is the same as prediction 1.
+- TarMAC reports that more communication rounds helped more than wider messages. Added: `s5a_r25_mean64_rounds1` and `s5a_r25_grid8_rounds1` (shared state used in the last layer only instead of all four). Comparing mean64 / grid8 with their rounds1 versions separates rounds from bandwidth.
+- Evidence that shared messages are sometimes ignored exists (Lowe et al. 2019); that is what the wrong-shared-state swap control is for.
+
 ## Follow-up waves (each changes one thing relative to the first wave)
 
 - B. Without a clock (v1 data, where r=0.40 no-clock has a baseline: 1.44 / 1.55, 60% of shapes in one piece): does a shared state replace the clock (progress is readable from the pooled state)?

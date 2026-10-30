@@ -162,8 +162,9 @@ class GlobalMix(nn.Module):
 
 class Denoiser(nn.Module):
     def __init__(s, d=192, heads=6, layers=6, radius=None, cond="none", time=True,
-                 gstate="none", gdim=16, gtok=4, ggrid=8, gc=1):
+                 gstate="none", gdim=16, gtok=4, ggrid=8, gc=1, grounds=None):
         super().__init__()
+        s.grounds = layers if grounds is None else grounds     # shared state is used in the last `grounds` layers only
         s.radius, s.cond, s.time, s.L, s.H = radius, cond, time, layers, heads
         s.gkind, s.ggrid, s.gswap = gstate, ggrid, False
         s.inp = nn.Sequential(nn.Linear(34 + (6 if cond == "map" else 0) + (3 if gstate == "dens" else 0), d), nn.GELU(), nn.Linear(d, d))
@@ -195,7 +196,7 @@ class Denoiser(nn.Module):
         mask = (dist[..., 0] < s.radius) if s.radius else None
         for l, blk in enumerate(s.blocks):
             h = blk(h, te, bias_all[:, :, :, l].permute(0, 3, 1, 2), mask)
-            if s.gmix is not None:
+            if s.gmix is not None and l >= s.L - s.grounds:
                 h = h + s.gmix[l](h, x, s.gswap)
         return s.out(h)
 
@@ -204,6 +205,6 @@ def build(cfg):
     """Construct the denoiser from a run config (every script uses this)."""
     m = Denoiser(cfg["d"], cfg["heads"], cfg["layers"], cfg["radius"], cfg["cond"], cfg["time"],
                  gstate=cfg.get("gstate", "none"), gdim=cfg.get("gdim", 16), gtok=cfg.get("gtok", 4),
-                 ggrid=cfg.get("ggrid", 8), gc=cfg.get("gc", 1))
+                 ggrid=cfg.get("ggrid", 8), gc=cfg.get("gc", 1), grounds=cfg.get("grounds"))
     m.gswap = bool(cfg.get("gshuffle", False))
     return m

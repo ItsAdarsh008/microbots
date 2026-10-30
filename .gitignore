@@ -12,3 +12,4 @@ assets/*/renders/*.png
 !assets/*/renders/overview.png
 assets/*/sandbox/index.html
 diffusion/models_backup/
+diffusion/data_backup/

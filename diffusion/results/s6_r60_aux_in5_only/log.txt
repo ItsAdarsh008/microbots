@@ -38,3 +38,25 @@ it 18000 loss 0.0099 gn 0.08 lr 1.1e-04 798s
 it 18500 loss 0.0095 gn 0.08 lr 1.0e-04 820s
 it 19000 loss 0.0091 gn 0.15 lr 9.5e-05 842s
 it 19500 loss 0.0095 gn 0.09 lr 8.8e-05 864s
+it 20000 loss 0.0087 gn 0.19 lr 8.2e-05 886s
+it 20500 loss 0.0097 gn 0.11 lr 7.5e-05 908s
+it 21000 loss 0.0090 gn 0.04 lr 6.9e-05 930s
+it 21500 loss 0.0089 gn 0.14 lr 6.3e-05 952s
+it 22000 loss 0.0089 gn 0.18 lr 5.7e-05 974s
+it 22500 loss 0.0090 gn 0.05 lr 5.2e-05 997s
+it 23000 loss 0.0094 gn 0.08 lr 4.6e-05 1019s
+it 23500 loss 0.0086 gn 0.10 lr 4.1e-05 1041s
+it 24000 loss 0.0090 gn 0.19 lr 3.7e-05 1063s
+it 24500 loss 0.0089 gn 0.04 lr 3.2e-05 1085s
+it 25000 loss 0.0086 gn 0.10 lr 2.9e-05 1107s
+it 25500 loss 0.0088 gn 0.03 lr 2.5e-05 1129s
+it 26000 loss 0.0090 gn 0.09 lr 2.2e-05 1152s
+it 26500 loss 0.0085 gn 0.11 lr 1.9e-05 1174s
+it 27000 loss 0.0085 gn 0.07 lr 1.6e-05 1196s
+it 27500 loss 0.0088 gn 0.05 lr 1.4e-05 1218s
+it 28000 loss 0.0086 gn 0.14 lr 1.2e-05 1240s
+it 28500 loss 0.0087 gn 0.08 lr 1.1e-05 1262s
+it 29000 loss 0.0084 gn 0.18 lr 9.8e-06 1284s
+it 29500 loss 0.0085 gn 0.09 lr 9.2e-06 1307s
+it 30000 loss 0.0085 gn 0.11 lr 9.0e-06 1329s
+val {"noise": {"w2": 10.52, "inside": 0.29, "cover": 0.53, "coll": 0.06, "nn": 1.831, "iou": 0.206, "prec": 0.342, "rec": 0.323, "skill": 0.0}, "classical": {"w2": 1.711, "inside": 1.0, "cover": 0.992, "coll": 0.105, "nn": 0.754, "iou": 0.651, "prec": 0.762, "rec": 0.811, "skill": 0.837}, "K64": {"w2": 1.255, "inside": 0.902, "cover": 0.936, "coll": 0.067, "nn": 0.717, "iou": 0.687, "prec": 0.785, "rec": 0.823, "skill": 0.881}}

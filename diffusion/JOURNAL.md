@@ -770,3 +770,7 @@ Demo: now has the letters (52 presets, thick and thin), upright emoji, 14 descri
 - Reference-swarm recipe (pile start, 64-number map, noisy clock, repair) with weight 5: IoU 0.71 / 0.61 / 0.66 (val / held-out / emoji, 64 steps), collisions 0.00 (1 seed; weight 20 version queued). Not directly comparable with the numbers above (different start and map).
 
 Still to do: replicate weight 20 (1 more seed), higher weights, which of the two penalty terms matters (ablations `in only`, `rep only` at weight 5 and 20 are running), the reference-swarm recipe at weight 20, letters and hand-drawn shapes for the weight-20 models, and a check of whether polish still equalises everything at the new level.
+
+## 2026-10-30 tick 31: late-time emphasis settled; replicates running
+
+`s8_global_aux5_tpow2` (global, geometric losses 5 + 5, late-time emphasis 2): IoU 0.69 / 0.65 / 0.65 (val / held-out / emoji, 64 steps), the same as without it (0.69 / 0.64 / 0.65). With the local model (tick 30) the result was the same, so **late-time emphasis does not help, on two models** (it hurts when used alone: local 0.64 / 0.58 / 0.58). Queued to replicate the global weight-20 result: `s6_global_aux_in20_rep20_seed1`. Running: weight 50 (local, global), weight-20 second seed (local), each penalty term alone at 5 and 20, reference swarm at weight 20, 60k iterations at weight 5, global weight 5 second seed.

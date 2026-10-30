@@ -58,6 +58,11 @@ def separate(x, dmin, iters=3):
 def run(req):
     m, cfg = MODELS[req["model"]]
     N, K = int(req.get("n", 256)), int(req.get("k", 16))
+    # a physical sensing range is fixed in bot spacings: with more bots the spacing shrinks, so shrink the radius with it
+    if cfg.get("radius") and req.get("keep_spacings"):
+        m.radius = cfg["radius"] * float(np.sqrt(256.0 / N))
+    elif cfg.get("radius"):
+        m.radius = cfg["radius"]
     rng = np.random.default_rng(int(req.get("seed", 0)))
     torch.manual_seed(int(req.get("seed", 0)))
     if "mask" in req:

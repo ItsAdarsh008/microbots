@@ -80,19 +80,19 @@
   "note": "All-to-all version of the same recipe."
  },
  "s6_r25_aux_in20_rep20_seed1": {
-  "label": "Small sensing radius (0.25) with geometric losses",
+  "label": "Small sensing radius (0.25, about 4 spacings) with geometric losses",
   "start": "noise",
-  "note": "About 2.5 spacings of sensing. Without the new losses this radius gave blobs; now it is close to radius 0.6."
+  "note": "About 4 spacings of sensing (the real bot's arm reach is about 2.3). Without the new losses this radius gave blobs; now it is close to radius 0.6."
  },
  "s6_r40_aux_in20_rep20_seed1": {
-  "label": "Sensing radius 0.4 with geometric losses",
+  "label": "Sensing radius 0.4 (about 6.6 spacings) with geometric losses",
   "start": "noise",
-  "note": "About 4 spacings of sensing."
+  "note": "About 6.6 spacings of sensing."
  },
  "s6_r60_aux_in100_rep100": {
   "label": "BEST: local radius 0.6, geometric losses weight 100",
   "start": "noise",
-  "note": "Each bot senses about 6 spacings. Cleanest letters and emoji of the learned models so far (one training run)."
+  "note": "Each bot senses about 10 spacings. Cleanest letters and emoji of the learned models so far (one training run)."
  },
  "s6_global_aux_in100_rep100": {
   "label": "BEST: global attention, geometric losses weight 100",
@@ -100,12 +100,12 @@
   "note": "All-to-all version of the same recipe."
  },
  "s14_refv3_r25_g16": {
-  "label": "SWARM v3: sensing 2.5 spacings, 16x16 map, noisy clock, repair-trained, pile start",
+  "label": "SWARM v3: sensing about 4 spacings, 16x16 map, noisy clock, repair-trained, pile start",
   "start": "pile_c",
-  "note": "The most hardware-like model: each bot hears only neighbours within about one arm reach and is told a 256-number map. Start it from the centred pile. Try cut a chunk then repair."
+  "note": "The most hardware-like model: each bot hears only neighbours within about 4 spacings (the real arm reach is about 2.3) and is told a 256-number map. Start it from the centred pile. Try cut a chunk then repair."
  },
  "s14_refv3_r40_g16": {
-  "label": "SWARM v3: sensing 4 spacings, 16x16 map, noisy clock, repair-trained, pile start",
+  "label": "SWARM v3: sensing about 6.6 spacings, 16x16 map, noisy clock, repair-trained, pile start",
   "start": "pile_c",
   "note": "Same recipe with a bit more sensing range."
  }

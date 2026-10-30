@@ -59,10 +59,10 @@ def pile_opts(start):
 def pile_fps(rng, B, N, R0=0.7, off=0.5):
     """B well-spaced piles: N points chosen by farthest-point sampling from a uniform disc of radius R0,
     centred at a random spot. Like bots dropped together: touching, never overlapping."""
-    cand = rng.uniform(-1, 1, (B, 1500, 2)); cand = cand[(cand ** 2).sum(-1) < 1].reshape(B, -1, 2) if False else cand
-    r = R0 * np.sqrt(rng.uniform(size=(B, 1500))); th = rng.uniform(0, 2 * np.pi, (B, 1500))
+    M = max(1500, 8 * N)   # enough candidates to pick N distinct, well-spaced points
+    r = R0 * np.sqrt(rng.uniform(size=(B, M))); th = rng.uniform(0, 2 * np.pi, (B, M))
     cand = np.stack([r * np.cos(th), r * np.sin(th)], -1)
-    idx = np.zeros((B, N), int); idx[:, 0] = rng.integers(1500, size=B)
+    idx = np.zeros((B, N), int); idx[:, 0] = rng.integers(M, size=B)
     d = ((cand - cand[np.arange(B), idx[:, 0]][:, None]) ** 2).sum(-1)
     for k in range(1, N):
         j = d.argmax(1); idx[:, k] = j

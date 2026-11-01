@@ -340,25 +340,96 @@ def rule_order(sw, p, slots, dist):
     return [s for _, s in ranked]
 
 
-def step(sw, chooser, record=None):
-    """One tick of building. `chooser(sw, p, slots, ctx)` returns slots to try, best first.
+# ---------------------------------------------------------------- spares: work only if needed, then go home
+#
+# Two optional behaviours, switched on per swarm with prepare(sw):
+#
+# * thrifty: while building, only the free bots nearest the work move: about
+#   1.5 per empty shape cell left, plus a few. The rest stay where they are. If
+#   nothing gets locked in for a while, everyone helps.
+# * park: once the shape is done, spares go back to the pad where the pile
+#   started and stack there: a spare on the pad, standing on the floor or on a
+#   parked spare, is parked and stays put.
+#
+# The teacher works these out from the whole grid (who is nearest the work, is
+# the shape finished). A bot can't see that; a learned policy has to work it
+# out from its neighbours (see gnn_gru.py).
 
-    If `record` is a list, every free bot's (observation, legal-slot mask,
-    slot it ended up taking) is appended to it. Returns the number of moves made.
+PAD = (slice(2, 10), slice(3, 12))      # the pile's footprint on the floor (x, y)
+
+
+def prepare(sw, thrifty=True, park=True):
+    sw.thrifty, sw.park = thrifty, park
+    sw.home = np.zeros(GRID, dtype=bool)
+    pad = np.zeros(GRID, dtype=bool)
+    pad[PAD[0], PAD[1], :] = True
+    sw.pad = pad & ~sw.target
+    return sw
+
+
+def update_parked(sw):
+    """Spares on the pad that stand on the floor or on a parked spare are parked (bottom up)."""
+    for z in range(GRID[2]):
+        here = sw.occ[:, :, z] & ~sw.locked[:, :, z] & sw.pad[:, :, z]
+        below = np.ones(GRID[:2], dtype=bool) if z == 0 else sw.home[:, :, z - 1]
+        sw.home[:, :, z] = here & below
+
+
+def all_home(sw):
+    return sw.done() and not (sw.occ & ~sw.locked & ~sw.home).any()
+
+
+def plan(sw):
+    """What the teacher knows this step: phase, goal cells, its distance map, who should work."""
+    if not sw.done():
+        goal = sw.goal_cells()
+        fixed = sw.locked
+        phase = "build"
+    elif getattr(sw, "park", False):
+        update_parked(sw)
+        below_ok = np.zeros(GRID, dtype=bool)
+        below_ok[:, :, 0] = True
+        below_ok[:, :, 1:] = sw.home[:, :, :-1]
+        goal = sw.pad & ~sw.occ & below_ok
+        fixed = sw.locked | sw.home
+        phase = "park"
+    else:
+        return None
+    dist = L.distance_field(sw.occ, fixed, goal)
+    movers = sw.occ & ~sw.locked & ~getattr(sw, "home", np.zeros(GRID, dtype=bool))
+    needed = None                                   # None: every free bot may move
+    if phase == "build" and getattr(sw, "thrifty", False) and getattr(sw, "stalls", 0) <= 10:
+        left = int((sw.target & ~sw.occ).sum())
+        cap = int(np.ceil(1.5 * left)) + 4
+        cells = np.argwhere(movers)
+        if len(cells) > cap:
+            d = dist[tuple(cells.T)] + sw.id_at[tuple(cells.T)] * 1e-6    # ties broken by bot id
+            needed = np.zeros(GRID, dtype=bool)
+            needed[tuple(cells[np.argsort(d)[:cap]].T)] = True
+    return {"phase": phase, "goal": goal, "dist": dist, "movers": movers, "needed": needed}
+
+
+def step(sw, chooser, record=None):
+    """One tick. `chooser(sw, p, slots, ctx)` returns slots to try, best first.
+
+    Builds the shape; then, if the swarm was prepare()d with park=True, sends the
+    spares home. If `record` is a list, every free bot's (observation, legal-slot
+    mask, slot it ended up taking) is appended to it. Returns the number of moves.
     """
     sw.last_kind[:] = 0
     sw.last_from = sw.pos.copy()
-    if sw.done():
+    ctx = plan(sw)
+    if ctx is None:
         return 0
-    goal = sw.goal_cells()
-    ctx = {"dist": L.distance_field(sw.occ, sw.locked, goal), "goal": goal}
+    goal = ctx["goal"]
+    building = ctx["phase"] == "build"
     ctx["frame"] = frame_state(sw, goal, ctx["dist"])
     busy = sw.occ.copy()
     if SAFETY == "tree":
         if not hasattr(sw, "tree"):
             sw.tree = HolderTree(sw.occ, sw.locked)
         sw.tree.relax(sw.occ, sw.locked)
-    free = np.argwhere(sw.occ & ~sw.locked)
+    free = np.argwhere(ctx["movers"])
     sw.rng.shuffle(free)
     moves = 0
     for p in free:
@@ -369,9 +440,9 @@ def step(sw, chooser, record=None):
         obs = observe(ctx["frame"], p) if record is not None or chooser is not rule_chooser else None
         ctx["obs"] = obs
         taken = 0
-        plan = sw.tree.plan_leave(sw.occ, p) if SAFETY == "tree" else []
+        plan_ = sw.tree.plan_leave(sw.occ, p) if SAFETY == "tree" else []
         for s in chooser(sw, p, slots, ctx):
-            if s == 0 or plan is None:
+            if s == 0 or plan_ is None:
                 break                                  # chose to stay, or it's holding someone up
             kind, c, via = slots[s]
             sw.occ[p] = False
@@ -384,11 +455,12 @@ def step(sw, chooser, record=None):
                 busy[c] = busy[via] = True
                 moves += 1
                 taken = s
-                if goal[c]:
+                sw.moved_ever = getattr(sw, "moved_ever", set()) | {int(bot)}
+                if building and goal[c]:
                     sw.locked[c] = True
                     goal[c] = False
                 if SAFETY == "tree":
-                    sw.tree.apply(sw.occ, sw.locked, p, c, plan)
+                    sw.tree.apply(sw.occ, sw.locked, p, c, plan_)
                 break
             sw.occ[c] = False
             sw.occ[p] = True
@@ -398,17 +470,24 @@ def step(sw, chooser, record=None):
             for s in slots:
                 mask[s] = True
             record.append((obs, mask, taken))
-    before = sw.locked.copy()
-    sw.settle()      # free bots standing on ready target cells lock in place
-    progress = int(sw.locked.sum()) > getattr(sw, "locked_before", 0)
-    sw.locked_before = int(sw.locked.sum())
+    if building:
+        before = sw.locked.copy()
+        sw.settle()      # free bots standing on ready target cells lock in place
+        progress = int(sw.locked.sum()) > getattr(sw, "locked_before", 0)
+        sw.locked_before = int(sw.locked.sum())
+        if SAFETY == "tree":
+            sw.tree.lock(sw.occ, sw.locked, list(map(tuple, np.argwhere(sw.locked & ~before))))
+    else:
+        update_parked(sw)
+        progress = int(sw.home.sum()) > getattr(sw, "home_before", 0)
+        sw.home_before = int(sw.home.sum())
     sw.stalls = 0 if progress else getattr(sw, "stalls", 0) + 1
-    if SAFETY == "tree":
-        sw.tree.lock(sw.occ, sw.locked, list(map(tuple, np.argwhere(sw.locked & ~before))))
     return moves
 
 
 def rule_chooser(sw, p, slots, ctx):
+    if ctx.get("needed") is not None and not ctx["needed"][p]:
+        return []                                      # not needed right now: stay put
     return rule_order(sw, p, slots, ctx["dist"])
 
 

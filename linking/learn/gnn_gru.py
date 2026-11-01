@@ -1,33 +1,36 @@
 """A graph neural network with GRU memory, as the bots' shared policy.
 
-The first trained policy (train_bc.py, dagger.py) is an MLP, and it was handed
-two inputs written by hand: a "how far to the work" signal relayed bot to bot,
-and a compass pointing at the nearest open cell. Without them it can't find
-the work. This file asks: can the bots learn to do that relaying themselves?
+The goal: with many more bots than the shape needs (3x, 5x),
 
-    * GNN: every step, each bot sends a message to the bots around it (the 26
-      cells touching it, faces, edges and corners) and combines what it hears,
-      a few rounds per step. That's how information moves through the swarm.
-    * GRU: each bot keeps a hidden state between steps and updates it with a
-      GRU cell. That's memory, so information can keep travelling across many
-      steps, the way the Kilobots' hop-count gradient settled over time.
+  (a) only the bots actually needed should go to work; the rest stay put, and
+  (b) once the shape is finished, the spares should go home to the pad where
+      they started, not sit in a heap on top of the structure.
+
+Both depend on things no single bot can see: whether it's one of the bots
+nearest the work, and whether the shape is finished somewhere out of view.
+The hand-written rules (the teacher, env.plan) do both by looking at the
+whole grid. The network has to work them out locally:
+
+    * GNN: every step, each bot sends a message to the bots touching it (the 26
+      cells around it) and combines what it hears, 3 rounds per step. That's
+      how news moves through the swarm.
+    * GRU: each bot keeps a hidden state from step to step, updated by a GRU
+      cell. That's memory, so news can keep travelling over many steps ("the
+      work is that way", "everything's built, go home").
 
 Each bot sees only its own 5x5x5 block (which cells hold a bot, which belong
-to the shape) and whether it's locked: no relayed signal, no compass. Every
-bot runs the same network.
+to the shape) and whether it's locked in or parked: no relayed signal, no
+compass. Every bot runs the same network.
 
-Training is imitation, as before: record the hand-written rules (the
-teacher), train the network to predict the teacher's move, then DAgger
-(the network drives, the teacher labels). The teacher uses a map of the whole
-grid that the bots can't see, so to copy it well the network has to work out
-"which way is the work" from what its neighbours tell it.
+Training is imitation: record the teacher, train the network to pick the
+teacher's move, then DAgger (the network drives, the teacher labels).
 
-    python linking/learn/gnn_gru.py                 # record, train, DAgger, evaluate
-    python linking/learn/gnn_gru.py --quick         # small smoke test
-    python linking/learn/gnn_gru.py --no-memory     # same, but the GRU state is wiped every step
+    python linking/learn/gnn_gru.py --quick              # small smoke test (a few minutes on a CPU)
+    python linking/learn/gnn_gru.py                      # the real run: meant for a GPU (Colab)
+    python linking/learn/gnn_gru.py --no-memory          # same, but the GRU state is wiped every step
 
-Runs on a CPU; a GPU (Colab) makes the training part much faster. The data
-recording and the evaluation run the Python simulation, which is CPU only.
+The data recording and the evaluation run the Python simulation, on the CPU.
+The training is the heavy part, and a GPU makes it many times faster.
 """
 
 import argparse
@@ -45,102 +48,118 @@ import env as E
 HERE = os.path.dirname(os.path.abspath(__file__))
 L = E.L
 
-N_FEAT = 2 * E.SIDE ** 3 + 1          # 125 occupied + 125 shape + 1 locked = 251
+N_FEAT = 2 * E.SIDE ** 3 + 2          # 125 occupied + 125 shape + locked + parked = 252
+N_BYTES = (N_FEAT + 7) // 8            # stored as packed bits
 NEIGHBOURS = np.array([(a, b, c) for a in (-1, 0, 1) for b in (-1, 0, 1) for c in (-1, 0, 1)
                        if (a, b, c) != (0, 0, 0)])                # 26 cells touching a bot
-N_PAD = 256                            # bots per build, padded (the biggest training build has ~180)
-E_PAD = N_PAD * len(NEIGHBOURS)        # message slots per step
 WINDOW = 32                            # steps per training window (truncated backprop through time)
+N_PAD = 576                            # bots per build, padded; set by configure()
+E_PAD = N_PAD * len(NEIGHBOURS)
+
+
+def configure(mult, shapes=("sheet", "arch", "tower")):
+    """Size the padding for `mult` times the usual number of bots."""
+    global N_PAD, E_PAD
+    biggest = max((int(L.SHAPES[s]().sum()) + 12) * mult for s in shapes)
+    N_PAD = 64 * int(np.ceil((biggest + 1) / 64))
+    E_PAD = N_PAD * len(NEIGHBOURS)
+    return N_PAD
+
+
+def new_swarm(shape, seed, mult):
+    need = int(L.SHAPES[shape]().sum())
+    sw = L.Swarm(L.SHAPES[shape](), seed=seed, extra=(need + 12) * mult - need)
+    return E.prepare(sw, thrifty=True, park=True)
 
 
 # ============================================================== recording
 
-def features(sw):
-    """What each bot sees (251 numbers each), and its own cell, for every bot."""
-    goal = sw.goal_cells()
-    frame = E.frame_state(sw, goal)
-    n = len(sw.pos)
-    x = np.zeros((N_PAD, N_FEAT), dtype=np.uint8)          # all 0/1, stored small
-    for b in range(n):
-        if not sw.alive[b]:
-            continue
-        obs = E.observe(frame, tuple(int(v) for v in sw.pos[b]))
+def features(sw, ctx):
+    """What each bot sees, as packed bits: (N_PAD, N_BYTES)."""
+    frame = E.frame_state(sw, ctx["goal"], ctx["dist"])
+    x = np.zeros((N_PAD, N_FEAT), dtype=np.uint8)
+    for b in range(len(sw.pos)):
+        p = tuple(int(v) for v in sw.pos[b])
+        obs = E.observe(frame, p)
         x[b, :250] = obs[:250]
-        x[b, 250] = obs[257]                       # locked
-    return x
+        x[b, 250] = obs[257]                       # locked into the shape
+        x[b, 251] = sw.home[p]                     # parked on the pad
+    return np.packbits(x, axis=1)
 
 
 def edges(sw):
-    """Who can hear whom this step: every pair of bots in touching cells.
-
-    Returned as (senders, receivers, offsets) padded to E_PAD. Padding points at
-    the spare node N_PAD - 1, which never holds a bot.
-    """
+    """Who can hear whom this step: every pair of bots in touching cells. (senders, receivers, offsets)."""
     pos = np.asarray(sw.pos)
     n = len(pos)
     snd, rcv, off = [], [], []
     for d in NEIGHBOURS:
         q = pos + d
-        ok = np.all((q >= 0) & (q < np.array(L.GRID)), axis=1) & sw.alive[:n]
+        ok = np.all((q >= 0) & (q < np.array(L.GRID)), axis=1)
         idx = np.full(n, -1)
         idx[ok] = sw.id_at[tuple(q[ok].T)]
         has = idx >= 0
-        has &= np.where(has, sw.alive[np.maximum(idx, 0)], False)
-        snd.append(idx[has])
-        rcv.append(np.nonzero(has)[0])
-        off.append(np.repeat(d[None, :], has.sum(), axis=0))
-    snd, rcv, off = np.concatenate(snd), np.concatenate(rcv), np.concatenate(off)
-    m = len(snd)
-    S = np.full(E_PAD, N_PAD - 1, dtype=np.int16)
-    R = np.full(E_PAD, N_PAD - 1, dtype=np.int16)
-    O = np.zeros((E_PAD, 3), dtype=np.int8)
-    S[:m], R[:m], O[:m] = snd, rcv, off
-    return S, R, O
+        snd.append(idx[has]); rcv.append(np.nonzero(has)[0]); off.append(np.repeat(d[None], has.sum(), 0))
+    return (np.concatenate(snd).astype(np.int16), np.concatenate(rcv).astype(np.int16),
+            np.concatenate(off).astype(np.int8))
 
 
-def teacher_labels(sw):
-    """At the start of a step: for every free bot, its legal moves and the teacher's pick."""
-    goal = sw.goal_cells()
-    dist = L.distance_field(sw.occ, sw.locked, goal)
+def teacher_labels(sw, ctx):
+    """For every bot that may move: its legal moves, and what the teacher would do."""
     busy = sw.occ.copy()
     mask = np.zeros((N_PAD, E.N_ACTIONS), dtype=bool)
     mask[:, 0] = True
-    label = np.zeros(N_PAD, dtype=np.int32)
+    label = np.zeros(N_PAD, dtype=np.int8)
     train = np.zeros(N_PAD, dtype=bool)
-    for b in range(len(sw.pos)):
-        p = tuple(int(v) for v in sw.pos[b])
-        if not sw.alive[b] or sw.locked[p]:
-            continue
+    for p in map(tuple, np.argwhere(ctx["movers"])):
+        b = sw.id_at[p]
         slots = E.legal_slots(sw, p, busy)
         for s in slots:
             mask[b, s] = True
-        order = E.rule_order(sw, p, slots, dist)
+        order = E.rule_chooser(sw, p, slots, ctx)
         label[b] = order[0] if order else 0
         train[b] = True
     return mask, label, train
 
 
-def rollout(shape, seed, driver=None, max_steps=200, extra=12):
-    """One build, recording every step. driver=None: the teacher drives; else a Driver."""
-    sw = L.Swarm(L.SHAPES[shape](), seed=seed, extra=extra)
-    assert len(sw.pos) < N_PAD
+def rollout(shape, seed, mult, driver=None, build_steps=200, park_steps=150):
+    """One build and the spares going home, recording every step. driver=None: the teacher drives."""
+    sw = new_swarm(shape, seed, mult)
+    assert len(sw.pos) < N_PAD, "configure() for this many bots first"
     rec = {k: [] for k in ("x", "snd", "rcv", "off", "mask", "label", "train")}
     if driver is not None:
         driver.reset()
-    t = 0
-    for t in range(max_steps):
+    t = parked_for = 0
+    built_at = None
+    while not E.all_home(sw):
+        ctx = E.plan(sw)
         if sw.done():
+            built_at = t if built_at is None else built_at
+            if parked_for >= park_steps:
+                break
+            parked_for += 1
+        elif t >= build_steps:
             break
-        x = features(sw)
-        S, R, O = edges(sw)
-        mask, label, train = teacher_labels(sw)
-        for k, v in zip(rec, (x, S, R, O, mask, label, train)):
+        x = features(sw, ctx)
+        snd, rcv, off = edges(sw)
+        mask, label, train = teacher_labels(sw, ctx)
+        for k, v in zip(rec, (x, snd, rcv, off, mask, label, train)):
             rec[k].append(v)
         if driver is None:
             E.step(sw, E.rule_chooser)
         else:
-            driver.step(sw, x, S, R, O, mask)
-    return {k: np.stack(v) for k, v in rec.items()}, sw.done(), t
+            driver.step(sw, x, snd, rcv, off)
+        t += 1
+    return rec, stats(sw, built_at, parked_for)
+
+
+def stats(sw, built_at, parked_for):
+    spares = [b for b in range(len(sw.pos)) if not sw.locked[tuple(sw.pos[b])]]
+    moved = len(set(spares) & getattr(sw, "moved_ever", set()))
+    return {"bots": len(sw.pos), "spares": len(spares), "built_in": built_at,
+            "spares_that_moved": moved,
+            "home_in": parked_for if E.all_home(sw) else None,
+            "not_home": int((sw.occ & ~sw.locked & ~sw.home).sum()),
+            "attached": bool(L.is_connected(sw.occ))}
 
 
 # ============================================================== the network
@@ -155,7 +174,7 @@ def dense(key, n_in, n_out):
 
 def init(key):
     ks = iter(jax.random.split(key, 32))
-    p = {
+    return {
         "enc1": dense(next(ks), N_FEAT, H), "enc2": dense(next(ks), H, H),
         "from_mem": dense(next(ks), H, H),
         "msg": [dense(next(ks), 2 * H + 3, H) for _ in range(ROUNDS)],
@@ -164,7 +183,6 @@ def init(key):
         # GRU cell: update gate z, reset gate r, candidate n
         "gru_x": dense(next(ks), H, 3 * H), "gru_h": dense(next(ks), H, 3 * H),
     }
-    return p
 
 
 def lin(p, x):
@@ -172,20 +190,19 @@ def lin(p, x):
 
 
 def gru(p, h, x):
-    """One GRU step. z: how much to update; r: how much old memory to use for the candidate."""
-    gx, gh = lin(p["gru_x"], x), lin(p["gru_h"], h)
-    zx, rx, nx = jnp.split(gx, 3, axis=-1)
-    zh, rh, nh = jnp.split(gh, 3, axis=-1)
+    """One GRU step. z: how much of the old memory to keep; r: how much of it to use for the new candidate."""
+    zx, rx, nx = jnp.split(lin(p["gru_x"], x), 3, axis=-1)
+    zh, rh, nh = jnp.split(lin(p["gru_h"], h), 3, axis=-1)
     z = jax.nn.sigmoid(zx + zh)
     r = jax.nn.sigmoid(rx + rh)
     n = jnp.tanh(nx + r * nh)
     return (1 - z) * n + z * h
 
 
-def step_fn(p, h, x, snd, rcv, off, memory=True):
-    """One simulation step for every bot: listen to neighbours, update memory, score moves."""
-    x, off = x.astype(jnp.float32), off.astype(jnp.float32)
-    snd, rcv = snd.astype(jnp.int32), rcv.astype(jnp.int32)
+def step_fn(p, h, xbits, snd, rcv, off, memory=True):
+    """One simulation step for every bot: listen to neighbours, update memory, score the 19 moves."""
+    x = jnp.unpackbits(xbits, axis=-1, count=N_FEAT).astype(jnp.float32)
+    snd, rcv, off = snd.astype(jnp.int32), rcv.astype(jnp.int32), off.astype(jnp.float32)
     if not memory:
         h = jnp.zeros_like(h)
     u = jax.nn.relu(lin(p["enc2"], jax.nn.relu(lin(p["enc1"], x)))) + lin(p["from_mem"], h)
@@ -207,22 +224,24 @@ def count(p):
 # ============================================================== training
 
 def window_loss(p, h0, w, memory):
-    """Cross-entropy over one window of steps for one build, carrying the GRU state through it."""
+    """Cross-entropy over one window of steps for one build, carrying each bot's memory through it."""
     def body(h, s):
         h, logits = step_fn(p, h, s["x"], s["snd"], s["rcv"], s["off"], memory)
         logits = jnp.where(s["mask"], logits, -1e9)
         logp = jax.nn.log_softmax(logits)
-        nll = -jnp.take_along_axis(logp, s["label"][:, None], axis=1)[:, 0]
-        hit = (jnp.argmax(logits, axis=1) == s["label"])
-        return h, (jnp.sum(nll * s["train"]), jnp.sum(hit * s["train"]), jnp.sum(s["train"]))
-    h, (nll, hit, n) = jax.lax.scan(body, h0, w)
+        nll = -jnp.take_along_axis(logp, s["label"].astype(jnp.int32)[:, None], axis=1)[:, 0]
+        hit = jnp.argmax(logits, axis=1) == s["label"]
+        stay = s["label"] == 0
+        return h, (jnp.sum(nll * s["train"]), jnp.sum(hit * s["train"]), jnp.sum(s["train"]),
+                   jnp.sum(hit * stay * s["train"]), jnp.sum(stay * s["train"]))
+    h, (nll, hit, n, hit_stay, n_stay) = jax.lax.scan(body, h0, w)
     total = jnp.maximum(n.sum(), 1.0)
-    return nll.sum() / total, (h, hit.sum() / total)
+    return nll.sum() / total, (h, hit.sum() / total, hit_stay.sum() / jnp.maximum(n_stay.sum(), 1.0))
 
 
 def batched_loss(p, h0, wb, memory):
-    loss, (h, acc) = jax.vmap(window_loss, in_axes=(None, 0, 0, None))(p, h0, wb, memory)
-    return loss.mean(), (h, acc.mean())
+    loss, (h, acc, acc_stay) = jax.vmap(window_loss, in_axes=(None, 0, 0, None))(p, h0, wb, memory)
+    return loss.mean(), (h, acc.mean(), acc_stay.mean())
 
 
 def adam_init(p):
@@ -233,64 +252,65 @@ def adam_init(p):
 def make_train_step(memory):
     @jax.jit
     def train_step(p, opt, h0, wb, lr):
-        (loss, (h, acc)), g = jax.value_and_grad(batched_loss, has_aux=True)(p, h0, wb, memory)
+        (loss, (h, acc, acc_stay)), g = jax.value_and_grad(batched_loss, has_aux=True)(p, h0, wb, memory)
         g = jax.tree_util.tree_map(lambda x: jnp.clip(x, -1.0, 1.0), g)
         t = opt["t"] + 1
         m = jax.tree_util.tree_map(lambda m, g: 0.9 * m + 0.1 * g, opt["m"], g)
         v = jax.tree_util.tree_map(lambda v, g: 0.999 * v + 0.001 * g * g, opt["v"], g)
         p = jax.tree_util.tree_map(
             lambda p, m, v: p - lr * (m / (1 - 0.9 ** t)) / (jnp.sqrt(v / (1 - 0.999 ** t)) + 1e-8), p, m, v)
-        return p, {"m": m, "v": v, "t": t}, jax.lax.stop_gradient(h), loss, acc
+        return p, {"m": m, "v": v, "t": t}, jax.lax.stop_gradient(h), loss, acc, acc_stay
     return train_step
 
 
-def pad_build(rec, T):
-    """Pad one recorded build to T steps (extra steps train nothing)."""
-    t = len(rec["x"])
-    out = {}
-    for k, v in rec.items():
-        pad = [(0, T - t)] + [(0, 0)] * (v.ndim - 1)
-        fill = N_PAD - 1 if k in ("snd", "rcv") else 0
-        out[k] = np.pad(v, pad, constant_values=fill)
-    out["mask"][t:, :, 0] = True
-    return out
-
-
-def stack(builds):
-    T = WINDOW * int(np.ceil(max(len(b["x"]) for b in builds) / WINDOW))
-    padded = [pad_build(b, T) for b in builds]
-    return {k: np.stack([b[k] for b in padded]) for k in padded[0]}, T
+def window(builds, idx, t0):
+    """Steps t0 .. t0+WINDOW of the builds in idx, padded to fixed sizes (padding trains nothing)."""
+    B, W = len(idx), WINDOW
+    out = {"x": np.zeros((B, W, N_PAD, N_BYTES), np.uint8),
+           "snd": np.full((B, W, E_PAD), N_PAD - 1, np.int16), "rcv": np.full((B, W, E_PAD), N_PAD - 1, np.int16),
+           "off": np.zeros((B, W, E_PAD, 3), np.int8),
+           "mask": np.zeros((B, W, N_PAD, E.N_ACTIONS), bool), "label": np.zeros((B, W, N_PAD), np.int8),
+           "train": np.zeros((B, W, N_PAD), bool)}
+    out["mask"][..., 0] = True
+    for i, b in enumerate(idx):
+        rec = builds[b]
+        for j in range(W):
+            t = t0 + j
+            if t >= len(rec["x"]):
+                break
+            m = len(rec["snd"][t])
+            out["x"][i, j] = rec["x"][t]
+            out["snd"][i, j, :m] = rec["snd"][t]; out["rcv"][i, j, :m] = rec["rcv"][t]; out["off"][i, j, :m] = rec["off"][t]
+            for k in ("mask", "label", "train"):
+                out[k][i, j] = rec[k][t]
+    return {k: jnp.asarray(v) for k, v in out.items()}
 
 
 def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitation"):
-    data, T = stack(builds)
     step = make_train_step(memory)
     rng = np.random.default_rng(len(log["loss"]))
-    nb = len(builds)
     for ep in range(epochs):
-        order = rng.permutation(nb)
-        ls, accs = [], []
-        for i in range(0, nb - batch + 1, batch):
+        order = rng.permutation(len(builds))
+        ls, accs, stays = [], [], []
+        for i in range(0, len(order) - batch + 1, batch):
             idx = order[i:i + batch]
+            T = max(len(builds[b]["x"]) for b in idx)
             h = jnp.zeros((batch, N_PAD, H))
-            for w0 in range(0, T, WINDOW):
-                wb = {k: jnp.asarray(v[idx, w0:w0 + WINDOW]) for k, v in data.items()}
-                if not np.any(np.asarray(wb["train"])):
-                    break
-                p, opt, h, loss, acc = step(p, opt, h, wb, lr)
-                ls.append(float(loss)); accs.append(float(acc))
+            for t0 in range(0, T, WINDOW):
+                p, opt, h, loss, acc, acc_stay = step(p, opt, h, window(builds, idx, t0), lr)
+                ls.append(float(loss)); accs.append(float(acc)); stays.append(float(acc_stay))
                 log["loss"].append(round(float(loss), 4))
         log["epoch_end"].append(len(log["loss"])); log["agree"].append(round(float(np.mean(accs)), 4))
         log["stage"].append(stage)
-        print(f"  {stage:9s} epoch {len(log['agree']):3d}  loss {np.mean(ls):.3f}  "
-              f"picks the teacher's move {np.mean(accs):.1%}", flush=True)
+        print(f"  {stage:9s} epoch {len(log['agree']):3d}  loss {np.mean(ls):.3f}  same move as the teacher "
+              f"{np.mean(accs):.1%}  (when it should stay put: {np.mean(stays):.1%})", flush=True)
     return p, opt
 
 
 # ============================================================== driving the swarm
 
 class Driver:
-    """The trained network driving every free bot, with a GRU state per bot."""
+    """The trained network driving every bot, with a GRU state per bot."""
 
     def __init__(self, p, memory=True, seed=0):
         self.p, self.memory = p, memory
@@ -300,7 +320,11 @@ class Driver:
     def reset(self):
         self.h = jnp.zeros((N_PAD, H))
 
-    def step(self, sw, x, S, R, O, mask):
+    def step(self, sw, x, snd, rcv, off):
+        m = len(snd)
+        S = np.full(E_PAD, N_PAD - 1, np.int16); R = np.full(E_PAD, N_PAD - 1, np.int16)
+        O = np.zeros((E_PAD, 3), np.int8)
+        S[:m], R[:m], O[:m] = snd, rcv, off
         self.h, logits = self.fwd(self.p, self.h, jnp.asarray(x), jnp.asarray(S), jnp.asarray(R), jnp.asarray(O))
         logits = np.asarray(logits)
 
@@ -315,27 +339,19 @@ class Driver:
         E.step(sw, chooser)
 
 
-def evaluate(p, memory, shapes=("sheet", "arch", "tower"), seeds=range(100, 105), max_steps=300):
-    out = {}
+def evaluate(p, memory, mult, shapes=("sheet", "arch", "tower"), seeds=range(100, 105), who="network"):
+    """Build each shape and send the spares home. who="teacher" runs the hand-written rules instead."""
+    rows = []
     for shape in shapes:
-        res = []
         for seed in seeds:
-            sw = L.Swarm(L.SHAPES[shape](), seed=seed, extra=12)
-            d = Driver(p, memory, seed)
-            d.reset()
-            t = 0
-            for t in range(max_steps):
-                if sw.done():
-                    break
-                x = features(sw)
-                S, R, O = edges(sw)
-                d.step(sw, x, S, R, O, None)
-            assert L.is_connected(sw.occ)
-            res.append(t if sw.done() else None)
-        out[shape] = res
-        done = [r for r in res if r is not None]
-        print(f"  {shape:6s} {len(done)}/{len(res)} built   steps: {res}", flush=True)
-    return out
+            driver = None if who == "teacher" else Driver(p, memory, seed)
+            _, st = rollout(shape, seed, mult, driver)
+            st.update(shape=shape, seed=seed, who=who)
+            rows.append(st)
+            print(f"  {who:8s} {shape:6s} seed {seed}: built in {st['built_in']}, "
+                  f"{st['spares_that_moved']}/{st['spares']} spares moved, "
+                  f"home in {st['home_in']} ({st['not_home']} not home)", flush=True)
+    return rows
 
 
 # ============================================================== main
@@ -343,7 +359,8 @@ def evaluate(p, memory, shapes=("sheet", "arch", "tower"), seeds=range(100, 105)
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true", help="tiny run to check everything works")
-    ap.add_argument("--no-memory", action="store_true", help="wipe the GRU state every step (ablation)")
+    ap.add_argument("--no-memory", action="store_true", help="wipe the GRU state every step (comparison)")
+    ap.add_argument("--mult", type=int, default=3, help="times the usual number of bots")
     ap.add_argument("--seeds", type=int, default=12, help="teacher builds per training shape")
     ap.add_argument("--epochs", type=int, default=40)
     ap.add_argument("--dagger", type=int, default=2, help="DAgger rounds")
@@ -351,20 +368,22 @@ def main():
     a = ap.parse_args()
     memory = not a.no_memory
     if a.quick:
-        a.seeds, a.epochs, a.dagger = 2, 2, 0
-    name = "gnn_gru" if memory else "gnn_nomem"
+        a.mult, a.seeds, a.epochs, a.dagger = 2, 2, 3, 1
+    configure(a.mult)
+    name = ("gnn_gru" if memory else "gnn_nomem") + f"_x{a.mult}"
     out = a.out or os.path.join(HERE, name)
     shapes = ["sheet", "arch"]
-    print("devices:", jax.devices())
+    print("devices:", jax.devices(), f"| {a.mult}x bots, padded to {N_PAD}")
 
     t0 = time.time()
     print("recording the teacher...")
     builds = []
     for shape in shapes:
         for seed in range(a.seeds):
-            rec, ok, steps = rollout(shape, seed)
+            rec, st = rollout(shape, seed, a.mult)
             builds.append(rec)
-            print(f"  teacher {shape:5s} seed {seed:2d}: {steps} steps, finished={ok}", flush=True)
+            print(f"  teacher {shape:5s} seed {seed:2d}: built in {st['built_in']}, {st['spares_that_moved']}/"
+                  f"{st['spares']} spares moved, home in {st['home_in']}", flush=True)
     print(f"recorded {len(builds)} builds in {time.time() - t0:.0f}s")
 
     p = init(jax.random.PRNGKey(0))
@@ -377,23 +396,23 @@ def main():
 
     for r in range(a.dagger):
         print(f"DAgger round {r + 1}: the network drives, the teacher labels")
-        new = []
         for shape in shapes:
-            for seed in range(1000 + 10 * r, 1000 + 10 * r + a.seeds // 2):
-                rec, ok, steps = rollout(shape, seed, Driver(p, memory, seed), max_steps=150)
-                new.append(rec)
-                print(f"  student {shape:5s} seed {seed}: {steps} steps, finished={ok}", flush=True)
-        builds += new
-        p, opt = train(p, opt, builds, max(4, a.epochs // 4), memory, log, stage=f"dagger {r + 1}")
+            for seed in range(1000 + 10 * r, 1000 + 10 * r + max(1, a.seeds // 2)):
+                rec, st = rollout(shape, seed, a.mult, Driver(p, memory, seed))
+                builds.append(rec)
+                print(f"  student {shape:5s} seed {seed}: built in {st['built_in']}, home in {st['home_in']}", flush=True)
+        p, opt = train(p, opt, builds, max(3, a.epochs // 4), memory, log, stage=f"dagger {r + 1}")
 
     with open(out + ".pkl", "wb") as f:
-        pickle.dump(jax.tree_util.tree_map(np.asarray, p), f)
+        pickle.dump({"params": jax.tree_util.tree_map(np.asarray, p), "memory": memory, "mult": a.mult}, f)
     json.dump(log, open(out + "_log.json", "w"))
     print("saved", out + ".pkl")
 
+    seeds = range(100, 101) if a.quick else range(100, 103)
     print("evaluating on unseen seeds (the tower was never trained on)...")
-    res = evaluate(p, memory, seeds=range(100, 102) if a.quick else range(100, 105))
-    json.dump(res, open(out + "_eval.json", "w"))
+    rows = evaluate(p, memory, a.mult, seeds=seeds)
+    rows += evaluate(p, memory, a.mult, seeds=seeds, who="teacher")
+    json.dump(rows, open(out + "_eval.json", "w"), indent=1)
 
 
 if __name__ == "__main__":

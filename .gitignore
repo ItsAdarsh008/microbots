@@ -16,3 +16,4 @@ assets/*/sandbox/index.html
 linking/learn/gnn_*.pkl
 linking/learn/gnn_*_log.json
 linking/learn/gnn_*_eval.json
+linking/learn/gnn_*_teacher.pkl

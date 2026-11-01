@@ -365,6 +365,7 @@ def main():
     ap.add_argument("--epochs", type=int, default=40)
     ap.add_argument("--dagger", type=int, default=2, help="DAgger rounds")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--eval-only", action="store_true", help="load saved weights and just test them")
     a = ap.parse_args()
     memory = not a.no_memory
     if a.quick:
@@ -375,26 +376,42 @@ def main():
     shapes = ["sheet", "arch"]
     print("devices:", jax.devices(), f"| {a.mult}x bots, padded to {N_PAD}")
 
-    t0 = time.time()
-    print("recording the teacher...")
-    builds = []
-    for shape in shapes:
-        for seed in range(a.seeds):
-            rec, st = rollout(shape, seed, a.mult)
-            builds.append(rec)
-            print(f"  teacher {shape:5s} seed {seed:2d}: built in {st['built_in']}, {st['spares_that_moved']}/"
-                  f"{st['spares']} spares moved, home in {st['home_in']}", flush=True)
-    print(f"recorded {len(builds)} builds in {time.time() - t0:.0f}s")
+    def save(p, log):
+        with open(out + ".pkl", "wb") as f:
+            pickle.dump({"params": jax.tree_util.tree_map(np.asarray, p), "memory": memory, "mult": a.mult}, f)
+        json.dump(log, open(out + "_log.json", "w"))
 
-    p = init(jax.random.PRNGKey(0))
-    opt = adam_init(p)
-    print(f"network: {count(p):,} weights, {ROUNDS} message rounds per step, GRU memory {'on' if memory else 'off'}")
-    log = {"loss": [], "epoch_end": [], "agree": [], "stage": []}
-    t0 = time.time()
-    p, opt = train(p, opt, builds, a.epochs, memory, log)
-    print(f"imitation done in {time.time() - t0:.0f}s")
+    if a.eval_only:
+        p = pickle.load(open(out + ".pkl", "rb"))["params"]
+    else:
+        # the recorded builds are cached, so a rerun (or a crash) doesn't have to record them again
+        cache = out + "_teacher.pkl"
+        if os.path.exists(cache):
+            builds = pickle.load(open(cache, "rb"))
+            print(f"loaded {len(builds)} recorded builds from {cache}")
+        else:
+            t0 = time.time()
+            print("recording the teacher...")
+            builds = []
+            for shape in shapes:
+                for seed in range(a.seeds):
+                    rec, st = rollout(shape, seed, a.mult)
+                    builds.append(rec)
+                    print(f"  teacher {shape:5s} seed {seed:2d}: built in {st['built_in']}, {st['spares_that_moved']}/"
+                          f"{st['spares']} spares moved, home in {st['home_in']}", flush=True)
+            print(f"recorded {len(builds)} builds in {time.time() - t0:.0f}s")
+            pickle.dump(builds, open(cache, "wb"))
 
-    for r in range(a.dagger):
+        p = init(jax.random.PRNGKey(0))
+        opt = adam_init(p)
+        print(f"network: {count(p):,} weights, {ROUNDS} message rounds per step, GRU memory {'on' if memory else 'off'}")
+        log = {"loss": [], "epoch_end": [], "agree": [], "stage": []}
+        t0 = time.time()
+        p, opt = train(p, opt, builds, a.epochs, memory, log)
+        print(f"imitation done in {time.time() - t0:.0f}s")
+        save(p, log)
+
+    for r in range(0 if a.eval_only else a.dagger):
         print(f"DAgger round {r + 1}: the network drives, the teacher labels")
         for shape in shapes:
             for seed in range(1000 + 10 * r, 1000 + 10 * r + max(1, a.seeds // 2)):
@@ -402,10 +419,7 @@ def main():
                 builds.append(rec)
                 print(f"  student {shape:5s} seed {seed}: built in {st['built_in']}, home in {st['home_in']}", flush=True)
         p, opt = train(p, opt, builds, max(3, a.epochs // 4), memory, log, stage=f"dagger {r + 1}")
-
-    with open(out + ".pkl", "wb") as f:
-        pickle.dump({"params": jax.tree_util.tree_map(np.asarray, p), "memory": memory, "mult": a.mult}, f)
-    json.dump(log, open(out + "_log.json", "w"))
+        save(p, log)
     print("saved", out + ".pkl")
 
     seeds = range(100, 101) if a.quick else range(100, 103)

@@ -11,3 +11,8 @@ assets/*/stl/
 assets/*/renders/*.png
 !assets/*/renders/overview.png
 assets/*/sandbox/index.html
+
+# GNN + GRU run outputs (weights, logs): added with git add -f once a run is final
+linking/learn/gnn_*.pkl
+linking/learn/gnn_*_log.json
+linking/learn/gnn_*_eval.json

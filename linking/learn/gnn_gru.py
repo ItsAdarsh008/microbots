@@ -18,9 +18,10 @@ whole grid. The network has to work them out locally:
       cell. That's memory, so news can keep travelling over many steps ("the
       work is that way", "everything's built, go home").
 
-Each bot sees only its own 5x5x5 block (which cells hold a bot, which belong
-to the shape) and whether it's locked in or parked: no relayed signal, no
-compass. Every bot runs the same network.
+Each bot sees its own 5x5x5 block (which cells hold a bot, which belong to the
+shape), whether it's locked in or parked, and the relayed "how far to the
+work" hop count that bots pass to each other (pointing home once the shape is
+built). No compass (USE_COMPASS turns it on). Every bot runs the same network.
 
 Training is imitation: record the teacher, train the network to pick the
 teacher's move, then DAgger (the network drives, the teacher labels).
@@ -48,8 +49,10 @@ import env as E
 HERE = os.path.dirname(os.path.abspath(__file__))
 L = E.L
 
-N_FEAT = 2 * E.SIDE ** 3 + 2          # 125 occupied + 125 shape + locked + parked = 252
-N_BYTES = (N_FEAT + 7) // 8            # stored as packed bits
+N_FEAT = 2 * E.SIDE ** 3 + 2 + 7 + 4  # 125 occupied + 125 shape + locked + parked + 7 relayed signal + 4 compass = 263
+USE_SIGNAL = True                      # the relayed "how far to the work" hop count (local: bots pass it along)
+USE_COMPASS = False                    # direction to the nearest open cell (needs live state from far away: a shortcut)
+N_BYTES = N_FEAT                       # stored as bytes
 NEIGHBOURS = np.array([(a, b, c) for a in (-1, 0, 1) for b in (-1, 0, 1) for c in (-1, 0, 1)
                        if (a, b, c) != (0, 0, 0)])                # 26 cells touching a bot
 WINDOW = 32                            # steps per training window (truncated backprop through time)
@@ -75,16 +78,20 @@ def new_swarm(shape, seed, mult):
 # ============================================================== recording
 
 def features(sw, ctx):
-    """What each bot sees, as packed bits: (N_PAD, N_BYTES)."""
+    """What each bot sees, as bytes: (N_PAD, N_FEAT)."""
     frame = E.frame_state(sw, ctx["goal"], ctx["dist"])
-    x = np.zeros((N_PAD, N_FEAT), dtype=np.uint8)
+    x = np.zeros((N_PAD, N_FEAT), dtype=np.uint8)    # 0/1 cells, then signal and compass as 0..255
     for b in range(len(sw.pos)):
         p = tuple(int(v) for v in sw.pos[b])
         obs = E.observe(frame, p)
         x[b, :250] = obs[:250]
         x[b, 250] = obs[257]                       # locked into the shape
         x[b, 251] = sw.home[p]                     # parked on the pad
-    return np.packbits(x, axis=1)
+        if USE_SIGNAL:                             # how far to the work (home, once built), at the bot and its 6 faces
+            x[b, 252:259] = np.round(obs[250:257] * 255)
+        if USE_COMPASS:
+            x[b, 259:263] = np.round((obs[258:262] + 1) * 127.5)
+    return x
 
 
 def edges(sw):
@@ -201,7 +208,8 @@ def gru(p, h, x):
 
 def step_fn(p, h, xbits, snd, rcv, off, memory=True):
     """One simulation step for every bot: listen to neighbours, update memory, score the 19 moves."""
-    x = jnp.unpackbits(xbits, axis=-1, count=N_FEAT).astype(jnp.float32)
+    x = xbits.astype(jnp.float32)
+    x = x.at[..., 252:].multiply(1 / 255.0)          # signal and compass back to 0..1
     snd, rcv, off = snd.astype(jnp.int32), rcv.astype(jnp.int32), off.astype(jnp.float32)
     if not memory:
         h = jnp.zeros_like(h)
@@ -366,12 +374,17 @@ def main():
     ap.add_argument("--dagger", type=int, default=2, help="DAgger rounds")
     ap.add_argument("--out", default=None)
     ap.add_argument("--eval-only", action="store_true", help="load saved weights and just test them")
+    ap.add_argument("--eval-seeds", type=int, default=3, help="unseen builds per shape to test on")
+    ap.add_argument("--compass", action="store_true", help="also give each bot the compass (a shortcut)")
+    ap.add_argument("--no-signal", action="store_true", help="don't give bots the relayed signal")
     a = ap.parse_args()
     memory = not a.no_memory
+    global USE_SIGNAL, USE_COMPASS
+    USE_SIGNAL, USE_COMPASS = not a.no_signal, a.compass
     if a.quick:
         a.mult, a.seeds, a.epochs, a.dagger = 2, 2, 3, 1
     configure(a.mult)
-    name = ("gnn_gru" if memory else "gnn_nomem") + f"_x{a.mult}"
+    name = ("gnn_gru" if memory else "gnn_nomem") + f"_x{a.mult}" + ("_compass" if a.compass else "") + ("_nosignal" if a.no_signal else "")
     out = a.out or os.path.join(HERE, name)
     shapes = ["sheet", "arch"]
     print("devices:", jax.devices(), f"| {a.mult}x bots, padded to {N_PAD}")
@@ -422,7 +435,7 @@ def main():
         save(p, log)
     print("saved", out + ".pkl")
 
-    seeds = range(100, 101) if a.quick else range(100, 103)
+    seeds = range(100, 101) if a.quick else range(100, 100 + a.eval_seeds)
     print("evaluating on unseen seeds (the tower was never trained on)...")
     rows = evaluate(p, memory, a.mult, seeds=seeds)
     rows += evaluate(p, memory, a.mult, seeds=seeds, who="teacher")

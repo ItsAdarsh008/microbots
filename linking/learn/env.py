@@ -344,9 +344,12 @@ def rule_order(sw, p, slots, dist):
 #
 # Two optional behaviours, switched on per swarm with prepare(sw):
 #
-# * thrifty: while building, only the free bots nearest the work move: about
-#   1.5 per empty shape cell left, plus a few. The rest stay where they are. If
-#   nothing gets locked in for a while, everyone helps.
+# * thrifty: while building, only some free bots move. "rank" (default): the
+#   free bots nearest the work, about 1.5 per empty cell + 4, which needs the
+#   whole grid. "local": a bot works only if the relayed hop count to the work
+#   is small, which it could know itself; tried, and it doesn't hold bots back
+#   (see EXPERIMENTS section 9). Either way, if nothing gets locked in for a
+#   while, everyone helps.
 # * park: once the shape is done, spares go back to the pad where the pile
 #   started and stack there: a spare on the pad, standing on the floor or on a
 #   parked spare, is parked and stays put.
@@ -358,7 +361,15 @@ def rule_order(sw, p, slots, dist):
 PAD = (slice(2, 10), slice(3, 12))      # the pile's footprint on the floor (x, y)
 
 
-def prepare(sw, thrifty=True, park=True):
+NEED_HOPS = 3          # "local" thrifty rule: work only within this many relayed hops of the work
+NEED_REACH = 1         # ... hops passed between touching bots
+NEED_PATIENCE = 30     # ... and if nothing gets locked in for this many steps, everyone helps
+
+
+def prepare(sw, thrifty="rank", park=True):
+    """thrifty: "rank" (the free bots nearest the work, from the whole grid), "local" (a
+    hop-count threshold a bot could follow itself; tried, works badly, see EXPERIMENTS
+    section 9), or False (everyone works)."""
     sw.thrifty, sw.park = thrifty, park
     sw.home = np.zeros(GRID, dtype=bool)
     pad = np.zeros(GRID, dtype=bool)
@@ -398,14 +409,23 @@ def plan(sw):
     dist = L.distance_field(sw.occ, fixed, goal)
     movers = sw.occ & ~sw.locked & ~getattr(sw, "home", np.zeros(GRID, dtype=bool))
     needed = None                                   # None: every free bot may move
-    if phase == "build" and getattr(sw, "thrifty", False) and getattr(sw, "stalls", 0) <= 10:
-        left = int((sw.target & ~sw.occ).sum())
-        cap = int(np.ceil(1.5 * left)) + 4
-        cells = np.argwhere(movers)
-        if len(cells) > cap:
-            d = dist[tuple(cells.T)] + sw.id_at[tuple(cells.T)] * 1e-6    # ties broken by bot id
-            needed = np.zeros(GRID, dtype=bool)
-            needed[tuple(cells[np.argsort(d)[:cap]].T)] = True
+    rule = getattr(sw, "thrifty", False)
+    if phase == "build" and rule and getattr(sw, "stalls", 0) <= (10 if rule == "rank" else NEED_PATIENCE):
+        if rule == "rank":
+            # global: only the bots nearest the work, ~1.5 per empty cell + 4
+            left = int((sw.target & ~sw.occ).sum())
+            cap = int(np.ceil(1.5 * left)) + 4
+            cells = np.argwhere(movers)
+            if len(cells) > cap:
+                d = dist[tuple(cells.T)] + sw.id_at[tuple(cells.T)] * 1e-6    # ties broken by bot id
+                needed = np.zeros(GRID, dtype=bool)
+                needed[tuple(cells[np.argsort(d)[:cap]].T)] = True
+        else:
+            # local: a bot works only if the relayed "how far to the work" hop
+            # count it hears is at most NEED_HOPS. Something a bot can actually
+            # know. The pile drains front first, like a queue.
+            hops = work_signal(sw.occ, goal, NEED_REACH)
+            needed = movers & (hops <= NEED_HOPS)
     return {"phase": phase, "goal": goal, "dist": dist, "movers": movers, "needed": needed}
 
 

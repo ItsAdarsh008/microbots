@@ -305,8 +305,8 @@ def window(builds, idx, t0):
 def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitation"):
     step = make_train_step(memory)
     rng = np.random.default_rng(len(log["loss"]))
-    n_move = sum(int(((b["label"] != 0) & b["train"]).sum()) for b in builds)
-    n_stay = sum(int(((b["label"] == 0) & b["train"]).sum()) for b in builds)
+    n_move = sum(int(((l != 0) & t).sum()) for b in builds for l, t in zip(b["label"], b["train"]))
+    n_stay = sum(int(((l == 0) & t).sum()) for b in builds for l, t in zip(b["label"], b["train"]))
     move_weight = float(np.clip(n_stay / max(n_move, 1), 1.0, 50.0))
     print(f"  {n_move:,} move decisions, {n_stay:,} stay decisions: each move counts {move_weight:.1f}x")
     for ep in range(epochs):

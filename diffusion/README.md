@@ -121,3 +121,6 @@ One local network with a sensing radius of about 4 to 6.6 particle spacings (r=0
 ### CORRECTION (journal tick 44): sensing radius in bot spacings
 
 Earlier sections convert the sensing radius to spacings wrongly (about 2.5 for r=0.25, about 4 for r=0.4, about 6 for r=0.6). Measured on the data (mean spacing 0.061 world units; it varies from 0.04 to 0.08 with the shape): **r=0.25 is 4.1 spacings, r=0.4 is 6.6, r=0.6 is 9.8.** The v1 bot's arm reach (81 mm over a 34.5 mm touching distance) is about **2.35 spacings**, so even the smallest model senses about 1.75 times farther than the real arm reaches. Models at r=0.14 (about 2.3 spacings) and r=0.10 are training. Statements such as "radius 0.25 matches the arm reach" in the journal are retracted.
+
+## Dashboard (journal tick 58)
+`python demo/dashboard.py --port 8000` (needs torch, numpy, scipy; first use of a model downloads its weights from the Hub repo to `weights_cache/`) opens http://localhost:8000 with an overview, a sortable table of all 215 runs scored on one common test set (`demo/eval_all.py`, results in `demo/lb/`), a live lab (any model, any shape or your own drawing, next to the no-learning rule and the ceiling) and a side-by-side compare. `demo/serve.py` is the older single-page demo.

@@ -1218,3 +1218,20 @@ State: all five GPU boxes idle, 215 jobs finished in the queues, none failed, no
 
 The weights upload completed. **Verified:** all 231 local files (215 weights, 4 dataset files plus the emoji silhouettes) are on the Hub with identical size and SHA-256 (0 missing, 0 mismatched); the repo is private. Then the local copies were deleted (as asked) and the temporary working folders cleared. The boxes were checked against the local copy earlier (217 of 217 files, matching sizes). Where things are: `WEIGHTS.md`. Left in git: code, configs, per-run results, logs, pictures, journal, summaries and plans. **Not saved anywhere:** optimizer states (so training cannot be resumed) and the full-size logs beyond `log.txt` per run.
 Mistake worth recording: a commit in this tick added three dataset files (190 MB) to git because the folder was not ignored; fixed with a follow-up commit that removes them from the tip. They remain in the branch history (a history rewrite was not done; it needs an explicit go-ahead).
+
+## 2026-11-02 tick 58: dashboard, and every run scored on one common test set
+
+**Built** `demo/dashboard.py` + `dashboard.html` (+ `engine.py`, `eval_all.py`, `build_catalog.py`): overview, a table of all 215 runs, a live lab (any model, any shape or drawing, next to the no-learning rule and the even-sample ceiling), and a side-by-side compare. Weights are fetched on demand from the Hub (`weights_cache/`, git-ignored); runs on CPU (about 0.6 s per 64-step run). Run: `python demo/dashboard.py --port 8000` with torch, numpy, scipy installed (the `mini-vla` conda env works).
+
+**Why a new scoring pass:** only 93 of the 215 runs had a footprint IoU (the older ones only had `w2`, which misled us at tick 26), and the scores that existed came from different test sets. `eval_all.py` scores all 204 map-conditioned runs (11 unconditional runs cannot be told a shape) with one protocol: 48 never-trained shapes (8 emoji, 16 letters thick and thin, 16 held-out family shapes), 256 bots, 64 steps, seed 0, each model from its own default start. Results in `demo/lb/shard_*.json` (per shape and aggregate). No errors in 204 runs.
+
+**Numbers (single seed 0 per shape; gaps under about 0.02 are noise):**
+- Reference rows on the same set: no-learning rule **0.58** (collisions 9.6%), ceiling (even sample of the shape) **0.82**.
+- Best: `s11_r60_notime_aux100_seed1` 0.77, `s14_refv3_r40_g16` 0.75 (both seeds 0.75), `s6_r60_aux_in200_rep200` 0.75, `s14_refv3_r25_g16` 0.75 (4.1 spacings, both seeds). 103 of 204 runs beat the rule.
+- Control passes: `s1_ctrl_shuffled_labels` scores 0.38, below the rule, as it must.
+- Group means (confounded: later runs carry more of the recipe, so these are descriptions, not effects): aux weight >= 100: 0.72 (54 runs) vs none: 0.53 (114 runs); centred-pile start 0.68 (36); global attention 0.57 (53); 2.3-spacing runs 0.73 (17).
+
+**Visual check (the rule from tick 26):** the top-ranked no-clock runs (`s11_*_notime_aux100`) keep their bots inside the shape (high precision) but on the thin letter K leave the lower-right leg about half empty (cover 93%, recall 0.81) and bunch up (10% collisions on that shape, 5.5% over the set), while the clocked recipe runs fill the whole letter evenly (cover 99%, 1 to 2% collisions) but spill over the edge (precision 0.76). So IoU alone over-rewards the no-clock runs; it does not punish bunching or an empty limb as much as the eye does. **Not a contradiction of the earlier "no clock gives skeletal shapes" finding, but it is not refuted either**; the dashboard now says to read IoU with cover and collisions. One shape and one seed, so not a finding.
+Also seen: the weak local model (4 spacings, plain, `s12_r25_g8_aux100`) breaks the anchor (IoU 0.48, cover 74%); the rule gets 0.50 there and 0.47 on the thin K, with 13 to 15% collisions.
+
+**Not done / limits:** one seed per model per shape; the leaderboard ranks by IoU on this set, which is not the same test as the training boxes' own evaluation (kept as a separate column). The dashboard was exercised in the browser for the overview, live lab and compare tabs; the run-detail drawer was not clicked through.

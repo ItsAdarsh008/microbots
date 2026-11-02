@@ -240,13 +240,13 @@ def count(p):
 
 # ============================================================== training
 
-def window_loss(p, h0, w, memory, go_weight):
+def window_loss(p, h0, w, memory, go_weight, stay_weight):
     """Loss over one window of steps for one build, carrying each bot's memory through it.
 
     Two parts, so they can't crowd each other out:
     * go: should this bot move right now? Matches whether the teacher moves it:
-      not if it isn't needed, and not if it has no move that helps. Most bots
-      stay most steps, so each "go" counts go_weight times.
+      not if it isn't needed, and not if it has no move that helps. Moving and
+      staying are weighted so each counts about equally overall, whichever is rarer.
     * which move: only for bots the teacher actually moves, which of the
       legal moves (stay excluded).
     """
@@ -255,7 +255,7 @@ def window_loss(p, h0, w, memory, go_weight):
         tr = s["train"]
         need = (s["label"] != 0) & tr                # the teacher moves this bot this step
         # go / stay
-        wt = jnp.where(need, go_weight, 1.0) * tr
+        wt = jnp.where(need, go_weight, stay_weight) * tr
         bce = jnp.where(need, jax.nn.softplus(-go), jax.nn.softplus(go))
         go_hit = (go > 0) == need
         # which move
@@ -275,8 +275,8 @@ def window_loss(p, h0, w, memory, go_weight):
     return loss, (h, jnp.stack([o[4], o[5], o[6], o[7], o[8], o[3]]))
 
 
-def batched_loss(p, h0, wb, memory, go_weight):
-    loss, (h, c) = jax.vmap(window_loss, in_axes=(None, 0, 0, None, None))(p, h0, wb, memory, go_weight)
+def batched_loss(p, h0, wb, memory, go_weight, stay_weight):
+    loss, (h, c) = jax.vmap(window_loss, in_axes=(None, 0, 0, None, None, None))(p, h0, wb, memory, go_weight, stay_weight)
     return loss.mean(), (h, c.sum(axis=0))
 
 
@@ -287,8 +287,8 @@ def adam_init(p):
 
 def make_train_step(memory):
     @jax.jit
-    def train_step(p, opt, h0, wb, lr, go_weight):
-        (loss, (h, counts)), g = jax.value_and_grad(batched_loss, has_aux=True)(p, h0, wb, memory, go_weight)
+    def train_step(p, opt, h0, wb, lr, go_weight, stay_weight):
+        (loss, (h, counts)), g = jax.value_and_grad(batched_loss, has_aux=True)(p, h0, wb, memory, go_weight, stay_weight)
         g = jax.tree_util.tree_map(lambda x: jnp.clip(x, -1.0, 1.0), g)
         t = opt["t"] + 1
         m = jax.tree_util.tree_map(lambda m, g: 0.9 * m + 0.1 * g, opt["m"], g)
@@ -327,8 +327,11 @@ def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitatio
     rng = np.random.default_rng(len(log["loss"]))
     n_go = sum(int(((l != 0) & t).sum()) for b in builds for l, t in zip(b["label"], b["train"]))
     n_wait = sum(int(((l == 0) & t).sum()) for b in builds for l, t in zip(b["label"], b["train"]))
-    go_weight = float(np.clip(n_wait / max(n_go, 1), 1.0, 50.0))
-    print(f"  {n_go:,} decisions where the teacher moves the bot, {n_wait:,} where it stays: each 'move' counts {go_weight:.1f}x")
+    n_all = max(n_go + n_wait, 1)
+    go_weight = float(np.clip(n_all / (2 * max(n_go, 1)), 0.02, 50.0))
+    stay_weight = float(np.clip(n_all / (2 * max(n_wait, 1)), 0.02, 50.0))
+    print(f"  {n_go:,} decisions where the teacher moves the bot, {n_wait:,} where it stays "
+          f"(weights: move {go_weight:.2f}, stay {stay_weight:.2f})")
     for ep in range(epochs):
         order = rng.permutation(len(builds))
         ls, tot = [], np.zeros(6)
@@ -337,7 +340,7 @@ def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitatio
             T = max(len(builds[b]["x"]) for b in idx)
             h = jnp.zeros((batch, N_PAD, H))
             for t0 in range(0, T, WINDOW):
-                p, opt, h, loss, counts = step(p, opt, h, window(builds, idx, t0), lr, go_weight)
+                p, opt, h, loss, counts = step(p, opt, h, window(builds, idx, t0), lr, go_weight, stay_weight)
                 ls.append(float(loss)); tot += np.asarray(counts)
                 log["loss"].append(round(float(loss), 4))
         go_ok, wait_ok, move_ok = tot[0] / max(tot[1], 1), tot[2] / max(tot[3], 1), tot[4] / max(tot[5], 1)

@@ -231,25 +231,33 @@ def count(p):
 
 # ============================================================== training
 
-def window_loss(p, h0, w, memory):
-    """Cross-entropy over one window of steps for one build, carrying each bot's memory through it."""
+def window_loss(p, h0, w, memory, move_weight):
+    """Cross-entropy over one window of steps for one build, carrying each bot's memory through it.
+
+    Most decisions are "stay" when there are many spares, so a network that
+    always says stay looks good on plain accuracy and builds nothing. Each
+    "move" decision is weighted by move_weight (about #stay / #move), so both
+    count about equally.
+    """
     def body(h, s):
         h, logits = step_fn(p, h, s["x"], s["snd"], s["rcv"], s["off"], memory)
         logits = jnp.where(s["mask"], logits, -1e9)
         logp = jax.nn.log_softmax(logits)
         nll = -jnp.take_along_axis(logp, s["label"].astype(jnp.int32)[:, None], axis=1)[:, 0]
-        hit = jnp.argmax(logits, axis=1) == s["label"]
-        stay = s["label"] == 0
-        return h, (jnp.sum(nll * s["train"]), jnp.sum(hit * s["train"]), jnp.sum(s["train"]),
-                   jnp.sum(hit * stay * s["train"]), jnp.sum(stay * s["train"]))
-    h, (nll, hit, n, hit_stay, n_stay) = jax.lax.scan(body, h0, w)
-    total = jnp.maximum(n.sum(), 1.0)
-    return nll.sum() / total, (h, hit.sum() / total, hit_stay.sum() / jnp.maximum(n_stay.sum(), 1.0))
+        pick = jnp.argmax(logits, axis=1)
+        stay = (s["label"] == 0) & s["train"]
+        move = (s["label"] != 0) & s["train"]
+        wt = jnp.where(move, move_weight, 1.0) * s["train"]
+        return h, (jnp.sum(nll * wt), jnp.sum(wt),
+                   jnp.sum((pick == 0) * stay), jnp.sum(stay),
+                   jnp.sum((pick == s["label"]) * move), jnp.sum(move))
+    h, (nll, wsum, hit_stay, n_stay, hit_move, n_move) = jax.lax.scan(body, h0, w)
+    return nll.sum() / jnp.maximum(wsum.sum(), 1.0), (h, hit_stay.sum(), n_stay.sum(), hit_move.sum(), n_move.sum())
 
 
-def batched_loss(p, h0, wb, memory):
-    loss, (h, acc, acc_stay) = jax.vmap(window_loss, in_axes=(None, 0, 0, None))(p, h0, wb, memory)
-    return loss.mean(), (h, acc.mean(), acc_stay.mean())
+def batched_loss(p, h0, wb, memory, move_weight):
+    loss, (h, hs, ns, hm, nm) = jax.vmap(window_loss, in_axes=(None, 0, 0, None, None))(p, h0, wb, memory, move_weight)
+    return loss.mean(), (h, hs.sum() / jnp.maximum(ns.sum(), 1.0), hm.sum() / jnp.maximum(nm.sum(), 1.0))
 
 
 def adam_init(p):
@@ -259,15 +267,15 @@ def adam_init(p):
 
 def make_train_step(memory):
     @jax.jit
-    def train_step(p, opt, h0, wb, lr):
-        (loss, (h, acc, acc_stay)), g = jax.value_and_grad(batched_loss, has_aux=True)(p, h0, wb, memory)
+    def train_step(p, opt, h0, wb, lr, move_weight):
+        (loss, (h, acc_stay, acc_move)), g = jax.value_and_grad(batched_loss, has_aux=True)(p, h0, wb, memory, move_weight)
         g = jax.tree_util.tree_map(lambda x: jnp.clip(x, -1.0, 1.0), g)
         t = opt["t"] + 1
         m = jax.tree_util.tree_map(lambda m, g: 0.9 * m + 0.1 * g, opt["m"], g)
         v = jax.tree_util.tree_map(lambda v, g: 0.999 * v + 0.001 * g * g, opt["v"], g)
         p = jax.tree_util.tree_map(
             lambda p, m, v: p - lr * (m / (1 - 0.9 ** t)) / (jnp.sqrt(v / (1 - 0.999 ** t)) + 1e-8), p, m, v)
-        return p, {"m": m, "v": v, "t": t}, jax.lax.stop_gradient(h), loss, acc, acc_stay
+        return p, {"m": m, "v": v, "t": t}, jax.lax.stop_gradient(h), loss, acc_stay, acc_move
     return train_step
 
 
@@ -297,6 +305,10 @@ def window(builds, idx, t0):
 def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitation"):
     step = make_train_step(memory)
     rng = np.random.default_rng(len(log["loss"]))
+    n_move = sum(int(((b["label"] != 0) & b["train"]).sum()) for b in builds)
+    n_stay = sum(int(((b["label"] == 0) & b["train"]).sum()) for b in builds)
+    move_weight = float(np.clip(n_stay / max(n_move, 1), 1.0, 50.0))
+    print(f"  {n_move:,} move decisions, {n_stay:,} stay decisions: each move counts {move_weight:.1f}x")
     for ep in range(epochs):
         order = rng.permutation(len(builds))
         ls, accs, stays = [], [], []
@@ -305,13 +317,13 @@ def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitatio
             T = max(len(builds[b]["x"]) for b in idx)
             h = jnp.zeros((batch, N_PAD, H))
             for t0 in range(0, T, WINDOW):
-                p, opt, h, loss, acc, acc_stay = step(p, opt, h, window(builds, idx, t0), lr)
-                ls.append(float(loss)); accs.append(float(acc)); stays.append(float(acc_stay))
+                p, opt, h, loss, acc_stay, acc_move = step(p, opt, h, window(builds, idx, t0), lr, move_weight)
+                ls.append(float(loss)); accs.append(float(acc_move)); stays.append(float(acc_stay))
                 log["loss"].append(round(float(loss), 4))
         log["epoch_end"].append(len(log["loss"])); log["agree"].append(round(float(np.mean(accs)), 4))
         log["stage"].append(stage)
-        print(f"  {stage:9s} epoch {len(log['agree']):3d}  loss {np.mean(ls):.3f}  same move as the teacher "
-              f"{np.mean(accs):.1%}  (when it should stay put: {np.mean(stays):.1%})", flush=True)
+        print(f"  {stage:9s} epoch {len(log['agree']):3d}  loss {np.mean(ls):.3f}  when the teacher moves, same move "
+              f"{np.mean(accs):.1%}  |  when the teacher stays, stays {np.mean(stays):.1%}", flush=True)
     return p, opt
 
 

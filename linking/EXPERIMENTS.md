@@ -159,6 +159,18 @@ What really holds spares up is physical: most of the ones left are holding up an
 
 **Training log.** `dagger.py` now writes `policy_log.json`; `plot_training.py` draws `media/linking_training.png`. Retrained on the local rules: Python wall/arch/tower 15/15 (arch 96–116 steps, rules 97–151).
 
+## 9. GNN + GRU policy: only the needed bots work, spares go home (`linking/learn/gnn_gru.py`)
+
+Goal, with 2-5x the bots: (a) only the bots needed for the shape move; (b) once it's built, spares go home to the pad. The teacher (`env.plan`, `prepare()`) does both by looking at the whole grid: it lets only the free bots nearest the work move (~1.5 per empty cell + 4) and, once the shape is done, sends spares back to stack on the pad. Teacher at 3x: wall 45 of 198 spares moved (198 without the rule), arch 113 of 324; a few spares (1-16) end up stuck rather than home.
+
+The network: each bot sees only its 5x5x5 block plus locked/parked flags (no relayed signal, no compass), 3 rounds of message passing between touching bots per step, a GRU memory per bot, 109k weights. Imitation on whole sequences (build + trip home), truncated backprop through time.
+
+| Tried | Result |
+| --- | --- |
+| 2x bots, 12 teacher builds, 16 epochs on a CPU (~28 min) | Picks the teacher's move 53% of the time, but only 39% when the teacher says stay. **Driving on its own it fails:** at first it moves far too many bots (155 of 186 within 10 steps), then nearly all of them freeze (8-20 moving when the teacher wants ~100), and the wall stalls at 12 of 81 cells. |
+
+Why, most likely: the teacher's "am I needed?" is a global ranking (am I among the N bots nearest the work), and "which way is the work" came from a global map. With 1-cell messages, 3 rounds a step and this little training, the network can't recover either. Next: give back the relayed signal (it is local), make the teacher's "needed" rule something a bot could actually work out (e.g. a distance threshold on that signal), and train at full size on a GPU.
+
 ## Still open
 
 1. **Moves aren't real v1 moves.** Bots slide and pivot (or roll, on the triangle grid). v1 moves with two 3-joint arms. Needed: how does v1 actually get from one spot to the next?

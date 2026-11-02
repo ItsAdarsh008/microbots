@@ -404,6 +404,7 @@ def evaluate(p, memory, mult, shapes=("sheet", "arch", "tower"), seeds=range(100
 # ============================================================== main
 
 def main():
+    global USE_SIGNAL, USE_COMPASS, THRIFTY, PARK, ROUNDS
     ap = argparse.ArgumentParser()
     ap.add_argument("--quick", action="store_true", help="tiny run to check everything works")
     ap.add_argument("--no-memory", action="store_true", help="wipe the GRU state every step (comparison)")
@@ -420,7 +421,6 @@ def main():
     ap.add_argument("--rounds", type=int, default=ROUNDS, help="message-passing rounds per step (0 = no GNN, a plain MLP)")
     a = ap.parse_args()
     memory = not a.no_memory
-    global USE_SIGNAL, USE_COMPASS, THRIFTY, PARK, ROUNDS
     USE_SIGNAL, USE_COMPASS = not a.no_signal, a.compass
     if a.easy:
         THRIFTY, PARK = False, False

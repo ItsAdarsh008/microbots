@@ -69,10 +69,13 @@ def configure(mult, shapes=("sheet", "arch", "tower")):
     return N_PAD
 
 
+THRIFTY, PARK = "rank", True           # the teacher's behaviours (see env.prepare); --easy turns both off
+
+
 def new_swarm(shape, seed, mult):
     need = int(L.SHAPES[shape]().sum())
     sw = L.Swarm(L.SHAPES[shape](), seed=seed, extra=(need + 12) * mult - need)
-    return E.prepare(sw, thrifty="rank", park=True)
+    return E.prepare(sw, thrifty=THRIFTY, park=PARK)
 
 
 # ============================================================== recording
@@ -141,6 +144,9 @@ def rollout(shape, seed, mult, driver=None, build_steps=200, park_steps=150):
     built_at = None
     while not E.all_home(sw):
         ctx = E.plan(sw)
+        if ctx is None:                             # built, and no trip home in this mode
+            built_at = t if built_at is None else built_at
+            break
         if sw.done():
             built_at = t if built_at is None else built_at
             if parked_for >= park_steps:
@@ -405,14 +411,17 @@ def main():
     ap.add_argument("--eval-seeds", type=int, default=3, help="unseen builds per shape to test on")
     ap.add_argument("--compass", action="store_true", help="also give each bot the compass (a shortcut)")
     ap.add_argument("--no-signal", action="store_true", help="don't give bots the relayed signal")
+    ap.add_argument("--easy", action="store_true", help="plain building only: every bot works, no trip home (sanity check)")
     a = ap.parse_args()
     memory = not a.no_memory
-    global USE_SIGNAL, USE_COMPASS
+    global USE_SIGNAL, USE_COMPASS, THRIFTY, PARK
     USE_SIGNAL, USE_COMPASS = not a.no_signal, a.compass
+    if a.easy:
+        THRIFTY, PARK = False, False
     if a.quick:
         a.mult, a.seeds, a.epochs, a.dagger = 2, 2, 3, 1
     configure(a.mult)
-    name = ("gnn_gru" if memory else "gnn_nomem") + f"_x{a.mult}" + ("_compass" if a.compass else "") + ("_nosignal" if a.no_signal else "")
+    name = ("gnn_gru" if memory else "gnn_nomem") + f"_x{a.mult}" + ("_compass" if a.compass else "") + ("_nosignal" if a.no_signal else "") + ("_easy" if a.easy else "")
     out = a.out or os.path.join(HERE, name)
     shapes = ["sheet", "arch"]
     print("devices:", jax.devices(), f"| {a.mult}x bots, padded to {N_PAD}")

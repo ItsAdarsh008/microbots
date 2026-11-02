@@ -169,7 +169,13 @@ The network: each bot sees only its 5x5x5 block plus locked/parked flags (no rel
 | --- | --- |
 | 2x bots, 12 teacher builds, 16 epochs on a CPU (~28 min) | Picks the teacher's move 53% of the time, but only 39% when the teacher says stay. **Driving on its own it fails:** at first it moves far too many bots (155 of 186 within 10 steps), then nearly all of them freeze (8-20 moving when the teacher wants ~100), and the wall stalls at 12 of 81 cells. |
 
-Why, most likely: the teacher's "am I needed?" is a global ranking (am I among the N bots nearest the work), and "which way is the work" came from a global map. With 1-cell messages, 3 rounds a step and this little training, the network can't recover either. Next: give back the relayed signal (it is local), make the teacher's "needed" rule something a bot could actually work out (e.g. a distance threshold on that signal), and train at full size on a GPU.
+| + relayed signal and compass back as inputs | First tries copied the wrong teacher: a switch meant to turn on the "rank" rule turned on a "local" rule that marks almost no bot as needed, so the network learned "always stay". Fixed. |
+| A "local" needed rule for the teacher (work only within a few relayed hops of the work) | Doesn't hold bots back (3x arch: 310-320 of 324 spares still moved), and with touching-only hops builds stall. The teacher keeps the global "rank" rule. |
+| Two outputs: "should I move now?" and "which move?" | First version trained "should I move" on "needed", so bots with no useful move never learned to stay, and wandered off. Now it learns "does the teacher move this bot this step", with moving and staying weighted equally. |
+| Sanity check: easy task (1x bots, every bot works, no trip home) | Both the GNN and the same pipeline with the GNN switched off (a plain MLP) copy the teacher about half the time but **don't finish the wall** after 10 epochs on 8 builds. Early on 67 of 75 moves head downhill; by step 30, 16 of 76: it drifts once it's somewhere the teacher never went. |
+| Driving with the teacher's own labels through the same code | Builds the wall (85 steps) and arch (134): the pipeline is fine. What's missing is more data, more epochs and DAgger, which is what the Colab run is for. |
+
+Why the first run failed, most likely: the teacher's "am I needed?" is a global ranking (am I among the N bots nearest the work), and "which way is the work" came from a global map. With 1-cell messages, 3 rounds a step and this little training, the network can't recover either. Next: give back the relayed signal (it is local), make the teacher's "needed" rule something a bot could actually work out (e.g. a distance threshold on that signal), and train at full size on a GPU.
 
 ## Still open
 

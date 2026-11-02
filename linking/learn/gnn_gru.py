@@ -323,6 +323,7 @@ def window(builds, idx, t0):
 
 
 def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitation"):
+    batch = min(batch, len(builds))
     step = make_train_step(memory)
     rng = np.random.default_rng(len(log["loss"]))
     n_go = sum(int(((l != 0) & t).sum()) for b in builds for l, t in zip(b["label"], b["train"]))
@@ -375,8 +376,10 @@ class Driver:
 
         def chooser(sw_, pcell, slots, ctx):
             b = sw_.id_at[pcell]
-            if go[b] <= 0 or not slots:
-                return []                              # not needed right now: stay put
+            # move with the probability the network gives (a hard cut-off makes whole
+            # groups freeze together when they're all just under it)
+            if not slots or self.rng.random() > 1 / (1 + np.exp(-go[b])):
+                return []                              # stay put this step
             options = list(slots)
             s = logits[b, options]
             prob = np.exp(s - s.max()); prob /= prob.sum()

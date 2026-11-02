@@ -72,7 +72,7 @@ def configure(mult, shapes=("sheet", "arch", "tower")):
 def new_swarm(shape, seed, mult):
     need = int(L.SHAPES[shape]().sum())
     sw = L.Swarm(L.SHAPES[shape](), seed=seed, extra=(need + 12) * mult - need)
-    return E.prepare(sw, thrifty=True, park=True)
+    return E.prepare(sw, thrifty="rank", park=True)
 
 
 # ============================================================== recording
@@ -117,6 +117,7 @@ def teacher_labels(sw, ctx):
     mask[:, 0] = True
     label = np.zeros(N_PAD, dtype=np.int8)
     train = np.zeros(N_PAD, dtype=bool)
+    need = np.zeros(N_PAD, dtype=bool)
     for p in map(tuple, np.argwhere(ctx["movers"])):
         b = sw.id_at[p]
         slots = E.legal_slots(sw, p, busy)
@@ -125,14 +126,15 @@ def teacher_labels(sw, ctx):
         order = E.rule_chooser(sw, p, slots, ctx)
         label[b] = order[0] if order else 0
         train[b] = True
-    return mask, label, train
+        need[b] = ctx["needed"] is None or bool(ctx["needed"][p])
+    return mask, label, train, need
 
 
 def rollout(shape, seed, mult, driver=None, build_steps=200, park_steps=150):
     """One build and the spares going home, recording every step. driver=None: the teacher drives."""
     sw = new_swarm(shape, seed, mult)
     assert len(sw.pos) < N_PAD, "configure() for this many bots first"
-    rec = {k: [] for k in ("x", "snd", "rcv", "off", "mask", "label", "train")}
+    rec = {k: [] for k in ("x", "snd", "rcv", "off", "mask", "label", "train", "need")}
     if driver is not None:
         driver.reset()
     t = parked_for = 0
@@ -148,8 +150,8 @@ def rollout(shape, seed, mult, driver=None, build_steps=200, park_steps=150):
             break
         x = features(sw, ctx)
         snd, rcv, off = edges(sw)
-        mask, label, train = teacher_labels(sw, ctx)
-        for k, v in zip(rec, (x, snd, rcv, off, mask, label, train)):
+        mask, label, train, need = teacher_labels(sw, ctx)
+        for k, v in zip(rec, (x, snd, rcv, off, mask, label, train, need)):
             rec[k].append(v)
         if driver is None:
             E.step(sw, E.rule_chooser)
@@ -187,6 +189,7 @@ def init(key):
         "msg": [dense(next(ks), 2 * H + 3, H) for _ in range(ROUNDS)],
         "upd": [dense(next(ks), 2 * H, H) for _ in range(ROUNDS)],
         "head1": dense(next(ks), 2 * H, H), "head2": dense(next(ks), H, E.N_ACTIONS),
+        "go": dense(next(ks), H, 1),          # should this bot work right now? (one number)
         # GRU cell: update gate z, reset gate r, candidate n
         "gru_x": dense(next(ks), H, 3 * H), "gru_h": dense(next(ks), H, 3 * H),
     }
@@ -221,8 +224,8 @@ def step_fn(p, h, xbits, snd, rcv, off, memory=True):
         agg = jax.ops.segment_sum(msg, rcv, num_segments=N_PAD) / deg          # mean over neighbours
         u = u + jax.nn.relu(lin(p["upd"][k], jnp.concatenate([u, agg], axis=-1)))
     h2 = gru(p, h, u)
-    logits = lin(p["head2"], jax.nn.relu(lin(p["head1"], jnp.concatenate([u, h2], axis=-1))))
-    return h2, logits
+    z = jax.nn.relu(lin(p["head1"], jnp.concatenate([u, h2], axis=-1)))
+    return h2, lin(p["head2"], z), lin(p["go"], z)[:, 0]
 
 
 def count(p):
@@ -231,33 +234,42 @@ def count(p):
 
 # ============================================================== training
 
-def window_loss(p, h0, w, memory, move_weight):
-    """Cross-entropy over one window of steps for one build, carrying each bot's memory through it.
+def window_loss(p, h0, w, memory, go_weight):
+    """Loss over one window of steps for one build, carrying each bot's memory through it.
 
-    Most decisions are "stay" when there are many spares, so a network that
-    always says stay looks good on plain accuracy and builds nothing. Each
-    "move" decision is weighted by move_weight (about #stay / #move), so both
-    count about equally.
+    Two parts, so they can't crowd each other out:
+    * go: should this bot work right now? Matches the teacher's "needed". With
+      many spares most bots should stay, so each "go" counts go_weight times.
+    * which move: only for bots the teacher actually moves, which of the
+      legal moves (stay excluded).
     """
     def body(h, s):
-        h, logits = step_fn(p, h, s["x"], s["snd"], s["rcv"], s["off"], memory)
-        logits = jnp.where(s["mask"], logits, -1e9)
-        logp = jax.nn.log_softmax(logits)
-        nll = -jnp.take_along_axis(logp, s["label"].astype(jnp.int32)[:, None], axis=1)[:, 0]
-        pick = jnp.argmax(logits, axis=1)
-        stay = (s["label"] == 0) & s["train"]
-        move = (s["label"] != 0) & s["train"]
-        wt = jnp.where(move, move_weight, 1.0) * s["train"]
-        return h, (jnp.sum(nll * wt), jnp.sum(wt),
-                   jnp.sum((pick == 0) * stay), jnp.sum(stay),
-                   jnp.sum((pick == s["label"]) * move), jnp.sum(move))
-    h, (nll, wsum, hit_stay, n_stay, hit_move, n_move) = jax.lax.scan(body, h0, w)
-    return nll.sum() / jnp.maximum(wsum.sum(), 1.0), (h, hit_stay.sum(), n_stay.sum(), hit_move.sum(), n_move.sum())
+        h, logits, go = step_fn(p, h, s["x"], s["snd"], s["rcv"], s["off"], memory)
+        tr, need = s["train"], s["need"] & s["train"]
+        # go / stay
+        wt = jnp.where(need, go_weight, 1.0) * tr
+        bce = jnp.where(need, jax.nn.softplus(-go), jax.nn.softplus(go))
+        go_hit = (go > 0) == need
+        # which move
+        moves = s["mask"].at[:, 0].set(False)
+        lm = jnp.where(moves, logits, -1e9)
+        logp = jax.nn.log_softmax(lm)
+        lab = s["label"].astype(jnp.int32)
+        mv = need & (lab > 0)
+        nll = -jnp.take_along_axis(logp, lab[:, None], axis=1)[:, 0]
+        mv_hit = jnp.argmax(lm, axis=1) == lab
+        return h, (jnp.sum(bce * wt), jnp.sum(wt), jnp.sum(nll * mv), jnp.sum(mv),
+                   jnp.sum(go_hit * need), jnp.sum(need), jnp.sum(go_hit * tr * ~need), jnp.sum(tr * ~need),
+                   jnp.sum(mv_hit * mv))
+    h, o = jax.lax.scan(body, h0, w)
+    o = [x.sum() for x in o]
+    loss = o[0] / jnp.maximum(o[1], 1.0) + o[2] / jnp.maximum(o[3], 1.0)
+    return loss, (h, jnp.stack([o[4], o[5], o[6], o[7], o[8], o[3]]))
 
 
-def batched_loss(p, h0, wb, memory, move_weight):
-    loss, (h, hs, ns, hm, nm) = jax.vmap(window_loss, in_axes=(None, 0, 0, None, None))(p, h0, wb, memory, move_weight)
-    return loss.mean(), (h, hs.sum() / jnp.maximum(ns.sum(), 1.0), hm.sum() / jnp.maximum(nm.sum(), 1.0))
+def batched_loss(p, h0, wb, memory, go_weight):
+    loss, (h, c) = jax.vmap(window_loss, in_axes=(None, 0, 0, None, None))(p, h0, wb, memory, go_weight)
+    return loss.mean(), (h, c.sum(axis=0))
 
 
 def adam_init(p):
@@ -267,15 +279,15 @@ def adam_init(p):
 
 def make_train_step(memory):
     @jax.jit
-    def train_step(p, opt, h0, wb, lr, move_weight):
-        (loss, (h, acc_stay, acc_move)), g = jax.value_and_grad(batched_loss, has_aux=True)(p, h0, wb, memory, move_weight)
+    def train_step(p, opt, h0, wb, lr, go_weight):
+        (loss, (h, counts)), g = jax.value_and_grad(batched_loss, has_aux=True)(p, h0, wb, memory, go_weight)
         g = jax.tree_util.tree_map(lambda x: jnp.clip(x, -1.0, 1.0), g)
         t = opt["t"] + 1
         m = jax.tree_util.tree_map(lambda m, g: 0.9 * m + 0.1 * g, opt["m"], g)
         v = jax.tree_util.tree_map(lambda v, g: 0.999 * v + 0.001 * g * g, opt["v"], g)
         p = jax.tree_util.tree_map(
             lambda p, m, v: p - lr * (m / (1 - 0.9 ** t)) / (jnp.sqrt(v / (1 - 0.999 ** t)) + 1e-8), p, m, v)
-        return p, {"m": m, "v": v, "t": t}, jax.lax.stop_gradient(h), loss, acc_stay, acc_move
+        return p, {"m": m, "v": v, "t": t}, jax.lax.stop_gradient(h), loss, counts
     return train_step
 
 
@@ -286,7 +298,7 @@ def window(builds, idx, t0):
            "snd": np.full((B, W, E_PAD), N_PAD - 1, np.int16), "rcv": np.full((B, W, E_PAD), N_PAD - 1, np.int16),
            "off": np.zeros((B, W, E_PAD, 3), np.int8),
            "mask": np.zeros((B, W, N_PAD, E.N_ACTIONS), bool), "label": np.zeros((B, W, N_PAD), np.int8),
-           "train": np.zeros((B, W, N_PAD), bool)}
+           "train": np.zeros((B, W, N_PAD), bool), "need": np.zeros((B, W, N_PAD), bool)}
     out["mask"][..., 0] = True
     for i, b in enumerate(idx):
         rec = builds[b]
@@ -297,7 +309,7 @@ def window(builds, idx, t0):
             m = len(rec["snd"][t])
             out["x"][i, j] = rec["x"][t]
             out["snd"][i, j, :m] = rec["snd"][t]; out["rcv"][i, j, :m] = rec["rcv"][t]; out["off"][i, j, :m] = rec["off"][t]
-            for k in ("mask", "label", "train"):
+            for k in ("mask", "label", "train", "need"):
                 out[k][i, j] = rec[k][t]
     return {k: jnp.asarray(v) for k, v in out.items()}
 
@@ -305,25 +317,27 @@ def window(builds, idx, t0):
 def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitation"):
     step = make_train_step(memory)
     rng = np.random.default_rng(len(log["loss"]))
-    n_move = sum(int(((l != 0) & t).sum()) for b in builds for l, t in zip(b["label"], b["train"]))
-    n_stay = sum(int(((l == 0) & t).sum()) for b in builds for l, t in zip(b["label"], b["train"]))
-    move_weight = float(np.clip(n_stay / max(n_move, 1), 1.0, 50.0))
-    print(f"  {n_move:,} move decisions, {n_stay:,} stay decisions: each move counts {move_weight:.1f}x")
+    n_go = sum(int((n & t).sum()) for b in builds for n, t in zip(b["need"], b["train"]))
+    n_wait = sum(int((~n & t).sum()) for b in builds for n, t in zip(b["need"], b["train"]))
+    go_weight = float(np.clip(n_wait / max(n_go, 1), 1.0, 50.0))
+    print(f"  {n_go:,} decisions where the teacher has the bot work, {n_wait:,} where it waits: each 'work' counts {go_weight:.1f}x")
     for ep in range(epochs):
         order = rng.permutation(len(builds))
-        ls, accs, stays = [], [], []
+        ls, tot = [], np.zeros(6)
         for i in range(0, len(order) - batch + 1, batch):
             idx = order[i:i + batch]
             T = max(len(builds[b]["x"]) for b in idx)
             h = jnp.zeros((batch, N_PAD, H))
             for t0 in range(0, T, WINDOW):
-                p, opt, h, loss, acc_stay, acc_move = step(p, opt, h, window(builds, idx, t0), lr, move_weight)
-                ls.append(float(loss)); accs.append(float(acc_move)); stays.append(float(acc_stay))
+                p, opt, h, loss, counts = step(p, opt, h, window(builds, idx, t0), lr, go_weight)
+                ls.append(float(loss)); tot += np.asarray(counts)
                 log["loss"].append(round(float(loss), 4))
-        log["epoch_end"].append(len(log["loss"])); log["agree"].append(round(float(np.mean(accs)), 4))
+        go_ok, wait_ok, move_ok = tot[0] / max(tot[1], 1), tot[2] / max(tot[3], 1), tot[4] / max(tot[5], 1)
+        log["epoch_end"].append(len(log["loss"])); log["agree"].append(round(float(move_ok), 4))
+        log.setdefault("go_ok", []).append(round(float(go_ok), 4)); log.setdefault("wait_ok", []).append(round(float(wait_ok), 4))
         log["stage"].append(stage)
-        print(f"  {stage:9s} epoch {len(log['agree']):3d}  loss {np.mean(ls):.3f}  when the teacher moves, same move "
-              f"{np.mean(accs):.1%}  |  when the teacher stays, stays {np.mean(stays):.1%}", flush=True)
+        print(f"  {stage:9s} epoch {len(log['agree']):3d}  loss {np.mean(ls):.3f}  |  works when it should {go_ok:.0%}, "
+              f"waits when it should {wait_ok:.0%}  |  same move as the teacher {move_ok:.0%}", flush=True)
     return p, opt
 
 
@@ -345,12 +359,14 @@ class Driver:
         S = np.full(E_PAD, N_PAD - 1, np.int16); R = np.full(E_PAD, N_PAD - 1, np.int16)
         O = np.zeros((E_PAD, 3), np.int8)
         S[:m], R[:m], O[:m] = snd, rcv, off
-        self.h, logits = self.fwd(self.p, self.h, jnp.asarray(x), jnp.asarray(S), jnp.asarray(R), jnp.asarray(O))
-        logits = np.asarray(logits)
+        self.h, logits, go = self.fwd(self.p, self.h, jnp.asarray(x), jnp.asarray(S), jnp.asarray(R), jnp.asarray(O))
+        logits, go = np.asarray(logits), np.asarray(go)
 
         def chooser(sw_, pcell, slots, ctx):
             b = sw_.id_at[pcell]
-            options = [0] + list(slots)
+            if go[b] <= 0 or not slots:
+                return []                              # not needed right now: stay put
+            options = list(slots)
             s = logits[b, options]
             prob = np.exp(s - s.max()); prob /= prob.sum()
             first = options[self.rng.choice(len(options), p=prob)]
@@ -410,7 +426,7 @@ def main():
         p = pickle.load(open(out + ".pkl", "rb"))["params"]
     else:
         # the recorded builds are cached, so a rerun (or a crash) doesn't have to record them again
-        cache = out + "_teacher.pkl"
+        cache = out + "_teacher2.pkl"           # "2": recordings that include the teacher's needed flag
         if os.path.exists(cache):
             builds = pickle.load(open(cache, "rb"))
             print(f"loaded {len(builds)} recorded builds from {cache}")

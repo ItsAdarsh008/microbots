@@ -370,7 +370,8 @@ def prepare(sw, thrifty="rank", park=True):
     """thrifty: "rank" (the free bots nearest the work, from the whole grid), "local" (a
     hop-count threshold a bot could follow itself; tried, works badly, see EXPERIMENTS
     section 9), or False (everyone works)."""
-    sw.thrifty, sw.park = thrifty, park
+    sw.thrifty = "rank" if thrifty is True else thrifty      # True means the default rule
+    sw.park = park
     sw.home = np.zeros(GRID, dtype=bool)
     pad = np.zeros(GRID, dtype=bool)
     pad[PAD[0], PAD[1], :] = True

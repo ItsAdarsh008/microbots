@@ -417,16 +417,18 @@ def main():
     ap.add_argument("--compass", action="store_true", help="also give each bot the compass (a shortcut)")
     ap.add_argument("--no-signal", action="store_true", help="don't give bots the relayed signal")
     ap.add_argument("--easy", action="store_true", help="plain building only: every bot works, no trip home (sanity check)")
+    ap.add_argument("--rounds", type=int, default=ROUNDS, help="message-passing rounds per step (0 = no GNN, a plain MLP)")
     a = ap.parse_args()
     memory = not a.no_memory
-    global USE_SIGNAL, USE_COMPASS, THRIFTY, PARK
+    global USE_SIGNAL, USE_COMPASS, THRIFTY, PARK, ROUNDS
     USE_SIGNAL, USE_COMPASS = not a.no_signal, a.compass
     if a.easy:
         THRIFTY, PARK = False, False
+    ROUNDS = a.rounds
     if a.quick:
         a.mult, a.seeds, a.epochs, a.dagger = 2, 2, 3, 1
     configure(a.mult)
-    name = ("gnn_gru" if memory else "gnn_nomem") + f"_x{a.mult}" + ("_compass" if a.compass else "") + ("_nosignal" if a.no_signal else "") + ("_easy" if a.easy else "")
+    name = ("gnn_gru" if memory else "gnn_nomem") + f"_x{a.mult}" + ("_compass" if a.compass else "") + ("_nosignal" if a.no_signal else "") + ("_easy" if a.easy else "") + (f"_r{a.rounds}" if a.rounds != 3 else "")
     out = a.out or os.path.join(HERE, name)
     shapes = ["sheet", "arch"]
     print("devices:", jax.devices(), f"| {a.mult}x bots, padded to {N_PAD}")

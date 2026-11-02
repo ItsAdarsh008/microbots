@@ -244,14 +244,16 @@ def window_loss(p, h0, w, memory, go_weight):
     """Loss over one window of steps for one build, carrying each bot's memory through it.
 
     Two parts, so they can't crowd each other out:
-    * go: should this bot work right now? Matches the teacher's "needed". With
-      many spares most bots should stay, so each "go" counts go_weight times.
+    * go: should this bot move right now? Matches whether the teacher moves it:
+      not if it isn't needed, and not if it has no move that helps. Most bots
+      stay most steps, so each "go" counts go_weight times.
     * which move: only for bots the teacher actually moves, which of the
       legal moves (stay excluded).
     """
     def body(h, s):
         h, logits, go = step_fn(p, h, s["x"], s["snd"], s["rcv"], s["off"], memory)
-        tr, need = s["train"], s["need"] & s["train"]
+        tr = s["train"]
+        need = (s["label"] != 0) & tr                # the teacher moves this bot this step
         # go / stay
         wt = jnp.where(need, go_weight, 1.0) * tr
         bce = jnp.where(need, jax.nn.softplus(-go), jax.nn.softplus(go))
@@ -323,10 +325,10 @@ def window(builds, idx, t0):
 def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitation"):
     step = make_train_step(memory)
     rng = np.random.default_rng(len(log["loss"]))
-    n_go = sum(int((n & t).sum()) for b in builds for n, t in zip(b["need"], b["train"]))
-    n_wait = sum(int((~n & t).sum()) for b in builds for n, t in zip(b["need"], b["train"]))
+    n_go = sum(int(((l != 0) & t).sum()) for b in builds for l, t in zip(b["label"], b["train"]))
+    n_wait = sum(int(((l == 0) & t).sum()) for b in builds for l, t in zip(b["label"], b["train"]))
     go_weight = float(np.clip(n_wait / max(n_go, 1), 1.0, 50.0))
-    print(f"  {n_go:,} decisions where the teacher has the bot work, {n_wait:,} where it waits: each 'work' counts {go_weight:.1f}x")
+    print(f"  {n_go:,} decisions where the teacher moves the bot, {n_wait:,} where it stays: each 'move' counts {go_weight:.1f}x")
     for ep in range(epochs):
         order = rng.permutation(len(builds))
         ls, tot = [], np.zeros(6)
@@ -342,8 +344,8 @@ def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitatio
         log["epoch_end"].append(len(log["loss"])); log["agree"].append(round(float(move_ok), 4))
         log.setdefault("go_ok", []).append(round(float(go_ok), 4)); log.setdefault("wait_ok", []).append(round(float(wait_ok), 4))
         log["stage"].append(stage)
-        print(f"  {stage:9s} epoch {len(log['agree']):3d}  loss {np.mean(ls):.3f}  |  works when it should {go_ok:.0%}, "
-              f"waits when it should {wait_ok:.0%}  |  same move as the teacher {move_ok:.0%}", flush=True)
+        print(f"  {stage:9s} epoch {len(log['agree']):3d}  loss {np.mean(ls):.3f}  |  moves when it should {go_ok:.0%}, "
+              f"stays when it should {wait_ok:.0%}  |  same move as the teacher {move_ok:.0%}", flush=True)
     return p, opt
 
 

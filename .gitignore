@@ -13,3 +13,5 @@ assets/*/renders/*.png
 assets/*/sandbox/index.html
 diffusion/models_backup/
 diffusion/data_backup/
+diffusion/data/*.npz
+diffusion/weights_cache/

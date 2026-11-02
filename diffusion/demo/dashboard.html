@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Swarm model lab</title>
+<style>
+:root{--bg:#f7f7f3;--fg:#1c1c1a;--mut:#6b6b66;--card:#fff;--line:#dcdcd4;--acc:#0f6e5b;--accfg:#fff;--bot:#d1432b;--tgt:#dedfd6;--c1:#3b6fb6;--c2:#d1752b;--c3:#0f6e5b;--c4:#8a5fb8;--good:#0f6e5b;--bad:#b3392a;--heat:15,110,91}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141413;--fg:#ececE6;--mut:#9a9a92;--card:#1d1d1b;--line:#37372f;--acc:#4cc2a5;--accfg:#08231c;--bot:#ff7a5c;--tgt:#46463f;--c1:#6c9be0;--c2:#f0a05a;--c3:#4cc2a5;--c4:#b896e6;--good:#4cc2a5;--bad:#ff8a77;--heat:76,194,165}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.45 system-ui,sans-serif}
+header{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--card);position:sticky;top:0;z-index:5}
+header h1{font-size:17px;margin:0}nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{border:1px solid transparent;background:none;color:var(--mut);font:inherit;padding:6px 12px;border-radius:8px;cursor:pointer}
+nav button.on{background:var(--acc);color:var(--accfg)}nav button:hover:not(.on){border-color:var(--line);color:var(--fg)}
+#sub{color:var(--mut);font-size:12.5px;margin-left:auto}
+main{padding:16px;max-width:1280px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+h2{font-size:15px;margin:0 0 6px}p.s,.mut{color:var(--mut);font-size:12.5px}
+select,input[type=text],input[type=search],button{font:inherit;padding:6px 8px;border-radius:7px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
+button{cursor:pointer}button.p{background:var(--acc);color:var(--accfg);border-color:var(--acc)}button:disabled{opacity:.5;cursor:default}
+label{display:block;font-size:12px;color:var(--mut);margin:9px 0 3px}input[type=range]{width:100%}
+.grid4{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+.stat b{display:block;font-size:26px;font-variant-numeric:tabular-nums;line-height:1.1}.stat span{font-size:12.5px;color:var(--mut)}
+.two{display:grid;gap:16px;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}@media(max-width:900px){.two{grid-template-columns:1fr}}
+.lab{display:grid;gap:16px;grid-template-columns:minmax(250px,310px) 1fr}@media(max-width:820px){.lab{grid-template-columns:1fr}}
+table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
+th,td{padding:5px 7px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{position:sticky;top:50px;background:var(--card);cursor:pointer;color:var(--mut);font-weight:600;user-select:none}th.on{color:var(--fg)}
+tbody tr{cursor:pointer}tbody tr:hover{background:color-mix(in srgb,var(--acc) 8%,transparent)}
+td.num{text-align:right}.tag{display:inline-block;padding:0 6px;border-radius:9px;border:1px solid var(--line);font-size:11.5px;color:var(--mut);margin-right:3px}
+.ref td{font-weight:600;background:color-mix(in srgb,var(--fg) 5%,transparent)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+canvas{display:block;background:var(--card);border:1px solid var(--line);border-radius:10px;max-width:100%}
+.pan{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}.pan .card{padding:8px}.pan canvas{width:100%;height:auto}
+.pan .t{font-size:12px;margin-top:4px;line-height:1.3}.pan .t b{font-variant-numeric:tabular-nums}
+#tip{position:fixed;pointer-events:none;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;display:none;z-index:20;max-width:300px;box-shadow:0 2px 10px #0003}
+#drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:var(--card);border-left:1px solid var(--line);padding:14px;overflow:auto;transform:translateX(105%);transition:transform .18s;z-index:30}
+#drawer.open{transform:none}#drawer img{max-width:100%;border:1px solid var(--line);border-radius:8px;margin:6px 0}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;overflow:auto;font-size:11.5px}
+.warn{border-left:3px solid var(--c2);padding:6px 10px;background:color-mix(in srgb,var(--c2) 10%,transparent);border-radius:4px;font-size:12.5px;margin:8px 0}
+.legend span{margin-right:12px;font-size:12px;color:var(--mut)}.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+.chips{display:flex;gap:5px;flex-wrap:wrap}.chip{border:1px solid var(--line);border-radius:12px;padding:1px 4px 1px 9px;font-size:12px;background:var(--bg)}.chip a{cursor:pointer;color:var(--mut);padding:0 5px}
+.hide{display:none!important}
+</style></head><body>
+<header><h1>Swarm model lab</h1>
+<nav id="nav"><button data-t="over" class="on">Overview</button><button data-t="board">All runs</button><button data-t="lab">Live lab</button><button data-t="cmp">Compare</button></nav>
+<span id="sub"></span></header>
+<main>
+<section id="over"></section>
+<section id="board" class="hide"></section>
+<section id="shapewrap" class="hide">
+ <div class="lab"><div class="card" id="side">
+  <h2>Target shape</h2>
+  <select id="shape" style="width:100%"></select>
+  <canvas id="draw" width="192" height="192" style="margin-top:8px;cursor:crosshair;width:192px"></canvas>
+  <div class="row"><button id="clear">Clear</button><button id="usepreset">Back to preset</button></div>
+  <p class="s">Paint to draw your own (shift-drag erases). A drawing overrides the preset.</p>
+  <label>Bots <span id="nv">256</span></label><input id="n" type="range" min="64" max="1024" step="64" value="256">
+  <label>Steps <span id="kv">64</span> (scores below used 64)</label><input id="k" type="range" min="2" max="128" value="64">
+  <label>Seed</label><select id="seed"></select>
+  <label>Start</label><select id="start"><option value="auto">model's own start</option><option value="noise">scattered noise</option><option value="pile_c">pile at the centre</option><option value="pile_off">offset pile + rigid travel</option></select>
+  <label>Clock error per bot <span id="jv">0</span></label><input id="jit" type="range" min="0" max="0.4" step="0.05" value="0">
+  <label>Motion noise <span id="mv">0</span> spacings</label><input id="mot" type="range" min="0" max="0.6" step="0.1" value="0">
+  <label><input type="checkbox" id="hard"> hard-core rule (bots never overlap)</label>
+  <label><input type="checkbox" id="keep"> keep sensing range fixed in spacings when N changes</label>
+ </div>
+ <div>
+  <div id="labv">
+   <div class="card"><div class="row"><b>Model</b><input type="search" id="mq" placeholder="filter models..." style="width:170px"><select id="model" style="flex:1;min-width:200px"></select></div>
+    <div id="mnote" class="mut"></div>
+    <div class="row"><button class="p" id="run">Run</button><button id="cut">Cut a chunk</button><button id="rep">Repair</button><span class="mut" id="busy"></span></div></div>
+   <div class="pan" style="margin-top:12px" id="labpan"></div>
+   <div class="warn">Left: the learned swarm. Middle: the no-learning rule (slide onto the shape, spread by repulsion; 200 steps). Right: the ceiling - 256 evenly spaced points inside the shape. Judge by eye first; IoU is the overlap of the bots' footprint with the shape.</div>
+  </div>
+  <div id="cmpv" class="hide">
+   <div class="card"><h2>Pick models to put side by side</h2>
+    <div class="row"><input type="search" id="cq" placeholder="search a run..." style="flex:1;min-width:160px"><select id="cadd" style="flex:2;min-width:220px"></select><button id="cbtn">Add</button></div>
+    <div class="row mut">Presets:
+     <button data-pre="top">best 6</button><button data-pre="range">sensing-range ladder</button><button data-pre="clock">clock vs none</button><button data-pre="repair">plain vs repair-trained</button><button data-pre="aux">aux-loss weight</button><button data-pre="clear">clear</button></div>
+    <div class="chips" id="chips"></div>
+    <div class="row"><button class="p" id="go">Run all on this shape</button><button id="play">Replay</button><span class="mut" id="cbusy"></span></div></div>
+   <div class="pan" style="margin-top:12px" id="cmppan"></div>
+  </div>
+ </div></div>
+</section>
+</main>
+<div id="tip"></div>
+<aside id="drawer"></aside>
+<script>
+const $=id=>document.getElementById(id),css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let RUNS=[],LB={},BY={},SHAPES=[],tab='over';
+const f2=v=>v==null?'-':v.toFixed(2),pct=v=>v==null?'-':(100*v).toFixed(0)+'%';
+const STARTS={gauss:'scattered',pile:'pile (offset)',pile_fps:'pile (offset)',pile_fps_r09:'pile (offset)',pile_fps_c:'pile (centred)'};
+const SCOL={gauss:'--c1',pile:'--c2',pile_fps:'--c2',pile_fps_r09:'--c2',pile_fps_c:'--c3'};
+const attn=r=>r.radius?`local ${r.spacings} sp`:'global';
+const mapd=r=>r.cond!=='map'?'none (unconditional)':(r.coarse?`${r.coarse}x${r.coarse}`:'full');
+const clock=r=>!r.time?'none':(r.tnoise?'noisy':'yes');
+const std=r=>LB[r.run]&&LB[r.run].agg?LB[r.run].agg:null;
+function tip(html,e){const t=$('tip');if(!html){t.style.display='none';return}t.innerHTML=html;t.style.display='block';t.style.left=Math.min(e.clientX+14,innerWidth-310)+'px';t.style.top=(e.clientY+14)+'px'}
+// ---------- tabs
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>go(b.dataset.t));
+function go(t){tab=t;document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+ $('over').classList.toggle('hide',t!=='over');$('board').classList.toggle('hide',t!=='board');
+ $('shapewrap').classList.toggle('hide',!(t==='lab'||t==='cmp'));$('labv').classList.toggle('hide',t!=='lab');$('cmpv').classList.toggle('hide',t!=='cmp');
+ history.replaceState(null,'','#'+t);window.scrollTo(0,0)}
+// ---------- load
+async function init(){const j=await (await fetch('/api/catalog')).json();RUNS=j.runs;LB=j.lb;RUNS.forEach(r=>BY[r.run]=r);SHAPES=await (await fetch('/api/shapes')).json();
+ const sc=Object.keys(LB).filter(k=>!k.startsWith('_')&&LB[k].agg).length;
+ $('sub').textContent=`${RUNS.length} trained runs | ${sc} scored on the common test set`;
+ buildOver();buildBoard();buildLab();const h=location.hash.slice(1);go(['over','board','lab','cmp'].includes(h)?h:'over');}
+// ---------- overview
+function bestOf(f){let b=null;for(const r of RUNS){const s=std(r);if(s&&(!b||f(s)>f(std(b))))b=r}return b}
+function buildOver(){
+ const rule=LB._rule&&LB._rule.agg,ceil=LB._ceiling&&LB._ceiling.agg,best=bestOf(s=>s.all);
+ const scored=RUNS.filter(std);
+ $('over').innerHTML=`
+ <div class="grid4">
+  <div class="card stat"><b>${RUNS.length}</b><span>trained runs (flow-matching swarms, 2D)</span></div>
+  <div class="card stat"><b>${scored.length}</b><span>scored here on the same 48 never-trained shapes (emoji, letters, held-out families)</span></div>
+  <div class="card stat"><b>${best?f2(std(best).all):'-'}</b><span>best overlap (IoU), <a href="#" onclick="openRun('${best&&best.run}');return false">${best?best.run:''}</a></span></div>
+  <div class="card stat"><b>${rule?f2(rule.all):'-'} / ${ceil?f2(ceil.all):'-'}</b><span>no-learning rule / ceiling (even sample of the shape)</span></div>
+ </div>
+ <div class="warn">How to read this: IoU compares the bots' footprint (pixels within 0.7 spacings of a bot) to the target shape. The ceiling is not 1.0 because 256 bots cannot tile a pixel mask. Each model ran once per shape from seed 0 on the shared test set, so differences below about 0.02 are noise. Most runs are single seeds; trust a gap only where two seeds agree (see the journal). Always confirm by eye in the Live lab.</div>
+ <div class="two" style="margin-top:12px">
+  <div class="card"><h2>Overlap vs sensing range</h2><p class="s">Each dot is one run. How far a bot can see (in bot spacings) against how well the swarm matches the shapes. The dashed lines are the no-learning rule and the ceiling. Click a dot.</p>
+   <div class="legend"><span><i style="background:var(--c1)"></i>scattered start</span><span><i style="background:var(--c2)"></i>offset pile</span><span><i style="background:var(--c3)"></i>centred pile</span></div>
+   <svg id="sc" viewBox="0 0 640 330" style="width:100%"></svg></div>
+  <div class="card"><h2>Top 12 on the common test</h2><div id="top"></div></div>
+ </div>
+ <div class="two" style="margin-top:16px">
+  <div class="card"><h2>What the experiments showed so far</h2><div id="finds"></div></div>
+  <div class="card"><h2>What to do next</h2><div id="next"></div></div>
+ </div>`;
+ drawScatter(rule,ceil);
+ const top=[...scored].filter(r=>r.cond==='map').sort((a,b)=>std(b).all-std(a).all).slice(0,12);
+ $('top').innerHTML=`<table><thead><tr><th>run</th><th>sees</th><th class="num">IoU</th><th class="num">coll</th></tr></thead><tbody>`+top.map(r=>`<tr onclick="openRun('${r.run}')"><td>${r.run}</td><td>${attn(r)}</td><td class="num">${f2(std(r).all)}</td><td class="num">${f2(std(r).coll)}</td></tr>`).join('')+`</tbody></table><p class="s">Click a row for pictures, config and a live try-out.</p>`;
+ $('finds').innerHTML=`<ul style="padding-left:18px;margin:4px 0">
+ <li><b>Learned local swarms beat the hand-written rule</b> once trained with penalties on bots ending outside the shape (weight about 100): held-out IoU 0.74 vs 0.61, letters 0.76/0.70 vs 0.59/0.56 (2 seeds).</li>
+ <li><b>Sensing can be short.</b> With the full recipe, the real arm reach (2.3 spacings) costs nothing on held-out shapes (0.74; 2 seeds).</li>
+ <li><b>Recipe:</b> pile start, 16x16 map, noisy clock in training, repair batches, big cuts. Zero collisions, tolerant to clock errors, 128 to 512 bots.</li>
+ <li><b>Scales</b> to 1024 and 2048 bots untrained (1 seed). Try the Bots slider in the Live lab.</li>
+ <li><b>Repair must be trained in</b>: cover after a cut 0.97 with bigger training cuts (2 seeds). Try Cut a chunk, then Repair.</li>
+ <li><b>Did not help:</b> a shared global state (pooled, grid, density); late-time loss weighting. The rule beat early learned models by eye even when w2 said otherwise.</li></ul>
+ <p class="s">Source: STAGE1_SUMMARY.md and JOURNAL.md in the repo (they also list the corrections).</p>`;
+ $('next').innerHTML=`<ol style="padding-left:18px;margin:4px 0">
+ <li><b>Stage 2 with real body numbers</b>: finite bodies, sensing equal to arm reach, docking only on contact. Needs from the bot-design side: how neighbours are sensed (IR/BLE range, rate), speed per step, target swarm size.</li>
+ <li><b>Fix the weak spots seen in this lab</b>: thin parts (anchor ring, letter tips) and fuzzy outlines. Cheapest lever: a short rule-based polish after the flow, or sharper training targets.</li>
+ <li><b>3D</b> (plan in STAGE3_PLAN.md): use the flow model as a shape generator for the lattice swarm. Not started; needs a go.</li>
+ <li><b>More seeds</b> for the top five recipes so the leaderboard gaps can be believed.</li></ol>`;}
+function drawScatter(rule,ceil){
+ const pts=RUNS.filter(r=>std(r)&&r.cond==='map'),W=640,H=330,L=44,B=36,T=10,Rr=14;
+ const xv=r=>r.spacings==null?12.6:Math.min(r.spacings,10.5),X=v=>L+(v-1)/(13.4-1)*(W-L-Rr),Y=v=>T+(1-(v-.3)/(.95-.3))*(H-T-B);
+ let s='';for(const v of [.4,.5,.6,.7,.8,.9])s+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(v)}" y2="${Y(v)}" stroke="${css('--line')}"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="${css('--mut')}">${v.toFixed(1)}</text>`;
+ for(const [v,l] of [[2.3,'2.3'],[4.1,'4.1'],[6.6,'6.6'],[9.8,'9.8'],[12.6,'global']])s+=`<text x="${X(v)}" y="${H-18}" text-anchor="middle" font-size="11" fill="${css('--mut')}">${l}</text>`;
+ s+=`<text x="${(L+W)/2}" y="${H-3}" text-anchor="middle" font-size="11" fill="${css('--mut')}">sensing range (bot spacings)</text>`;
+ for(const [a,l] of [[rule,'rule'],[ceil,'ceiling']])if(a)s+=`<line x1="${L}" x2="${W-Rr}" y1="${Y(a.all)}" y2="${Y(a.all)}" stroke="${css('--fg')}" stroke-dasharray="5 4"/><text x="${W-Rr-2}" y="${Y(a.all)-4}" text-anchor="end" font-size="11" fill="${css('--fg')}">${l} ${a.all.toFixed(2)}</text>`;
+ pts.forEach((r,i)=>{const jx=((i*37)%11-5)*.05;s+=`<circle data-r="${r.run}" cx="${X(xv(r)+jx)}" cy="${Y(Math.max(.3,std(r).all))}" r="4.5" fill="${css(SCOL[r.start]||'--c1')}" fill-opacity=".72" stroke="${css('--card')}" style="cursor:pointer"/>`});
+ const svg=$('sc');svg.innerHTML=s;
+ svg.querySelectorAll('circle').forEach(c=>{const r=BY[c.dataset.r];c.onmousemove=e=>tip(`<b>${r.run}</b><br>${attn(r)} | map ${mapd(r)} | clock ${clock(r)}<br>IoU ${f2(std(r).all)} (emoji ${f2(std(r).emoji)}, letters ${f2(std(r).letters)}, held-out ${f2(std(r)['held-out'])})`,e);c.onmouseleave=()=>tip(null);c.onclick=()=>openRun(r.run)})}
+// ---------- all runs table
+let sortK='all',sortD=-1,filt={q:'',a:'',s:'',sc:true};
+const COLS=[['run','run',r=>r.run],['group','grp',r=>r.group],['attn','sees',r=>r.radius?r.spacings:99],['map','map',r=>r.cond!=='map'?-1:(r.coarse||64)],['clock','clock',r=>!r.time?0:(r.tnoise?2:1)],['start','start',r=>r.start],['rep','repair',r=>r.damage_p],['aux','aux',r=>r.aux_in],
+ ['emoji','emoji',r=>std(r)?.emoji],['letters','letters',r=>std(r)?.letters],['held','held-out',r=>std(r)?.['held-out']],['all','IoU',r=>std(r)?.all],['d','vs rule',r=>std(r)&&LB._rule?std(r).all-LB._rule.agg.all:null],['cover','cover',r=>std(r)?.cover],['coll','coll',r=>std(r)?.coll],['own','own-eval IoU',r=>r.iou.ood_family]];
+function heat(v,lo,hi){if(v==null)return'';const a=Math.max(0,Math.min(1,(v-lo)/(hi-lo)));return`background:rgba(var(--heat),${(.08+.5*a).toFixed(2)})`}
+function buildBoard(){
+ $('board').innerHTML=`<div class="card"><div class="row"><input type="search" id="bq" placeholder="search run name..." style="flex:1;min-width:180px"><select id="ba"><option value="">any sensing</option><option value="g">global</option><option value="l">local</option><option value="s">short (&lt;=2.3 sp)</option></select>
+ <select id="bs"><option value="">any start</option><option value="gauss">scattered</option><option value="pile">pile</option></select><label style="display:inline;margin:0"><input type="checkbox" id="bsc" checked> only scored + map-conditioned</label></div>
+ <p class="s">Every run scored with one protocol on 48 never-trained shapes (8 emoji, 16 letters in thick and thin, 16 held-out), 256 bots, 64 steps, seed 0. "own-eval IoU" is the earlier held-out score from the training box (a different test set, only for 93 runs). Click a header to sort, a row for details.</p>
+ <div style="overflow:auto;max-height:78vh"><table id="tb"></table></div></div>`;
+ for(const [id,k] of [['bq','q'],['ba','a'],['bs','s']])$(id).oninput=()=>{filt[k]=$(id).value;renderBoard()};$('bsc').onchange=()=>{filt.sc=$('bsc').checked;renderBoard()};renderBoard()}
+function renderBoard(){
+ let rows=RUNS.filter(r=>(!filt.q||r.run.includes(filt.q.toLowerCase()))&&(!filt.sc||(r.cond==='map'&&std(r)))&&(!filt.a||(filt.a==='g'?!r.radius:filt.a==='l'?!!r.radius:r.radius&&r.spacings<=2.4))&&(!filt.s||(filt.s==='gauss'?r.start==='gauss':r.start!=='gauss')));
+ const col=COLS.find(c=>c[0]===sortK)||COLS[11];rows.sort((a,b)=>{const x=col[2](a),y=col[2](b);if(x==null)return 1;if(y==null)return-1;return(x<y?-1:x>y?1:0)*sortD});
+ const rule=LB._rule?.agg,ceil=LB._ceiling?.agg;
+ const refrow=(n,a)=>a?`<tr class="ref"><td>${n}</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="num">${f2(a.emoji)}</td><td class="num">${f2(a.letters)}</td><td class="num">${f2(a['held-out'])}</td><td class="num">${f2(a.all)}</td><td></td><td class="num">${f2(a.cover)}</td><td class="num">${f2(a.coll)}</td><td></td></tr>`:'';
+ $('tb').innerHTML=`<thead><tr>${COLS.map(c=>`<th data-k="${c[0]}" class="${c[0]===sortK?'on':''}">${c[1]}${c[0]===sortK?(sortD<0?' v':' ^'):''}</th>`).join('')}</tr></thead><tbody>${refrow('no-learning rule',rule)}${refrow('ceiling (even sample)',ceil)}`+rows.map(r=>{const s=std(r);const d=s&&rule?s.all-rule.all:null;
+  return`<tr onclick="openRun('${r.run}')"><td>${r.run}</td><td>${r.group}</td><td>${attn(r)}</td><td>${mapd(r)}</td><td>${clock(r)}</td><td>${STARTS[r.start]||r.start}</td><td>${r.damage_p?Math.round(r.damage_p*100)+'%':'-'}</td><td>${r.aux_in||'-'}</td>`+
+  [s?.emoji,s?.letters,s?.['held-out'],s?.all].map(v=>`<td class="num" style="${heat(v,.45,.8)}">${f2(v)}</td>`).join('')+`<td class="num" style="color:var(--${d==null?'mut':d>=0?'good':'bad'})">${d==null?'-':(d>=0?'+':'')+d.toFixed(2)}</td><td class="num">${f2(s?.cover)}</td><td class="num">${s?f2(s.coll):'-'}</td><td class="num">${f2(r.iou.ood_family)}</td></tr>`}).join('')+`</tbody>`;
+ $('tb').querySelectorAll('th').forEach(h=>h.onclick=()=>{sortD=sortK===h.dataset.k?-sortD:-1;sortK=h.dataset.k;renderBoard()})}
+// ---------- run drawer
+function openRun(n){const r=BY[n];if(!r)return;const s=std(r);
+ $('drawer').innerHTML=`<div class="row"><b style="flex:1;font-size:15px">${r.run}</b><button onclick="$('drawer').classList.remove('open')">Close</button></div>
+ <div class="mut">${attn(r)} | map ${mapd(r)} | clock ${clock(r)} | start ${STARTS[r.start]||r.start} | repair ${r.damage_p?Math.round(r.damage_p*100)+'%':'no'} | aux ${r.aux_in||'none'} | data ${r.data} | seed ${r.seed} | ${r.iters||'?'} iters${r.train_min?' | '+r.train_min+' min':''}</div>
+ ${r.cond!=='map'?'<div class="warn">Unconditional run: it makes shapes from its training set and cannot be told which shape to form, so the lab cannot score it.</div>':''}
+ ${s?`<div class="grid4" style="margin:10px 0"><div class="card stat"><b>${f2(s.all)}</b><span>IoU, common test</span></div><div class="card stat"><b>${f2(s.letters)}</b><span>letters</span></div><div class="card stat"><b>${f2(s['held-out'])}</b><span>held-out shapes</span></div><div class="card stat"><b>${f2(s.coll)}</b><span>collisions</span></div></div>`:''}
+ <div class="row">${r.cond==='map'?`<button class="p" onclick="tryRun('${r.run}')">Try it in the live lab</button><button onclick="addCmp('${r.run}');go('cmp')">Add to compare</button>`:''}</div>
+ ${r.has_pics?`<h2>Samples after training (rows: targets, bots)</h2><img src="/results/${r.run}/samples.png" loading="lazy">`:''}
+ ${r.has_gif?`<h2>Trajectory</h2><img src="/results/${r.run}/traj.gif" loading="lazy">`:''}
+ <h2>Config</h2><pre>${JSON.stringify(r.config,null,1)}</pre>`;
+ $('drawer').classList.add('open')}
+function tryRun(n){$('drawer').classList.remove('open');go('lab');$('mq').value='';fillModels();$('model').value=n;$('model').onchange();$('run').click()}
+// ---------- shapes + drawing
+let grid=new Float32Array(4096),dirty=false,occ=null,painting=false,frames=[],anim=null,last=null,damaged=null;
+function drawGrid(){const c=$('draw').getContext('2d');c.fillStyle=css('--card');c.fillRect(0,0,192,192);c.fillStyle=css('--acc');for(let r=0;r<64;r++)for(let q=0;q<64;q++)if(grid[r*64+q]>.5)c.fillRect(q*3,(63-r)*3,3,3)}
+async function setPreset(n){const o=await (await fetch('/api/shape/'+encodeURIComponent(n))).json();for(let r=0;r<64;r++)for(let q=0;q<64;q++)grid[r*64+q]=o[r][q];dirty=false;drawGrid()}
+function paint(e){const b=$('draw').getBoundingClientRect(),q=Math.floor((e.clientX-b.left)/b.width*64),r=63-Math.floor((e.clientY-b.top)/b.height*64);
+ for(let dr=-2;dr<=2;dr++)for(let dq=-2;dq<=2;dq++){const rr=r+dr,qq=q+dq;if(rr>=0&&rr<64&&qq>=0&&qq<64&&dr*dr+dq*dq<=5)grid[rr*64+qq]=e.shiftKey?0:1}dirty=true;drawGrid()}
+function tgt(){return dirty?{mask:Array.from(grid).map(v=>v>.5?1:0)}:{shape:$('shape').value}}
+function params(){return{n:+$('n').value,k:+$('k').value,seed:+$('seed').value,start:$('start').value,jitter:+$('jit').value,motion:+$('mot').value,hardcore:$('hard').checked,keep_spacings:$('keep').checked}}
+// ---------- drawing swarms
+function swarm(cv,o,P,opt={}){const W=cv.width,S=W/2.6,X=x=>(x+1.3)*S,Y=y=>(1.3-y)*S,c=cv.getContext('2d');c.fillStyle=css('--card');c.fillRect(0,0,W,W);
+ if(o){c.fillStyle=css('--tgt');const k=2*S/64+1;for(let r=0;r<64;r++)for(let q=0;q<64;q++)if(o[r][q]>.5)c.fillRect(X(q*2/64-1),Y((r+1)*2/64-1),k,k)}
+ c.fillStyle=css('--bot');const rad=Math.max(1.6,W/ (P.length>600?260:170));for(const p of P){c.beginPath();c.arc(X(p[0]),Y(p[1]),rad,0,7);c.fill()}}
+function caption(r,lbl){return`<b>${lbl}</b><br>IoU <b>${f2(r.iou)}</b> | prec ${f2(r.prec)} rec ${f2(r.rec)}<br>cover ${pct(r.cover)} | collide ${pct(r.coll)}`}
+function panelHTML(id,lbl){return`<div class="card"><canvas id="${id}" width="440" height="440"></canvas><div class="t" id="${id}t">${lbl}</div></div>`}
+// ---------- live lab
+function fillModels(){const q=$('mq').value.toLowerCase();const ms=RUNS.filter(r=>r.cond==='map'&&(!q||r.run.toLowerCase().includes(q))).sort((a,b)=>(std(b)?.all??-1)-(std(a)?.all??-1));
+ $('model').innerHTML=ms.map(r=>`<option value="${r.run}">${std(r)?f2(std(r).all)+'  ':'  -   '}${r.run}  (${attn(r)})</option>`).join('');
+ $('cadd').innerHTML=$('model').innerHTML;if(ms.length)$('model').onchange()}
+function buildLab(){
+ $('shape').innerHTML=['emoji','letter','held-out'].map(g=>`<optgroup label="${g}">`+SHAPES.filter(s=>s.startsWith(g)).map(s=>`<option>${s}</option>`).join('')+'</optgroup>').join('');
+ for(let i=0;i<8;i++)$('seed').innerHTML+=`<option value="${i}">seed ${i}</option>`;
+ for(const [id,l] of [['k','kv'],['n','nv'],['jit','jv'],['mot','mv']])$(id).oninput=()=>$(l).textContent=$(id).value;
+ $('draw').onmousedown=e=>{painting=true;paint(e)};window.onmouseup=()=>painting=false;$('draw').onmousemove=e=>{if(painting)paint(e)};
+ $('clear').onclick=()=>{grid.fill(0);dirty=true;drawGrid()};$('usepreset').onclick=()=>setPreset($('shape').value);$('shape').onchange=()=>setPreset($('shape').value);
+ $('shape').value=SHAPES.includes('emoji anchor')?'emoji anchor':SHAPES[0];setPreset($('shape').value);
+ $('model').onchange=()=>{const r=BY[$('model').value];if(!r)return;const s=std(r);$('mnote').innerHTML=`${attn(r)} | map ${mapd(r)} | clock ${clock(r)} | start ${STARTS[r.start]||r.start} | repair ${r.damage_p?'yes':'no'} | aux ${r.aux_in||'none'}`+(s?` | common-test IoU <b>${f2(s.all)}</b> (rule ${f2(LB._rule?.agg.all)})`:'')+` <a href="#" onclick="openRun('${r.run}');return false">details</a>`};
+ $('mq').oninput=fillModels;fillModels();
+ $('labpan').innerHTML=panelHTML('c0','Model')+panelHTML('c1','No-learning rule')+panelHTML('c2','Ceiling');
+ $('run').onclick=runLab;$('cut').onclick=cutChunk;$('rep').onclick=repair;
+ $('cbtn').onclick=()=>addCmp($('cadd').value);$('cq').oninput=()=>{const q=$('cq').value.toLowerCase();[...$('cadd').options].forEach(o=>o.hidden=q&&!o.value.toLowerCase().includes(q));const v=[...$('cadd').options].find(o=>!o.hidden);if(v)$('cadd').value=v.value};
+ document.querySelectorAll('[data-pre]').forEach(b=>b.onclick=()=>preset(b.dataset.pre));$('go').onclick=runCmp;$('play').onclick=playCmp;renderChips()}
+async function post(u,b){const r=await fetch(u,{method:'POST',body:JSON.stringify(b)});const j=await r.json();if(j.error)throw new Error(j.error);return j}
+async function runLab(extra={},keepBase=false){$('busy').textContent='running (first use of a model downloads ~10 MB)...';$('run').disabled=true;
+ try{const j=await post('/api/run',{model:$('model').value,...tgt(),...params(),baselines:!extra.x0,...extra});
+  occ=j.occ;frames=j.model.frames;last=j.model.final;
+  if(j.rule){swarm($('c1'),occ,j.rule.final);$('c1t').innerHTML=caption(j.rule,'No-learning rule');swarm($('c2'),occ,j.ceiling.final);$('c2t').innerHTML=caption(j.ceiling,'Ceiling (even sample)')}
+  clearInterval(anim);let i=0;anim=setInterval(()=>{swarm($('c0'),occ,frames[i]);if(++i>=frames.length){clearInterval(anim);$('c0t').innerHTML=caption(j.model,$('model').value)}},35);
+  $('busy').textContent='';damaged=null}catch(e){$('busy').textContent='error: '+e.message}$('run').disabled=false}
+function cutChunk(){if(!last||!occ)return;const p=[];for(let r=0;r<64;r++)for(let q=0;q<64;q++)if(occ[r][q]>.5)p.push([(q+.5)*2/64-1,(r+.5)*2/64-1]);const c=p[Math.floor(Math.random()*p.length)];
+ damaged=last.filter(q=>Math.hypot(q[0]-c[0],q[1]-c[1])>.3);swarm($('c0'),occ,damaged);$('c0t').innerHTML=`<b>cut</b>: ${last.length-damaged.length} bots removed, ${damaged.length} left`}
+async function repair(){if(!damaged)return;const n=damaged.length;await runLab({x0:damaged,t0:0,n,baselines:false})}
+// ---------- compare
+let sel=[],cres=null,canim=null;
+function addCmp(n){if(n&&!sel.includes(n)&&sel.length<12){sel.push(n);renderChips()}}
+function renderChips(){$('chips').innerHTML=sel.map(n=>`<span class="chip">${n}<a onclick="sel=sel.filter(x=>x!=='${n}');renderChips()">x</a></span>`).join('')||'<span class="mut">none yet</span>'}
+function preset(p){const mp=RUNS.filter(r=>r.cond==='map'&&std(r));const by=(f)=>mp.filter(f).sort((a,b)=>std(b).all-std(a).all)[0];
+ if(p==='clear')sel=[];
+ if(p==='top')sel=[...mp].sort((a,b)=>std(b).all-std(a).all).slice(0,6).map(r=>r.run);
+ if(p==='range'){const at=v=>r=>v==null?!r.radius:r.spacings===v;sel=[2.3,4.1,6.6,9.8,null].map(v=>(by(r=>at(v)(r)&&r.start==='gauss'&&r.time&&!r.damage_p&&r.aux_in>=100)||by(at(v)))?.run).filter(Boolean)}
+ if(p==='clock'){sel=[by(r=>r.radius&&!r.time)?.run,by(r=>r.radius&&r.time&&!r.tnoise)?.run,by(r=>r.radius&&r.tnoise)?.run].filter(Boolean)}
+ if(p==='repair'){sel=[by(r=>r.radius&&!r.damage_p)?.run,by(r=>r.radius&&r.damage_p>0)?.run].filter(Boolean)}
+ if(p==='aux'){sel=[0,20,100,200].map(w=>by(r=>r.radius&&r.spacings===9.8&&(w?r.aux_in===w:!r.aux_in))?.run).filter(Boolean)}
+ renderChips()}
+async function runCmp(){if(!sel.length){$('cbusy').textContent='add some models first';return}$('go').disabled=true;$('cbusy').textContent=`running ${sel.length} models + baselines (downloads weights on first use)...`;
+ try{cres=await post('/api/compare',{models:sel,...tgt(),...params(),k:Math.min(+$('k').value,64)});occ=cres.occ;
+  const items=[['Target (grey) + ceiling',cres.ceiling,null],['No-learning rule',cres.rule,null],...sel.map(n=>[n,cres.models[n],n])];
+  $('cmppan').innerHTML=items.map((it,i)=>panelHTML('p'+i,'')).join('');
+  items.forEach((it,i)=>{swarm($('p'+i),occ,it[1].final);$('p'+i+'t').innerHTML=caption(it[1],it[0])+(it[2]?` | <a href="#" onclick="openRun('${it[2]}');return false">details</a>`:'')});
+  $('cbusy').textContent='';playCmp()}catch(e){$('cbusy').textContent='error: '+e.message}$('go').disabled=false}
+function playCmp(){if(!cres)return;clearInterval(canim);const ms=sel.filter(n=>cres.models[n]);const L=Math.max(...ms.map(n=>cres.models[n].frames.length));let i=0;
+ canim=setInterval(()=>{ms.forEach((n,j)=>{const F=cres.models[n].frames;swarm($('p'+(j+2)),occ,F[Math.min(i,F.length-1)])});if(++i>=L)clearInterval(canim)},60)}
+init();
+</script></body></html>

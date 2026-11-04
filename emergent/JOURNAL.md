@@ -30,3 +30,32 @@ Newest last. Every number names its seeds; "1 seed" is not a finding.
 - **Fix under test (box 1, 1000 iterations each):** gradient decay backward in time (0.90 / 0.95 / 0.98 per control
   step; forward pass unchanged), a per-step clamp on the gradient norm, and a shape loss at every control step
   weighted towards the end. Box 2 keeps the six original wave-1 runs as the no-fix comparison.
+
+## 2026-11-04 tick 3: why nothing moved, and what the physics allows
+
+- **Wave 1 and the gradient-fix tests learned nothing** (validation IoU 0.32 to 0.33 in all 12 runs, the pile's own
+  level; bond counts identical across runs). Cause: grip started at 0.88, so the starting pile is one bonded solid
+  (each bond holds about 7 units, a bot pushes at most 3); training then drove grip to 1.0 and force outputs into
+  saturation. All those runs were stopped. **Fix:** bots start mostly free (grip 0.12), and the raw force output is
+  penalised so it cannot saturate.
+- **Open-loop diagnostic** (`diag_openloop.py`: optimise a free force and grip sequence per bot, no controller,
+  8 validation shapes, 200 to 300 Adam steps):
+
+  | actuation | gravity | loss start -> end | IoU end | mean bot travel |
+  |---|---|---|---|---|
+  | drone (unphysical) | 1 | 38 -> 8.4 | (not logged) | 2.7 |
+  | push only against what it touches (r_touch 1.15) | 1 | 39 -> 36 | 0.29 | 1.5 |
+  | same, reach 2.0 | 1 | 39 -> 25 | 0.29 | 1.7 |
+  | same, reach 2.35, friction 0.2 | 1 | 46 -> 19 | 0.29 | 2.1 |
+  | touch only | 0 | 26 -> 17 | 0.29 | 2.8 |
+  | reach 2.0 | 0 | 25 -> 17 | 0.27 | 3.4 |
+
+  Gradients through the physics can form shapes when force is free (drone); with momentum-conserving actuation,
+  gradient descent finds no way out of the pile, **even without gravity**. So the obstacle is optimisation through
+  contact-limited actuation, not gravity alone.
+- **Is climbing physically possible?** A scripted bot next to a 6-bot column: with touch-only reach (1.15) a
+  constant force never gets it above 3.9 (it loses contact and falls back); with a 2.0 reach (about the v1 arm
+  reach) it climbs past the top of the column. So climbing exists in the physics, but needs reach or feedback.
+- **Next (running):** closed-loop controllers with low starting grip (drone, touch, reach 2.0, no gravity), and a
+  **continuation curriculum**: train with drone forces first and blend to fully physical actuation by iteration
+  1800 of 3000 (`mix`). The shape is learned first, physics is tightened afterwards; no behaviour is scripted.

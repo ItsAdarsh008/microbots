@@ -1,0 +1,11 @@
+{
+ "iters": 1500,
+ "eval_every": 250,
+ "grip_bias": -2.0,
+ "pre_w": 0.01,
+ "grad_clip_step": 10.0,
+ "dense_w": 1.0,
+ "r_touch": 2.0,
+ "mu": 0.2,
+ "name": "w2_int_rt2_mu02"
+}

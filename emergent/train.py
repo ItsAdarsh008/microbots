@@ -20,7 +20,7 @@ DEF = dict(data="data/world128.npz", iters=3000, B=16, lr=1e-3, T=64, K=4, hold=
            g=1.0, g_warm=0, f_bond=8.0, f_act=3.0, mu=0.5, reaction="internal", r_sense=3.0, H=32, M=96, rounds=2,
            use_h=True, see_v=True, out_w=1.0, act_w=0.0, seed=0, offset=0.0, shuffle_targets=False, eval_every=500,
            ema=0.995, clip=1.0, n_eval=192, k_c=200.0, r_bond=1.25, r_hold=1.15, damage_p=0.0, damage_r=2.5,
-           grip_fixed=None, families=None, g_eval=None, compile=True, grad_decay=1.0, grad_clip_step=0.0, dense_w=0.0, grip_bias=-2.0, pre_w=0.0, r_touch=1.15)
+           grip_fixed=None, families=None, g_eval=None, compile=True, grad_decay=1.0, grad_clip_step=0.0, dense_w=0.0, grip_bias=-2.0, pre_w=0.0, r_touch=1.15, mix_start=0, mix_iters=0)
 
 
 def load_cfg(path):
@@ -74,7 +74,7 @@ def tame(t, cfg):
     return t
 
 
-def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=False, damage=None, hold=None, dense=None):
+def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, mix=1.0, grad=True, alive=None, record=False, damage=None, hold=None, dense=None):
     """Build for T control steps (K physics steps each), then hold passively (motors off, grips kept).
     Returns dict with x at end of build, x at end of hold, grip, mean squared action, and frames if record."""
     B, N, _ = x0.shape
@@ -88,6 +88,7 @@ def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=F
     asq = 0.0
     pre = 0.0
     g_scale = torch.tensor(float(g_scale), device=dev)
+    mix = torch.tensor(float(mix), device=dev)
 
     def ctrl(x, v, h, alive):
         mf = map_features(maps, x, W)
@@ -95,7 +96,7 @@ def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=F
         if cfg["grip_fixed"] is not None:
             grip = torch.full_like(grip, float(cfg["grip_fixed"]))
         for _ in range(cfg["K"]):
-            x, v = ph.step(x, v, a, grip, alive, g_scale)
+            x, v = ph.step(x, v, a, grip, alive, g_scale, mix)
         return x, v, h, grip, (a * a).mean(), pre
 
     def passive(x, v, grip, alive):
@@ -370,7 +371,8 @@ def main(path):
             c = Q[torch.arange(cfg["B"], device=dev), torch.randint(0, data.N, (cfg["B"],), generator=gen).to(dev)]
             damage = (c, cfg["damage_r"])   # at T/2, remove the bots within damage_r of a random target point
         dense = [] if cfg["dense_w"] > 0 else None
-        r = rollout(run_pol, ph, maps, x0, cfg, g_scale=gs, grad=True, damage=damage, dense=dense)
+        mx = min(1.0, max(0.0, (it - cfg["mix_start"]) / cfg["mix_iters"])) if cfg["mix_iters"] else 1.0
+        r = rollout(run_pol, ph, maps, x0, cfg, g_scale=gs, mix=mx, grad=True, damage=damage, dense=dense)
         lb, pb = shape_loss(r["xb"], r["alive"], Q, maps, data.W, cfg["out_w"])
         if dense:
             # shape loss along the way, weighted towards the end (gives short-horizon gradients a target)
@@ -396,7 +398,7 @@ def main(path):
         if it % 25 == 0:
             el = time.time() - t0
             P(f"it {it} loss {loss.item():.3f} build {lb.item():.3f} (t1 {pb['t1']:.2f} t2 {pb['t2']:.2f} out {pb['out']:.2f}) "
-              f"hold {lh.item():.3f} asq {float(r['asq']):.2f} grip {r['grip'].mean().item():.2f} gn {gn.item():.2f} g {gs:.2f} "
+              f"hold {lh.item():.3f} mix {mx:.2f} asq {float(r['asq']):.2f} grip {r['grip'].mean().item():.2f} gn {gn.item():.2f} g {gs:.2f} "
               f"{el / (it - start + 1):.2f}s/it")
         if (it + 1) % 250 == 0 or it + 1 == cfg["iters"]:
             tmp = ck + f".tmp{os.getpid()}"

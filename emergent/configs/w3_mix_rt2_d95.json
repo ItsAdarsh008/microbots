@@ -1,0 +1,13 @@
+{
+ "iters": 3000,
+ "eval_every": 500,
+ "grip_bias": -2.0,
+ "pre_w": 0.01,
+ "grad_clip_step": 10.0,
+ "dense_w": 1.0,
+ "mix_start": 300,
+ "mix_iters": 1500,
+ "r_touch": 2.0,
+ "grad_decay": 0.95,
+ "name": "w3_mix_rt2_d95"
+}

@@ -34,7 +34,8 @@ class Physics:
         win = torch.clamp((self.r_bond - dist) / (self.r_bond - self.r_hold), 0, 1)
         return torch.minimum(grip[:, :, None], grip[:, None, :]) * win * pm
 
-    def step(self, x, v, a, grip, alive, g_scale=1.0):
+    def step(self, x, v, a, grip, alive, g_scale=1.0, mix=1.0):
+        """mix in [0, 1] blends 'internal' actuation (1) with unphysical drone actuation (0), for curricula."""
         d, dist, pm = self.pairs(x, alive)
         n = d / dist[..., None]
         vrel = v[:, None, :, :] - v[:, :, None, :]                # v_j - v_i
@@ -71,9 +72,10 @@ class Physics:
                 wt = torch.clamp((self.r_touch - dist) / (self.r_touch - 1.0), 0, 1) * pm
                 wf = torch.clamp((0.65 - y) / 0.15, 0, 1) * alive
                 Wsum = wt.sum(2) + wf
-                ae = a * torch.clamp(Wsum, max=1.0)[..., None] * alive[..., None]
+                eff = mix * torch.clamp(Wsum, max=1.0) + (1 - mix)
+                ae = a * eff[..., None] * alive[..., None]
                 share = wt / torch.clamp(Wsum, min=1e-6)[..., None]          # [b, i, j]: i's reaction share on j
-                F = F + ae - torch.einsum("bij,bid->bjd", share, ae)
+                F = F + ae - mix * torch.einsum("bij,bid->bjd", share, ae)
             else:
                 F = F + a * alive[..., None]
         F = F - self.air * v

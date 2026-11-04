@@ -11,9 +11,10 @@ import torch.nn.functional as Fn
 
 
 class Policy(nn.Module):
-    def __init__(self, H=32, M=96, rounds=2, r_sense=3.0, map_ch=6, f_act=3.0, use_h=True, see_v=True, grip_bias=-2.0):
+    def __init__(self, H=32, M=96, rounds=2, r_sense=3.0, map_ch=6, f_act=3.0, use_h=True, see_v=True, grip_bias=-2.0, out_scale=None):
         super().__init__()
         self.grip_bias = grip_bias
+        self.out_scale = f_act if out_scale is None else out_scale   # force bound, or max commanded speed
         self.H, self.M, self.rounds, self.r_sense, self.f_act, self.use_h, self.see_v = H, M, rounds, r_sense, f_act, use_h, see_v
         self.enc = nn.Sequential(nn.Linear(map_ch + 2 + 2 + H, M), nn.SiLU(), nn.Linear(M, M))
         self.ea = nn.ModuleList([nn.Linear(M, M) for _ in range(rounds)])          # receiver
@@ -47,7 +48,7 @@ class Policy(nn.Module):
             e = self.norm[r](e + self.upd[r](torch.cat([e, m], -1)))
         hn = self.gru(e.reshape(B * N, -1), h.reshape(B * N, -1)).reshape(B, N, -1) if self.use_h else h
         o = self.head(torch.cat([e, hn], -1))
-        a = self.f_act * torch.tanh(o[..., :2])
+        a = self.out_scale * torch.tanh(o[..., :2])
         grip = torch.sigmoid(o[..., 2] + self.grip_bias)   # default -2: starts mostly free (about 0.12)
         pre = (o[..., :2] ** 2).mean()                    # raw force output, penalised to avoid tanh saturation
         return a, grip, hn, pre

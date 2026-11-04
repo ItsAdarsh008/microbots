@@ -1,0 +1,12 @@
+{
+ "iters": 1000,
+ "eval_every": 250,
+ "grip_bias": -2.0,
+ "pre_w": 0.01,
+ "grad_clip_step": 10.0,
+ "dense_w": 1.0,
+ "lr": 0.0003,
+ "r_touch": 2.0,
+ "ctrl": "velocity",
+ "name": "w4_int_vel_lr3e4_rt2"
+}

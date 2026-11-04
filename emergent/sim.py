@@ -18,7 +18,8 @@ import torch
 
 class Physics:
     def __init__(self, g=1.0, k_c=200.0, c_c=3.0, mu=0.5, f_bond=4.0, r_hold=1.15, r_bond=1.25, c_b=2.0,
-                 f_act=3.0, reaction="internal", r_touch=1.15, air=0.05, dt=0.02, W=24.0, v_slip=0.05):
+                 f_act=3.0, reaction="internal", r_touch=1.15, air=0.05, dt=0.02, W=24.0, v_slip=0.05,
+                 ctrl="force", kp=10.0):
         self.__dict__.update(locals())
         del self.__dict__["self"]
 
@@ -66,7 +67,9 @@ class Physics:
         # side walls
         xl = torch.relu(0.5 - x[..., 0]) - torch.relu(x[..., 0] - (self.W - 0.5))
         F = F + torch.stack([self.k_c * xl, torch.zeros_like(xl)], -1) * alive[..., None]
-        # actuation
+        # actuation ('velocity' control: a is a commanded velocity, tracked by a force-limited motor)
+        if a is not None and self.ctrl == "velocity":
+            a = self.f_act * torch.tanh(self.kp * (a - v) / self.f_act)
         if a is not None:
             if self.reaction == "internal":
                 wt = torch.clamp((self.r_touch - dist) / (self.r_touch - 1.0), 0, 1) * pm

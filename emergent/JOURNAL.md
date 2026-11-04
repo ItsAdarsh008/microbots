@@ -59,3 +59,33 @@ Newest last. Every number names its seeds; "1 seed" is not a finding.
 - **Next (running):** closed-loop controllers with low starting grip (drone, touch, reach 2.0, no gravity), and a
   **continuation curriculum**: train with drone forces first and blend to fully physical actuation by iteration
   1800 of 3000 (`mix`). The shape is learned first, physics is tightened afterwards; no behaviour is scripted.
+
+## 2026-11-04 tick 4: learning is unstable; a better-conditioned motor model
+
+**Wave 2 and the curriculum runs (validation IoU of the EMA controller, 64 shapes, pile = 0.32):**
+
+| run | it 250 | it 500 | note |
+|---|---|---|---|
+| drone forces | **0.475** | 0.090 | learned to fill the lower part of shapes, then diverged (bots fly off) |
+| drone, gradient decay 0.95 | 0.31 | 0.32 | no learning |
+| drone, no gravity | 0.30 | 0.33 | |
+| drone, no per-step loss | 0.32 | 0.29 | 0.19 at 1000 |
+| physical (touch) | 0.29 | 0.32 | grip back to 0.96: the pile trap |
+| physical, reach 2.0 | 0.29 | 0.32 | grip 0.97, pile trap |
+| physical, no gravity | 0.28 | 0.30 | |
+| curriculum drone->physical (reach 1.15 / 2.0) | | 0.28 / 0.28 | |
+
+- Gradient decay and dropping the per-step shape loss both hurt; neither is used from here on.
+- The one run that clearly learned (drone, 0.475) diverged within the next 250 iterations: raw force outputs
+  through stiff contact dynamics are badly conditioned (learning rate 1e-3, gradient clipped to norm 1 every step).
+- Looked at the drone run at iteration 250 (`render.py`): bots fill the bottom of each shape and hover; grip ~0.09,
+  so no bonds and 68% fall during the hold.
+- **The even sample of the target, placed and frozen, slumps into a puddle for most shapes**, towers included
+  (bond strength 8). Hand test: a densely packed (hexagonal) tower 5 bots wide stands (top 10.0 -> 9.7, mostly contact
+  compression), 2 to 3 wide buckle unless bonds are strong (16 holds noticeably better than 8). An even sample at
+  1 unit of area per bot is looser than dense packing, so many neighbours are out of bond range and the bond network
+  is floppy. Standing requires compaction; that is something the swarm would have to find.
+- **Change (wave 4):** the controller can output a *commanded velocity*; a force-limited motor tracks it
+  (force = f_act tanh(k (v_cmd - v) / f_act), still momentum-conserving in the physical mode). Sweep: velocity vs
+  force control, learning rate 1e-3 / 3e-4 / 1e-4, air damping, batch 32, physical reach 1.15 / 2.0, no gravity,
+  curriculum, no hold loss. 12 runs, 1000 iterations each.

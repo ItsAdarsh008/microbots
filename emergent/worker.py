@@ -17,7 +17,12 @@ while True:
         os.rename(f"{Q}/pending/{j}", f"{Q}/running/{j}")
     except FileNotFoundError:
         continue
-    r = subprocess.run([sys.executable, "train.py", f"{Q}/running/{j}"], cwd=os.path.expanduser("~/emergent"),
+    import json
+    try:
+        script = "rl.py" if json.load(open(f"{Q}/running/{j}")).get("algo") == "rl" else "train.py"
+    except Exception:
+        script = "train.py"
+    r = subprocess.run([sys.executable, script, f"{Q}/running/{j}"], cwd=os.path.expanduser("~/emergent"),
                        stdout=open(f"{Q}/running/{j}.out", "w"), stderr=subprocess.STDOUT)
     dest = "done" if r.returncode == 0 else "failed"
     os.rename(f"{Q}/running/{j}", f"{Q}/{dest}/{j}")

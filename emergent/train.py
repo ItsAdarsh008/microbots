@@ -74,7 +74,7 @@ def tame(t, cfg):
     return t
 
 
-def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, mix=1.0, grad=True, alive=None, record=False, damage=None, hold=None, dense=None):
+def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, mix=1.0, g_hold=None, grad=True, alive=None, record=False, damage=None, hold=None, dense=None):
     """Build for T control steps (K physics steps each), then hold passively (motors off, grips kept).
     Returns dict with x at end of build, x at end of hold, grip, mean squared action, and frames if record."""
     B, N, _ = x0.shape
@@ -87,6 +87,7 @@ def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, mix=1.0, grad=True, alive=None,
     frames = []
     asq = 0.0
     pre = 0.0
+    g_hold = torch.tensor(float(g_scale if g_hold is None else g_hold), device=dev)
     g_scale = torch.tensor(float(g_scale), device=dev)
     mix = torch.tensor(float(mix), device=dev)
 
@@ -101,7 +102,7 @@ def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, mix=1.0, grad=True, alive=None,
 
     def passive(x, v, grip, alive):
         for _ in range(cfg["K"]):
-            x, v = ph.step(x, v, None, grip, alive, g_scale)
+            x, v = ph.step(x, v, None, grip, alive, g_hold)
         return x, v
 
     grip = torch.ones(B, N, device=dev)
@@ -206,13 +207,14 @@ def evaluate(pol, ph, data, cfg, split, n=None, dev="cuda", bs=32, seed=123, wit
         for f, vv in zip(fam.tolist(), val.tolist()):
             per_fam.setdefault(data.families[f], {}).setdefault(k, []).append(vv)
 
+    gh = cfg["g"] if cfg["g_eval"] is None else cfg["g_eval"]
     for i in range(0, n, bs):
         sl = slice(i, min(n, i + bs))
         maps, Q, occ, fam = S["maps"][sl].float(), S["pts"][sl], S["occ"][sl], S["fam"][sl]
         B = Q.shape[0]
         x0 = pile(B, data.N, W=data.W, jitter=0.05, offset=0.0, gen=gen).to(dev)
         with torch.no_grad():
-            r = rollout(pol, ph, maps, x0, cfg, grad=False, hold=cfg["hold_eval"])
+            r = rollout(pol, ph, maps, x0, cfg, g_scale=cfg["g"], g_hold=gh, grad=False, hold=cfg["hold_eval"])
             al = r["alive"]
             fb, fh = footprint(r["xb"], al, data.R, data.W), footprint(r["xh"], al, data.R, data.W)
             add(acc, "iou_build", iou(fb, occ), fam)
@@ -233,7 +235,7 @@ def evaluate(pol, ph, data, cfg, split, n=None, dev="cuda", bs=32, seed=123, wit
                 add(acc, "base_ceiling_iou", iou(footprint(Q, ones, data.R, data.W), occ), fam)
                 xq, vq = Q.clone(), torch.zeros_like(Q)
                 for _ in range(cfg["hold_eval"]):
-                    xq, vq = ph.step(xq, vq, None, ones, ones)
+                    xq, vq = ph.step(xq, vq, None, ones, ones, gh)
                 add(acc, "base_ceilfreeze_iou_hold", iou(footprint(xq, ones, data.R, data.W), occ), fam)
                 dropq = Q[..., 1] - xq[..., 1]
                 add(acc, "base_ceilfreeze_sag", dropq.mean(1), fam)
@@ -271,11 +273,12 @@ def draw(pol, ph, data, cfg, path_png, path_gif, dev):
         maps, Q, occ = S["maps"][idx].float(), S["pts"][idx], S["occ"][idx]
         x0 = pile(len(idx), data.N, W=data.W, gen=torch.Generator().manual_seed(7)).to(dev)
         with torch.no_grad():
-            r = rollout(pol, ph, maps, x0, cfg, grad=False, record=(ri == 0), hold=cfg["hold_eval"])
+            gh = cfg["g"] if cfg["g_eval"] is None else cfg["g_eval"]
+            r = rollout(pol, ph, maps, x0, cfg, g_scale=cfg["g"], g_hold=gh, grad=False, record=(ri == 0), hold=cfg["hold_eval"])
             ones = torch.ones_like(Q[..., 0])
             xq, vq = Q.clone(), torch.zeros_like(Q)
             for _ in range(cfg["hold_eval"]):
-                xq, vq = ph.step(xq, vq, None, ones, ones)
+                xq, vq = ph.step(xq, vq, None, ones, ones, gh)
         if ri == 0:
             gif_src = (r["frames"], occ.cpu())
         A = ph.bonds(r["xh"], r["grip"], r["alive"]).cpu()
@@ -331,9 +334,9 @@ def main(path):
         log.write(s + "\n"); log.flush()
 
     data = Data(cfg["data"], dev, cfg["families"])
-    ph = Physics(g=cfg["g"], f_bond=cfg["f_bond"], f_act=cfg["f_act"], mu=cfg["mu"], reaction=cfg["reaction"],
+    ph = Physics(g=1.0, f_bond=cfg["f_bond"], f_act=cfg["f_act"], mu=cfg["mu"], reaction=cfg["reaction"],
                  W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"], r_touch=cfg["r_touch"])
-    ph_eval = Physics(g=cfg["g"] if cfg["g_eval"] is None else cfg["g_eval"], f_bond=cfg["f_bond"], f_act=cfg["f_act"],
+    ph_eval = Physics(g=1.0, f_bond=cfg["f_bond"], f_act=cfg["f_act"],
                       mu=cfg["mu"], reaction=cfg["reaction"], W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"], r_touch=cfg["r_touch"])
     pol = Policy(H=cfg["H"], M=cfg["M"], rounds=cfg["rounds"], r_sense=cfg["r_sense"], f_act=cfg["f_act"],
                  use_h=cfg["use_h"], see_v=cfg["see_v"], grip_bias=cfg["grip_bias"]).to(dev)
@@ -358,6 +361,11 @@ def main(path):
     gen = torch.Generator().manual_seed(cfg["seed"] + 1000 * start)
     t0 = time.time()
     bad = 0
+    eval_only = "--eval-only" in sys.argv
+    if eval_only:
+        ema.load_state_dict(torch.load(os.path.join(out, "ema.pt"), map_location=dev)["ema"])
+        start = cfg["iters"]
+        P("eval only (re-scoring the saved EMA weights with the current evaluation code)")
     for it in range(start, cfg["iters"]):
         idx = torch.randint(0, len(T["fam"]), (cfg["B"],), generator=gen).to(dev)
         maps, Q = T["maps"][idx].float(), T["pts"][idx]
@@ -365,7 +373,7 @@ def main(path):
             Q = T["pts"][torch.randint(0, len(T["fam"]), (cfg["B"],), generator=gen).to(dev)]
         off = (torch.rand(1, generator=gen).item() * 2 - 1) * cfg["offset"]
         x0 = pile(cfg["B"], data.N, W=data.W, offset=off, gen=gen).to(dev)
-        gs = min(1.0, (it + 1) / cfg["g_warm"]) if cfg["g_warm"] else 1.0
+        gs = cfg["g"] * (min(1.0, (it + 1) / cfg["g_warm"]) if cfg["g_warm"] else 1.0)
         damage = None
         if cfg["damage_p"] > 0 and torch.rand(1, generator=gen).item() < cfg["damage_p"]:
             c = Q[torch.arange(cfg["B"], device=dev), torch.randint(0, data.N, (cfg["B"],), generator=gen).to(dev)]
@@ -407,7 +415,8 @@ def main(path):
         if (it + 1) % cfg["eval_every"] == 0 and it + 1 < cfg["iters"]:
             m, _ = evaluate(run_ema, ph_eval, data, cfg, "val", n=64, dev=dev)
             P(f"eval it {it + 1}: " + " ".join(f"{k} {v:.3f}" for k, v in m.items() if not k.endswith("_ci")))
-    torch.save(dict(ema=ema.state_dict(), cfg=cfg), os.path.join(out, "ema.pt"))
+    if not eval_only:
+        torch.save(dict(ema=ema.state_dict(), cfg=cfg), os.path.join(out, "ema.pt"))
     res = dict(config=cfg, commit=open("GIT_COMMIT").read().strip() if os.path.exists("GIT_COMMIT") else None,
                train_seconds=time.time() - t0, metrics={}, per_family={})
     for split in ("val", "held"):
@@ -426,4 +435,4 @@ def main(path):
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    main([a for a in sys.argv[1:] if not a.startswith("--")][0])

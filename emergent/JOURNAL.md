@@ -113,3 +113,9 @@ Validation IoU of the averaged (EMA) controller at iteration 500 (64 shapes; pil
   the gradient, not a structural insight.
 - **Next:** PPO (`rl.py`) on the same controller (stochastic actions, reward = decrease of shape loss per step plus
   the hold result), on drone (sanity check) and physical forces; replaces the four dead gradient runs.
+
+**Correction (same tick):** the four "PPO" runs queued in tick 5 did not run PPO. The workers on the boxes had been
+started before `worker.py` learned to route `algo: rl` configs to `rl.py`, so they ran the gradient trainer with its
+defaults (learning rate 1e-3, force bound unused options ignored). That is why two of them gave identical numbers.
+Their results are discarded; the PPO runs were restarted directly with `rl.py`. Lesson: a long-running worker keeps
+the code it started with; restart workers between waves when the worker itself changes.

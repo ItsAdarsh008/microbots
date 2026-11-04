@@ -1,0 +1,9 @@
+{
+ "iters": 1000,
+ "eval_every": 250,
+ "grad_decay": 0.95,
+ "grad_clip_step": 10.0,
+ "dense_w": 1.0,
+ "reaction": "external",
+ "name": "t_d95_ext"
+}

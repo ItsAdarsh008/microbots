@@ -20,7 +20,7 @@ DEF = dict(data="data/world128.npz", iters=3000, B=16, lr=1e-3, T=64, K=4, hold=
            g=1.0, g_warm=0, f_bond=8.0, f_act=3.0, mu=0.5, reaction="internal", r_sense=3.0, H=32, M=96, rounds=2,
            use_h=True, see_v=True, out_w=1.0, act_w=0.0, seed=0, offset=0.0, shuffle_targets=False, eval_every=500,
            ema=0.995, clip=1.0, n_eval=192, k_c=200.0, r_bond=1.25, r_hold=1.15, damage_p=0.0, damage_r=2.5,
-           grip_fixed=None, families=None, g_eval=None, compile=True)
+           grip_fixed=None, families=None, g_eval=None, compile=True, grad_decay=1.0, grad_clip_step=0.0, dense_w=0.0)
 
 
 def load_cfg(path):
@@ -50,7 +50,31 @@ class Data:
         self.N = self.sets["train"]["pts"].shape[1]
 
 
-def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=False, damage=None, hold=None):
+class _ClipGrad(torch.autograd.Function):
+    """Identity forward; backward clamps the gradient norm per sample to at most m."""
+    @staticmethod
+    def forward(ctx, x, m):
+        ctx.m = m
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, g):
+        n = g.flatten(1).norm(dim=1).clamp(min=1e-12)
+        s = torch.clamp(ctx.m / n, max=1.0).view(-1, *([1] * (g.dim() - 1)))
+        g = torch.nan_to_num(g * s, nan=0.0, posinf=0.0, neginf=0.0)
+        return g, None
+
+
+def tame(t, cfg):
+    """Gradient decay backward in time (forward unchanged) and per-step gradient clamp."""
+    if cfg["grad_decay"] < 1.0:
+        t = cfg["grad_decay"] * t + (1 - cfg["grad_decay"]) * t.detach()
+    if cfg["grad_clip_step"] > 0:
+        t = _ClipGrad.apply(t, cfg["grad_clip_step"])
+    return t
+
+
+def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=False, damage=None, hold=None, dense=None):
     """Build for T control steps (K physics steps each), then hold passively (motors off, grips kept).
     Returns dict with x at end of build, x at end of hold, grip, mean squared action, and frames if record."""
     B, N, _ = x0.shape
@@ -91,12 +115,17 @@ def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=F
         else:
             x, v, h, grip, aq = ctrl(x, v, h, alive)
         asq = asq + aq / cfg["T"]
+        if grad:
+            x, v, h = tame(x, cfg), tame(v, cfg), tame(h, cfg)
+            if dense is not None:
+                dense.append(x)
         if record:
             frames.append((x.detach().cpu(), grip.detach().cpu()))
     xb = x
     for t in range(hold // cfg["K"]):
         if grad:
             x, v = checkpoint(passive, x, v, grip, alive, use_reentrant=False)
+            x, v = tame(x, cfg), tame(v, cfg)
         else:
             x, v = passive(x, v, grip, alive)
         if record and t % 2 == 0:
@@ -338,10 +367,17 @@ def main(path):
         if cfg["damage_p"] > 0 and torch.rand(1, generator=gen).item() < cfg["damage_p"]:
             c = Q[torch.arange(cfg["B"], device=dev), torch.randint(0, data.N, (cfg["B"],), generator=gen).to(dev)]
             damage = (c, cfg["damage_r"])   # at T/2, remove the bots within damage_r of a random target point
-        r = rollout(run_pol, ph, maps, x0, cfg, g_scale=gs, grad=True, damage=damage)
+        dense = [] if cfg["dense_w"] > 0 else None
+        r = rollout(run_pol, ph, maps, x0, cfg, g_scale=gs, grad=True, damage=damage, dense=dense)
         lb, pb = shape_loss(r["xb"], r["alive"], Q, maps, data.W, cfg["out_w"])
+        if dense:
+            # shape loss along the way, weighted towards the end (gives short-horizon gradients a target)
+            ws = [(t + 1) / len(dense) for t in range(len(dense))]
+            ld = sum(w * shape_loss(xt, r["alive"], Q, maps, data.W, cfg["out_w"])[0] for w, xt in zip(ws, dense)) / sum(ws)
+        else:
+            ld = 0.0
         lh, ph_ = shape_loss(r["xh"], r["alive"], Q, maps, data.W, cfg["out_w"])
-        loss = lb + cfg["hold_w"] * lh + cfg["act_w"] * r["asq"]
+        loss = lb + cfg["hold_w"] * lh + cfg["act_w"] * r["asq"] + cfg["dense_w"] * ld
         opt.zero_grad(set_to_none=True)
         loss.backward()
         gn = torch.nn.utils.clip_grad_norm_(pol.parameters(), cfg["clip"])

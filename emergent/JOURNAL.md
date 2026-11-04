@@ -89,3 +89,27 @@ Newest last. Every number names its seeds; "1 seed" is not a finding.
   (force = f_act tanh(k (v_cmd - v) / f_act), still momentum-conserving in the physical mode). Sweep: velocity vs
   force control, learning rate 1e-3 / 3e-4 / 1e-4, air damping, batch 32, physical reach 1.15 / 2.0, no gravity,
   curriculum, no hold loss. 12 runs, 1000 iterations each.
+
+## 2026-11-04 tick 5: drone forces learn at a lower learning rate; physical forces under gravity do not (yet)
+
+Validation IoU of the averaged (EMA) controller at iteration 500 (64 shapes; pile 0.32; 1 seed each):
+
+| run | build | after hold |
+|---|---|---|
+| drone, force output, lr 3e-4, air damping 0.5 | **0.59** | 0.34 |
+| drone, force output, lr 3e-4 | 0.56 | 0.26 |
+| drone, force output, lr 1e-4 | 0.47 | 0.27 |
+| drone, velocity command, lr 3e-4 | 0.46 | 0.26 |
+| drone, velocity command, lr 1e-3 | 0.25 | 0.24 (diverged; stopped) |
+| physical (reach 2 or touch), velocity, lr 3e-4 / 1e-4, with or without hold loss | 0.31 to 0.32 | 0.29 to 0.32 (grip -> 0.97 to 1.00; three stopped) |
+| physical, reach 2, no gravity | 0.37 | 0.30 |
+| curriculum drone -> physical (78% physical at it 500) | 0.30 | 0.26 |
+
+- Lower learning rate (3e-4) fixes the divergence of the drone runs; force output learns faster than velocity commands.
+- Drone controllers never learn to grip (grip about 0.1): they hover the shape and fall in the hold. The hold loss
+  alone does not teach latching yet.
+- Every gradient run with momentum-conserving actuation under gravity sits at the pile. Grip goes to 1 **even with
+  no hold loss**: a fully bonded pile moves as one body that the bottom row can shove, which is a local optimum for
+  the gradient, not a structural insight.
+- **Next:** PPO (`rl.py`) on the same controller (stochastic actions, reward = decrease of shape loss per step plus
+  the hold result), on drone (sanity check) and physical forces; replaces the four dead gradient runs.

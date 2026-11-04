@@ -1,0 +1,13 @@
+{
+ "algo": "rl",
+ "updates": 600,
+ "eval_every": 100,
+ "envs": 32,
+ "grip_bias": -2.0,
+ "pre_w": 0.01,
+ "ctrl": "velocity",
+ "compile": true,
+ "r_touch": 2.0,
+ "log_std0": -1.0,
+ "name": "rl_int_rt2_std1"
+}

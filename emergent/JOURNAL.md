@@ -17,3 +17,16 @@ Newest last. Every number names its seeds; "1 seed" is not a finding.
   So simply filling the shape evenly is not enough; there is room for the swarm to find something structurally better.
 - Speed: `torch.compile` brings one training iteration (64 control steps x 4 physics steps + 100 hold steps,
   forward and backward) from 3.5 s to 0.9 s on an A100.
+
+## 2026-11-04 tick 2: wave 1 started; backprop through the physics explodes
+
+- Data: 3000 training shapes (500 per family), 192 validation, 192 held-out (mushroom, Y). Both boxes run 6 jobs
+  at once (about 2 s per iteration each, GPU at 99%).
+- Wave 1 (12 runs, plain backprop through all 356 physics steps) started. Within 150 iterations the gradient norm
+  reached 10^2 to 10^4 in most runs (clipped to 1 before the update), the training loss on the same batch sequence
+  was the same for six different configurations (no visible learning yet), and the drone-actuation control hit
+  non-finite gradients at iteration 120 and failed. Several runs saturate the force output (mean a^2 near the
+  maximum 9), where tanh passes almost no gradient.
+- **Fix under test (box 1, 1000 iterations each):** gradient decay backward in time (0.90 / 0.95 / 0.98 per control
+  step; forward pass unchanged), a per-step clamp on the gradient norm, and a shape loss at every control step
+  weighted towards the end. Box 2 keeps the six original wave-1 runs as the no-fix comparison.

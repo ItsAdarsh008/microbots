@@ -1,0 +1,6 @@
+{
+ "iters": 2500,
+ "eval_every": 500,
+ "reaction": "external",
+ "name": "e1_external"
+}

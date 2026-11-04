@@ -1,0 +1,6 @@
+{
+ "iters": 2500,
+ "eval_every": 500,
+ "seed": 1,
+ "name": "e1_base_s1"
+}

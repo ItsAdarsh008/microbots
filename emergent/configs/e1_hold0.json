@@ -1,0 +1,6 @@
+{
+ "iters": 2500,
+ "eval_every": 500,
+ "hold_w": 0.0,
+ "name": "e1_hold0"
+}

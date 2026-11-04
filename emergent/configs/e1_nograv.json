@@ -1,0 +1,7 @@
+{
+ "iters": 2500,
+ "eval_every": 500,
+ "g": 0.0,
+ "g_eval": 1.0,
+ "name": "e1_nograv"
+}

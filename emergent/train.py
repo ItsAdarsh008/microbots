@@ -62,6 +62,7 @@ def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=F
     W = ph.W
     frames = []
     asq = 0.0
+    g_scale = torch.tensor(float(g_scale), device=dev)
 
     def ctrl(x, v, h, alive):
         mf = map_features(maps, x, W)
@@ -305,6 +306,11 @@ def main(path):
     pol = Policy(H=cfg["H"], M=cfg["M"], rounds=cfg["rounds"], r_sense=cfg["r_sense"], f_act=cfg["f_act"],
                  use_h=cfg["use_h"], see_v=cfg["see_v"]).to(dev)
     ema = copy.deepcopy(pol)
+    run_pol, run_ema = pol, ema
+    if cfg["compile"]:
+        ph.step = torch.compile(ph.step, dynamic=False)
+        ph_eval.step = torch.compile(ph_eval.step, dynamic=False)
+        run_pol, run_ema = torch.compile(pol, dynamic=False), torch.compile(ema, dynamic=False)
     opt = torch.optim.Adam(pol.parameters(), lr=cfg["lr"])
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda i: min(1, (i + 1) / 100) * 0.5 * (1 + math.cos(math.pi * min(i, cfg["iters"]) / cfg["iters"])))
     start = 0
@@ -332,7 +338,7 @@ def main(path):
         if cfg["damage_p"] > 0 and torch.rand(1, generator=gen).item() < cfg["damage_p"]:
             c = Q[torch.arange(cfg["B"], device=dev), torch.randint(0, data.N, (cfg["B"],), generator=gen).to(dev)]
             damage = (c, cfg["damage_r"])   # at T/2, remove the bots within damage_r of a random target point
-        r = rollout(pol, ph, maps, x0, cfg, g_scale=gs, grad=True, damage=damage)
+        r = rollout(run_pol, ph, maps, x0, cfg, g_scale=gs, grad=True, damage=damage)
         lb, pb = shape_loss(r["xb"], r["alive"], Q, maps, data.W, cfg["out_w"])
         lh, ph_ = shape_loss(r["xh"], r["alive"], Q, maps, data.W, cfg["out_w"])
         loss = lb + cfg["hold_w"] * lh + cfg["act_w"] * r["asq"]
@@ -359,18 +365,18 @@ def main(path):
             torch.save(dict(pol=pol.state_dict(), ema=ema.state_dict(), opt=opt.state_dict(), sched=sched.state_dict(), it=it + 1), tmp)
             os.replace(tmp, ck)
         if (it + 1) % cfg["eval_every"] == 0 and it + 1 < cfg["iters"]:
-            m, _ = evaluate(ema, ph_eval, data, cfg, "val", n=64, dev=dev)
+            m, _ = evaluate(run_ema, ph_eval, data, cfg, "val", n=64, dev=dev)
             P(f"eval it {it + 1}: " + " ".join(f"{k} {v:.3f}" for k, v in m.items() if not k.endswith("_ci")))
     torch.save(dict(ema=ema.state_dict(), cfg=cfg), os.path.join(out, "ema.pt"))
     res = dict(config=cfg, commit=open("GIT_COMMIT").read().strip() if os.path.exists("GIT_COMMIT") else None,
                train_seconds=time.time() - t0, metrics={}, per_family={})
     for split in ("val", "held"):
-        m, pf = evaluate(ema, ph_eval, data, cfg, split, dev=dev, with_baselines=True)
+        m, pf = evaluate(run_ema, ph_eval, data, cfg, split, dev=dev, with_baselines=True)
         res["metrics"][split] = m
         res["per_family"][split] = pf
         P(f"final {split}: " + " ".join(f"{k} {v:.3f}" for k, v in m.items() if not k.endswith("_ci")))
     try:
-        draw(ema, ph_eval, data, cfg, os.path.join(out, "samples.png"), os.path.join(out, "traj.gif"), dev)
+        draw(run_ema, ph_eval, data, cfg, os.path.join(out, "samples.png"), os.path.join(out, "traj.gif"), dev)
     except Exception as e:  # pictures must not lose the result
         P(f"draw failed: {e!r}")
     tmp = os.path.join(out, f"result.json.tmp{os.getpid()}")

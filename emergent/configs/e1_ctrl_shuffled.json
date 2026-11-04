@@ -1,0 +1,6 @@
+{
+ "iters": 2500,
+ "eval_every": 500,
+ "shuffle_targets": true,
+ "name": "e1_ctrl_shuffled"
+}

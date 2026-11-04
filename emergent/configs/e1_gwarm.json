@@ -1,0 +1,6 @@
+{
+ "iters": 2500,
+ "eval_every": 500,
+ "g_warm": 1000,
+ "name": "e1_gwarm"
+}

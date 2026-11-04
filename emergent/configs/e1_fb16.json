@@ -1,0 +1,6 @@
+{
+ "iters": 2500,
+ "eval_every": 500,
+ "f_bond": 16.0,
+ "name": "e1_fb16"
+}

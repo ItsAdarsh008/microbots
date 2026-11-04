@@ -1,0 +1,6 @@
+{
+ "iters": 2500,
+ "eval_every": 500,
+ "use_h": false,
+ "name": "e1_nomem"
+}

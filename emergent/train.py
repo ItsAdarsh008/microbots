@@ -20,7 +20,7 @@ DEF = dict(data="data/world128.npz", iters=3000, B=16, lr=1e-3, T=64, K=4, hold=
            g=1.0, g_warm=0, f_bond=8.0, f_act=3.0, mu=0.5, reaction="internal", r_sense=3.0, H=32, M=96, rounds=2,
            use_h=True, see_v=True, out_w=1.0, act_w=0.0, seed=0, offset=0.0, shuffle_targets=False, eval_every=500,
            ema=0.995, clip=1.0, n_eval=192, k_c=200.0, r_bond=1.25, r_hold=1.15, damage_p=0.0, damage_r=2.5,
-           grip_fixed=None, families=None, g_eval=None, compile=True, grad_decay=1.0, grad_clip_step=0.0, dense_w=0.0)
+           grip_fixed=None, families=None, g_eval=None, compile=True, grad_decay=1.0, grad_clip_step=0.0, dense_w=0.0, grip_bias=-2.0, pre_w=0.0, r_touch=1.15)
 
 
 def load_cfg(path):
@@ -86,16 +86,17 @@ def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=F
     W = ph.W
     frames = []
     asq = 0.0
+    pre = 0.0
     g_scale = torch.tensor(float(g_scale), device=dev)
 
     def ctrl(x, v, h, alive):
         mf = map_features(maps, x, W)
-        a, grip, h = pol(x, v, h, mf, alive)
+        a, grip, h, pre = pol(x, v, h, mf, alive)
         if cfg["grip_fixed"] is not None:
             grip = torch.full_like(grip, float(cfg["grip_fixed"]))
         for _ in range(cfg["K"]):
             x, v = ph.step(x, v, a, grip, alive, g_scale)
-        return x, v, h, grip, (a * a).mean()
+        return x, v, h, grip, (a * a).mean(), pre
 
     def passive(x, v, grip, alive):
         for _ in range(cfg["K"]):
@@ -111,10 +112,11 @@ def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=F
             x = torch.where(alive[..., None] > 0, x, torch.full_like(x, -50.0))
             v = v * alive[..., None]
         if grad:
-            x, v, h, grip, aq = checkpoint(ctrl, x, v, h, alive, use_reentrant=False)
+            x, v, h, grip, aq, pq = checkpoint(ctrl, x, v, h, alive, use_reentrant=False)
         else:
-            x, v, h, grip, aq = ctrl(x, v, h, alive)
+            x, v, h, grip, aq, pq = ctrl(x, v, h, alive)
         asq = asq + aq / cfg["T"]
+        pre = pre + pq / cfg["T"]
         if grad:
             x, v, h = tame(x, cfg), tame(v, cfg), tame(h, cfg)
             if dense is not None:
@@ -130,7 +132,7 @@ def rollout(pol, ph, maps, x0, cfg, g_scale=1.0, grad=True, alive=None, record=F
             x, v = passive(x, v, grip, alive)
         if record and t % 2 == 0:
             frames.append((x.detach().cpu(), grip.detach().cpu()))
-    return dict(xb=xb, xh=x, grip=grip, asq=asq, frames=frames, alive=alive)
+    return dict(xb=xb, xh=x, grip=grip, asq=asq, pre=pre, frames=frames, alive=alive)
 
 
 def shape_loss(x, alive, Q, maps, W, out_w):
@@ -329,11 +331,11 @@ def main(path):
 
     data = Data(cfg["data"], dev, cfg["families"])
     ph = Physics(g=cfg["g"], f_bond=cfg["f_bond"], f_act=cfg["f_act"], mu=cfg["mu"], reaction=cfg["reaction"],
-                 W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"])
+                 W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"], r_touch=cfg["r_touch"])
     ph_eval = Physics(g=cfg["g"] if cfg["g_eval"] is None else cfg["g_eval"], f_bond=cfg["f_bond"], f_act=cfg["f_act"],
-                      mu=cfg["mu"], reaction=cfg["reaction"], W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"])
+                      mu=cfg["mu"], reaction=cfg["reaction"], W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"], r_touch=cfg["r_touch"])
     pol = Policy(H=cfg["H"], M=cfg["M"], rounds=cfg["rounds"], r_sense=cfg["r_sense"], f_act=cfg["f_act"],
-                 use_h=cfg["use_h"], see_v=cfg["see_v"]).to(dev)
+                 use_h=cfg["use_h"], see_v=cfg["see_v"], grip_bias=cfg["grip_bias"]).to(dev)
     ema = copy.deepcopy(pol)
     run_pol, run_ema = pol, ema
     if cfg["compile"]:
@@ -377,7 +379,7 @@ def main(path):
         else:
             ld = 0.0
         lh, ph_ = shape_loss(r["xh"], r["alive"], Q, maps, data.W, cfg["out_w"])
-        loss = lb + cfg["hold_w"] * lh + cfg["act_w"] * r["asq"] + cfg["dense_w"] * ld
+        loss = lb + cfg["hold_w"] * lh + cfg["act_w"] * r["asq"] + cfg["dense_w"] * ld + cfg["pre_w"] * r["pre"]
         opt.zero_grad(set_to_none=True)
         loss.backward()
         gn = torch.nn.utils.clip_grad_norm_(pol.parameters(), cfg["clip"])

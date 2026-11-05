@@ -170,3 +170,27 @@ held-out shape, every grip on, 10 time units of passive hold.)
   passively with motors off: does training find arrangements and latching that stand, without any rule about
   rigidity, triangulation or bending? Bond strength 16 / 64 / unbreakable, hold weight 0 / 1 / 3, no-gravity
   control, second seeds.
+
+## 2026-11-05 tick 8: structure wave at iteration 750; PPO stopped; always-latched wave
+
+Validation IoU (EMA controller, 64 shapes; build / after passive hold / after hold with every grip forced on;
+pile about 0.32; stiff physics; drone build forces; 1 seed unless noted):
+
+| run | it 750 build | hold | hold, all grips on |
+|---|---|---|---|
+| bond 16, no gravity in training (hold under gravity) | **0.46** | 0.33 | 0.39 |
+| bond 16, no hold loss | 0.41 | 0.35 | 0.36 |
+| bond 64 (seed 0 / seed 1) | 0.40 / 0.40 | 0.30 / 0.28 | 0.32 / 0.31 |
+| bond 16, hold weight 3 | 0.38 | 0.29 | 0.32 |
+| bond 16 (seed 0 / seed 1) | 0.26 / 0.27 | 0.26 / 0.27 | 0.27 / 0.27 (not learning) |
+| unbreakable | 0.33 | 0.33 | 0.33 (not learning) |
+
+- Learning under the stiff physics is slower and seed-dependent; three of eight runs have not left the pile.
+- **No run learned to grip** (grip stays about 0.12, zero bonds after the hold), and forcing every grip on adds
+  only 0.02 to 0.06: the arrangements the controllers make are too loose for latching to matter, so there is no
+  signal to learn it. The structural question cannot be answered by these runs as set up.
+- PPO, all variants (team reward, per-bot reward, physical or drone): flat after 90 to 180 updates. Stopped.
+- **Wave 6: every bot always latched** (grip fixed at 1). Bots stick to what they touch; with bond strength above a
+  bot's push (4 or 16 vs 3) a misplaced bot cannot free itself, so assembly order matters (growth-like); with
+  strength 2 bots can pull free. Drone build, stiff physics, passive hold. Bond 2 / 4 / 16, no-gravity control,
+  second seed, hold weight 3.

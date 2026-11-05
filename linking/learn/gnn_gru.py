@@ -358,8 +358,10 @@ def train(p, opt, builds, epochs, memory, log, batch=4, lr=1e-3, stage="imitatio
 class Driver:
     """The trained network driving every bot, with a GRU state per bot."""
 
-    def __init__(self, p, memory=True, seed=0):
-        self.p, self.memory = p, memory
+    def __init__(self, p, memory=True, seed=0, go_cut=None):
+        # go_cut=None: move with the probability the network gives. A number: move only if
+        # that probability is above it (no dice, so a bot told "probably stay" never drifts).
+        self.p, self.memory, self.go_cut = p, memory, go_cut
         self.rng = np.random.default_rng(seed)
         self.fwd = jax.jit(lambda p, h, x, s, r, o: step_fn(p, h, x, s, r, o, memory))
 
@@ -378,7 +380,8 @@ class Driver:
             b = sw_.id_at[pcell]
             # move with the probability the network gives (a hard cut-off makes whole
             # groups freeze together when they're all just under it)
-            if not slots or self.rng.random() > 1 / (1 + np.exp(-go[b])):
+            pgo = 1 / (1 + np.exp(-go[b]))
+            if not slots or (pgo <= self.go_cut if self.go_cut is not None else self.rng.random() > pgo):
                 return []                              # stay put this step
             options = list(slots)
             s = logits[b, options]
@@ -389,12 +392,12 @@ class Driver:
         E.step(sw, chooser)
 
 
-def evaluate(p, memory, mult, shapes=("sheet", "arch", "tower"), seeds=range(100, 105), who="network"):
+def evaluate(p, memory, mult, shapes=("sheet", "arch", "tower"), seeds=range(100, 105), who="network", go_cut=0.5):
     """Build each shape and send the spares home. who="teacher" runs the hand-written rules instead."""
     rows = []
     for shape in shapes:
         for seed in seeds:
-            driver = None if who == "teacher" else Driver(p, memory, seed)
+            driver = None if who == "teacher" else Driver(p, memory, seed, go_cut)
             _, st = rollout(shape, seed, mult, driver)
             st.update(shape=shape, seed=seed, who=who)
             rows.append(st)

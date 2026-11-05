@@ -265,3 +265,14 @@ curves already understood. **Proposal:** move the structural question to the 3D 
 are already valid and never drop a bot, and replace the hand-written support planner and readiness rule with a
 learned local policy judged only by whether the structure stands under a strength-limited connector model. This
 overlaps the teammate's lattice-policy work on `main`, so it needs the owner's go-ahead.
+
+## 2026-11-05 tick 13: last two runs finished; both boxes idle
+
+| run (always latched, bond 2, 128 build steps) | val build | val hold | fallen | held-out hold | even sample frozen (val / held) |
+|---|---|---|---|---|---|
+| trained without gravity | 0.48 | 0.31 | 0.75 | 0.14 | 0.29 / 0.13 |
+| seed 1 (with gravity) | 0.53 | 0.32 | 0.77 | 0.14 | 0.29 / 0.13 |
+
+Same picture as wave 6: the structure stands about as well as the even sample frozen, three quarters of the bots
+fall, and the gravity-trained run cannot be told apart from the no-gravity control. Nothing queued; waiting for a
+decision on the next direction (tick 12).

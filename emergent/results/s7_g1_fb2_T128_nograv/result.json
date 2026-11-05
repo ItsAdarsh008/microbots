@@ -1,0 +1,380 @@
+{
+ "config": {
+  "data": "data/world128.npz",
+  "iters": 1500,
+  "B": 16,
+  "lr": 0.0003,
+  "T": 128,
+  "K": 8,
+  "hold": 200,
+  "hold_eval": 1000,
+  "hold_w": 1.0,
+  "g": 0.0,
+  "g_warm": 0,
+  "f_bond": 2.0,
+  "f_act": 3.0,
+  "mu": 0.5,
+  "reaction": "external",
+  "r_sense": 3.0,
+  "H": 32,
+  "M": 96,
+  "rounds": 2,
+  "use_h": true,
+  "see_v": true,
+  "out_w": 1.0,
+  "act_w": 0.0,
+  "seed": 0,
+  "offset": 0.0,
+  "shuffle_targets": false,
+  "eval_every": 250,
+  "ema": 0.995,
+  "clip": 1.0,
+  "n_eval": 192,
+  "k_c": 2000.0,
+  "r_bond": 1.25,
+  "r_hold": 1.15,
+  "damage_p": 0.0,
+  "damage_r": 2.5,
+  "grip_fixed": 1.0,
+  "families": null,
+  "g_eval": 1.0,
+  "compile": true,
+  "grad_decay": 1.0,
+  "grad_clip_step": 10.0,
+  "dense_w": 1.0,
+  "grip_bias": -2.0,
+  "pre_w": 0.01,
+  "r_touch": 1.15,
+  "mix_start": 0,
+  "mix_iters": 0,
+  "ctrl": "force",
+  "kp": 10.0,
+  "v_max": 2.0,
+  "air": 0.05,
+  "k_b": 2000.0,
+  "dt": 0.01,
+  "c_c": 3.0,
+  "c_b": 2.0,
+  "name": "s7_g1_fb2_T128_nograv"
+ },
+ "commit": "6bc6cca6981d7b6469b602ff431a6974c78b0625",
+ "train_seconds": 5485.431821346283,
+ "metrics": {
+  "val": {
+   "iou_build": 0.48020821809768677,
+   "iou_hold": 0.31006553769111633,
+   "cover_hold": 0.4613851010799408,
+   "sag": 4.608579158782959,
+   "fallen": 0.7483317255973816,
+   "grip": 1.0,
+   "iou_hold_gripall": 0.3419687747955322,
+   "deg_all": 4.491536617279053,
+   "tri_all": 3.2069091796875,
+   "deg_ov": 2.641829490661621,
+   "tri_ov": 1.9679616689682007,
+   "deg_sup": 4.655301570892334,
+   "tri_sup": 3.4185211658477783,
+   "base_pile_iou": 0.3567320704460144,
+   "base_ceiling_iou": 0.9179471731185913,
+   "base_ceilfreeze_iou_hold": 0.29376405477523804,
+   "base_ceilfreeze_sag": 4.732427597045898,
+   "base_ceilfreeze_fallen": 0.7344564199447632,
+   "base_ceilfreeze_deg_all": 4.1708984375,
+   "base_ceilfreeze_tri_all": 2.7978515625,
+   "base_ceilfreeze_deg_ov": 1.6551021337509155,
+   "base_ceilfreeze_tri_ov": 1.0561944246292114,
+   "base_ceilfreeze_deg_sup": 4.486148357391357,
+   "base_ceilfreeze_tri_sup": 3.0784518718719482,
+   "iou_build_ci": [
+    0.46410670429468154,
+    0.49738929942250254
+   ],
+   "iou_hold_ci": [
+    0.2842112645506859,
+    0.3367485195398331
+   ],
+   "base_ceilfreeze_iou_hold_ci": [
+    0.2714009389281273,
+    0.31591844856739043
+   ]
+  },
+  "val_raw": {
+   "iou_build": 0.44559794664382935,
+   "iou_hold": 0.2869730591773987,
+   "cover_hold": 0.4407958984375,
+   "sag": 5.190471649169922,
+   "fallen": 0.8098958730697632,
+   "grip": 1.0,
+   "iou_hold_gripall": 0.3195475935935974,
+   "deg_all": 4.450357913970947,
+   "tri_all": 3.092529296875,
+   "deg_ov": 2.5339467525482178,
+   "tri_ov": 1.806656837463379,
+   "deg_sup": 4.568302631378174,
+   "tri_sup": 3.2316455841064453,
+   "iou_build_ci": [
+    0.4308827079832554,
+    0.4614731721580029
+   ],
+   "iou_hold_ci": [
+    0.26390081346035005,
+    0.31075633242726325
+   ]
+  },
+  "held": {
+   "iou_build": 0.44011351466178894,
+   "iou_hold": 0.13869617879390717,
+   "cover_hold": 0.259765625,
+   "sag": 6.012799263000488,
+   "fallen": 0.8479411005973816,
+   "grip": 1.0,
+   "iou_hold_gripall": 0.15324002504348755,
+   "deg_all": 4.421712398529053,
+   "tri_all": 3.0224609375,
+   "deg_ov": 3.8077008724212646,
+   "tri_ov": 2.712954521179199,
+   "deg_sup": 4.55914306640625,
+   "tri_sup": 3.210630416870117,
+   "base_pile_iou": 0.15794911980628967,
+   "base_ceiling_iou": 0.9137287139892578,
+   "base_ceilfreeze_iou_hold": 0.1347639113664627,
+   "base_ceilfreeze_sag": 7.769402980804443,
+   "base_ceilfreeze_fallen": 0.8980306386947632,
+   "base_ceilfreeze_deg_all": 4.104085445404053,
+   "base_ceilfreeze_tri_all": 2.6712646484375,
+   "base_ceilfreeze_deg_ov": 1.4584966897964478,
+   "base_ceilfreeze_tri_ov": 0.7651415467262268,
+   "base_ceilfreeze_deg_sup": 4.466258525848389,
+   "base_ceilfreeze_tri_sup": 3.0183842182159424,
+   "iou_build_ci": [
+    0.42977941408753395,
+    0.4504028432071209
+   ],
+   "iou_hold_ci": [
+    0.13257506862282753,
+    0.1454595409333706
+   ],
+   "base_ceilfreeze_iou_hold_ci": [
+    0.1291578434407711,
+    0.140353786945343
+   ]
+  },
+  "held_raw": {
+   "iou_build": 0.4258790910243988,
+   "iou_hold": 0.13024276494979858,
+   "cover_hold": 0.2474365234375,
+   "sag": 6.413612365722656,
+   "fallen": 0.8987630605697632,
+   "grip": 1.0,
+   "iou_hold_gripall": 0.15215393900871277,
+   "deg_all": 4.430338382720947,
+   "tri_all": 3.0343017578125,
+   "deg_ov": 3.792797088623047,
+   "tri_ov": 2.5825841426849365,
+   "deg_sup": 4.498044490814209,
+   "tri_sup": 3.152332305908203,
+   "iou_build_ci": [
+    0.41588430628180506,
+    0.4345684312283993
+   ],
+   "iou_hold_ci": [
+    0.12328120600432158,
+    0.13785333521664142
+   ]
+  }
+ },
+ "per_family": {
+  "val": {
+   "tower": {
+    "iou_build": 0.5867103636264801,
+    "iou_hold": 0.45785380667075515,
+    "cover_hold": 0.632080078125,
+    "sag": 3.673793599009514,
+    "fallen": 0.649169921875,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.52683658991009,
+    "base_pile_iou": 0.4922786201350391,
+    "base_ceiling_iou": 0.9313901718705893,
+    "base_ceilfreeze_iou_hold": 0.4102107281796634,
+    "base_ceilfreeze_sag": 2.907039362937212,
+    "base_ceilfreeze_fallen": 0.657958984375
+   },
+   "tee": {
+    "iou_build": 0.44367619324475527,
+    "iou_hold": 0.1565352901816368,
+    "cover_hold": 0.2841796875,
+    "sag": 6.348054960370064,
+    "fallen": 0.801513671875,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.1828093184158206,
+    "base_pile_iou": 0.16284393751993775,
+    "base_ceiling_iou": 0.9140813145786524,
+    "base_ceilfreeze_iou_hold": 0.1553677940974012,
+    "base_ceilfreeze_sag": 7.876209080219269,
+    "base_ceilfreeze_fallen": 0.880615234375
+   },
+   "arch": {
+    "iou_build": 0.3762638426851481,
+    "iou_hold": 0.23659338778816164,
+    "cover_hold": 0.405029296875,
+    "sag": 4.892314024269581,
+    "fallen": 0.884033203125,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.25949649792164564,
+    "base_pile_iou": 0.30335507151903585,
+    "base_ceiling_iou": 0.911546379327774,
+    "base_ceilfreeze_iou_hold": 0.22689339006319642,
+    "base_ceilfreeze_sag": 4.231308132410049,
+    "base_ceilfreeze_fallen": 0.7958984375
+   },
+   "stairs": {
+    "iou_build": 0.5617772694677114,
+    "iou_hold": 0.5236700298264623,
+    "cover_hold": 0.677734375,
+    "sag": 2.9671056009829044,
+    "fallen": 0.582763671875,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.542316229082644,
+    "base_pile_iou": 0.6211440907791257,
+    "base_ceiling_iou": 0.9246425572782755,
+    "base_ceilfreeze_iou_hold": 0.5062743406742811,
+    "base_ceilfreeze_sag": 1.9261655625887215,
+    "base_ceilfreeze_fallen": 0.47314453125
+   },
+   "blocks": {
+    "iou_build": 0.45744057931005955,
+    "iou_hold": 0.36247848765924573,
+    "cover_hold": 0.538818359375,
+    "sag": 3.5400869101285934,
+    "fallen": 0.728759765625,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.3894293690100312,
+    "base_pile_iou": 0.4170013046823442,
+    "base_ceiling_iou": 0.9184376951307058,
+    "base_ceilfreeze_iou_hold": 0.33093082439154387,
+    "base_ceilfreeze_sag": 3.3665668815374374,
+    "base_ceilfreeze_fallen": 0.69921875
+   },
+   "tree": {
+    "iou_build": 0.4553807647898793,
+    "iou_hold": 0.12326217885129154,
+    "cover_hold": 0.23046875,
+    "sag": 6.230117067694664,
+    "fallen": 0.84375,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.15092460624873638,
+    "base_pile_iou": 0.1437691308092326,
+    "base_ceiling_iou": 0.9075848441570997,
+    "base_ceilfreeze_iou_hold": 0.1329071067739278,
+    "base_ceilfreeze_sag": 8.087274685502052,
+    "base_ceilfreeze_fallen": 0.89990234375
+   }
+  },
+  "val_raw": {
+   "tower": {
+    "iou_build": 0.5161642460152507,
+    "iou_hold": 0.3789498168043792,
+    "cover_hold": 0.5634765625,
+    "sag": 4.6170468255877495,
+    "fallen": 0.7705078125,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.4658275074325502
+   },
+   "tee": {
+    "iou_build": 0.4171006064862013,
+    "iou_hold": 0.14211971184704453,
+    "cover_hold": 0.26708984375,
+    "sag": 7.003149405121803,
+    "fallen": 0.861083984375,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.16971507319249213
+   },
+   "arch": {
+    "iou_build": 0.36443900503218174,
+    "iou_hold": 0.2273165648803115,
+    "cover_hold": 0.392578125,
+    "sag": 5.402334481477737,
+    "fallen": 0.892822265625,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.24074259027838707
+   },
+   "stairs": {
+    "iou_build": 0.5197660503908992,
+    "iou_hold": 0.49773747101426125,
+    "cover_hold": 0.660400390625,
+    "sag": 3.4191636256873608,
+    "fallen": 0.6474609375,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.5233803717419505
+   },
+   "blocks": {
+    "iou_build": 0.4048285079188645,
+    "iou_hold": 0.35372966644354165,
+    "cover_hold": 0.53125,
+    "sag": 4.068698450922966,
+    "fallen": 0.796630859375,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.36614569975063205
+   },
+   "tree": {
+    "iou_build": 0.4512892095372081,
+    "iou_hold": 0.12198512337636203,
+    "cover_hold": 0.22998046875,
+    "sag": 6.632438063621521,
+    "fallen": 0.890869140625,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.151474294019863
+   }
+  },
+  "held": {
+   "mushroom": {
+    "iou_build": 0.4316500484322508,
+    "iou_hold": 0.12927934812614694,
+    "cover_hold": 0.24967447916666666,
+    "sag": 5.784042211870353,
+    "fallen": 0.8365071614583334,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.15245234760611007,
+    "base_pile_iou": 0.15107460331637412,
+    "base_ceiling_iou": 0.9130840692669153,
+    "base_ceilfreeze_iou_hold": 0.12982528031958887,
+    "base_ceilfreeze_sag": 7.521605019768079,
+    "base_ceilfreeze_fallen": 0.90087890625
+   },
+   "yshape": {
+    "iou_build": 0.4485769836852948,
+    "iou_hold": 0.1481129985768348,
+    "cover_hold": 0.2698567708333333,
+    "sag": 6.2415555367867155,
+    "fallen": 0.859375,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.1540276958451917,
+    "base_pile_iou": 0.1648236368006716,
+    "base_ceiling_iou": 0.9143732363979021,
+    "base_ceilfreeze_iou_hold": 0.13970253143149117,
+    "base_ceilfreeze_sag": 8.01720062394937,
+    "base_ceilfreeze_fallen": 0.8951822916666666
+   }
+  },
+  "held_raw": {
+   "mushroom": {
+    "iou_build": 0.41522514338915545,
+    "iou_hold": 0.1228028525559542,
+    "cover_hold": 0.23958333333333334,
+    "sag": 6.060876786708832,
+    "fallen": 0.887451171875,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.15071643566867957
+   },
+   "yshape": {
+    "iou_build": 0.4365329748640458,
+    "iou_hold": 0.13768267852719873,
+    "cover_hold": 0.2552897135416667,
+    "sag": 6.766348501046498,
+    "fallen": 0.9100748697916666,
+    "grip": 1.0,
+    "iou_hold_gripall": 0.15359142003580928
+   }
+  }
+ }
+}

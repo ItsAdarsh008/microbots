@@ -391,3 +391,10 @@ double-spares falsework builder (generation 1300 checkpoint; zero weights for th
 clean cost over 200 generations. At the warm start (one generation): fill 0.91, propped 0.000 (with curing the target
 stands without its props once cured), but 36 props still left in the site: the cost should teach their removal.
 Running: cure + clean warm (seeds 0, 1), clean warm without curing (control), cure without clean (from scratch).
+
+Picture, L1 with double spares, final (`results/lat1_L1_spares100/samples.png`): the bridge deck stands on a
+**colonnade**, thin pillars of spares with one-cell gaps between them, not a solid block; the same under the T
+arms and under the held-out mushroom and tree caps (filled 1.00 for three of six held-out samples). At L = 1 a deck
+over a gap of up to 2 cells between pillars is held, so pillars with gaps are the economical support, and the swarm
+uses gap 1 (close to, not at, the sparsest spacing allowed). Nothing in the objective rewards using fewer bots;
+the spacing likely comes from bots climbing up the existing pillars.

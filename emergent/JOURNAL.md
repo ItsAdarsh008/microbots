@@ -227,3 +227,24 @@ References (validation): pile 0.36, even sample placed 0.92, even sample after h
   thin tops break off.
 - Next (running, wave 7): twice the build time (128 control steps), always-latched bots with bond 2 to 3 (weak
   enough to pull free with a push of 3), and learned grip with hold weight 3.
+
+## 2026-11-05 tick 11: always-latched wave (6) final: also negative
+
+All 192 validation shapes; EMA (raw weights in brackets). Even sample after hold at the same bond strength:
+0.29 (bond 2), 0.33 (bond 4), 0.44 (bond 16).
+
+| run (always latched, drone build, stiff physics) | build | hold [95% CI] | fallen | held-out hold |
+|---|---|---|---|---|
+| bond 2, hold weight 3 | 0.49 (0.51) | 0.34 [0.31, 0.36] (0.33) | 0.74 | 0.15 |
+| bond 2 | 0.47 (0.47) | 0.32 [0.29, 0.34] (0.32) | 0.79 | 0.11 |
+| bond 4 (seed 0 / 1) | 0.46 / 0.47 | 0.32 / 0.30 | 0.89 / 0.82 | 0.10 / 0.13 |
+| bond 4, trained without gravity | 0.43 | 0.29 [0.26, 0.31] | 0.85 | 0.08 |
+| bond 16 | 0.46 (0.44) | 0.33 [0.30, 0.36] | 0.87 | 0.13 |
+
+- Builds reach 0.43 to 0.51 but 70 to 90% of bots fall in the hold. At bond 2 the learned structure stands slightly
+  better than the even sample (0.32 to 0.34 vs 0.29; intervals overlap), at bond 4 equal, at bond 16 worse.
+- The no-gravity control is not distinguishable from the gravity-trained runs (0.29 vs 0.30 to 0.32), so nothing
+  gravity-specific has been learned. **No emergent structure in this setup.**
+- Summary of the emergent-physics track so far: shape formation is learnable with drone forces; with
+  momentum-conserving forces under gravity nothing leaves the pile (gradients and PPO); standing structure has not
+  emerged under any objective tried. Wave 7 (twice the build time) is the last planned wave of this design.

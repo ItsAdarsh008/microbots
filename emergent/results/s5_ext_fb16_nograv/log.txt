@@ -58,3 +58,13 @@ eval it 1250: iou_build 0.402 iou_hold 0.333 cover_hold 0.474 sag 1.293 fallen 0
 it 1250 loss 48.074 build 13.862 (t1 4.46 t2 5.79 out 3.61) hold 15.848 mix 1.00 asq 0.81 grip 0.10 gn 641.14 g 0.00 3.42s/it
 it 1275 loss 35.638 build 10.402 (t1 2.84 t2 5.40 out 2.15) hold 10.979 mix 1.00 asq 0.77 grip 0.10 gn 620.25 g 0.00 3.42s/it
 it 1300 loss 41.882 build 10.935 (t1 3.21 t2 5.22 out 2.51) hold 12.991 mix 1.00 asq 0.80 grip 0.10 gn 780.15 g 0.00 3.41s/it
+it 1325 loss 20.557 build 5.143 (t1 1.80 t2 2.06 out 1.28) hold 7.006 mix 1.00 asq 0.75 grip 0.10 gn 928.54 g 0.00 3.40s/it
+it 1350 loss 34.627 build 9.236 (t1 2.86 t2 4.16 out 2.21) hold 11.286 mix 1.00 asq 0.76 grip 0.10 gn 1463.00 g 0.00 3.39s/it
+it 1375 loss 41.891 build 11.723 (t1 2.91 t2 6.60 out 2.21) hold 12.710 mix 1.00 asq 0.76 grip 0.10 gn 1143.42 g 0.00 3.39s/it
+it 1400 loss 33.883 build 8.479 (t1 2.87 t2 3.43 out 2.18) hold 10.341 mix 1.00 asq 0.78 grip 0.10 gn 1355.56 g 0.00 3.38s/it
+it 1425 loss 22.644 build 6.499 (t1 2.37 t2 2.38 out 1.75) hold 7.152 mix 1.00 asq 0.78 grip 0.10 gn 852.02 g 0.00 3.37s/it
+it 1450 loss 36.540 build 9.663 (t1 2.74 t2 4.83 out 2.10) hold 10.497 mix 1.00 asq 0.80 grip 0.10 gn 809.75 g 0.00 3.37s/it
+it 1475 loss 21.450 build 5.234 (t1 1.57 t2 2.59 out 1.08) hold 8.647 mix 1.00 asq 0.78 grip 0.10 gn 1537.18 g 0.00 3.36s/it
+final val: iou_build 0.424 iou_hold 0.348 cover_hold 0.489 sag 1.265 fallen 0.265 grip 0.105 iou_hold_gripall 0.399 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000 base_pile_iou 0.357 base_ceiling_iou 0.918 base_ceilfreeze_iou_hold 0.435 base_ceilfreeze_sag 3.279 base_ceilfreeze_fallen 0.552 base_ceilfreeze_deg_all 4.631 base_ceilfreeze_tri_all 3.826 base_ceilfreeze_deg_ov 2.837 base_ceilfreeze_tri_ov 2.282 base_ceilfreeze_deg_sup 4.910 base_ceilfreeze_tri_sup 4.166
+final held: iou_build 0.282 iou_hold 0.174 cover_hold 0.304 sag 1.932 fallen 0.421 grip 0.106 iou_hold_gripall 0.242 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000 base_pile_iou 0.158 base_ceiling_iou 0.914 base_ceilfreeze_iou_hold 0.208 base_ceilfreeze_sag 5.876 base_ceilfreeze_fallen 0.855 base_ceilfreeze_deg_all 4.599 base_ceilfreeze_tri_all 3.807 base_ceilfreeze_deg_ov 3.948 base_ceilfreeze_tri_ov 3.038 base_ceilfreeze_deg_sup 5.045 base_ceilfreeze_tri_sup 4.374
+done

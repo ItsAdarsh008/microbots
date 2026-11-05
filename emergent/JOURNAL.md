@@ -204,3 +204,26 @@ breaking free is all-or-nothing, and an average of weights pushes slightly too w
 Re-checked the runs called "not learning" earlier with raw weights: stiff bond 16 (seeds 0 and 1), unbreakable,
 physical reach 2, physical curriculum: raw equals EMA within 0.01, so those verdicts stand.
 From now on every in-training and final evaluation reports both (`eval-raw`, `val_raw`, `held_raw`).
+
+## 2026-11-05 tick 10: structure wave (5) final: the learned swarms do not stand better than the pile
+
+Final, all 192 validation / 192 held-out shapes, EMA weights (raw weights re-checked equal for the stuck runs, tick 9).
+References (validation): pile 0.36, even sample placed 0.92, even sample after hold 0.44 (bond 16) / 0.53 (bond 64) / 0.54 (unbreakable).
+
+| run (drone build, stiff physics, passive hold) | build | hold [95% CI] | hold, all grips on | fallen | held-out build / hold |
+|---|---|---|---|---|---|
+| bond 16, hold weight 3 | 0.51 | 0.33 [0.31, 0.36] | 0.41 | 0.54 | 0.39 / 0.17 |
+| bond 16, no hold loss | 0.49 | 0.34 [0.31, 0.37] | 0.40 | 0.64 | 0.35 / 0.13 |
+| bond 64 (seed 0 / 1) | 0.46 / 0.44 | 0.33 / 0.29 | 0.35 / 0.32 | 0.71 / 0.71 | 0.35 / 0.11, 0.31 / 0.10 |
+| bond 16, trained without gravity | 0.42 | 0.35 [0.32, 0.37] | 0.40 | 0.27 | 0.28 / 0.17 |
+| unbreakable | 0.35 | 0.35 | 0.35 | 0.00 | 0.16 / 0.16 (never left the pile) |
+| bond 16 (seed 0 / 1) | 0.25 / 0.29 | 0.26 / 0.29 | | 0.00 | (never left the pile) |
+
+- **Negative result.** After the hold every learned swarm sits at the pile level (0.26 to 0.35) and below the even
+  sample placed and frozen (0.44 to 0.54). Zero bonds in every run (grip about 0.1). Hold weight 3 vs 0 makes no
+  difference, so the hold objective does not shape the structure in this setup.
+- Pictures (`results/s5_ext_fb16_hold3/samples.png`): builds are fuzzy (bots hover around the outline); in the hold
+  every learned structure pours into a heap. The even sample keeps a bonded lower core: towers stand, overhangs and
+  thin tops break off.
+- Next (running, wave 7): twice the build time (128 control steps), always-latched bots with bond 2 to 3 (weak
+  enough to pull free with a push of 3), and learned grip with hold weight 3.

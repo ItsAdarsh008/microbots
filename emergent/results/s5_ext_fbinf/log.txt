@@ -58,3 +58,17 @@ eval it 1250: iou_build 0.328 iou_hold 0.327 cover_hold 0.453 sag 0.006 fallen 0
 it 1250 loss 119.055 build 39.609 (t1 6.91 t2 26.95 out 5.75) hold 39.704 mix 1.00 asq 0.02 grip 0.11 gn 149.65 g 1.00 3.43s/it
 it 1275 loss 89.861 build 29.928 (t1 5.64 t2 19.67 out 4.62) hold 30.011 mix 1.00 asq 0.02 grip 0.11 gn 486.43 g 1.00 3.42s/it
 it 1300 loss 125.427 build 41.777 (t1 8.21 t2 26.94 out 6.63) hold 41.878 mix 1.00 asq 0.02 grip 0.11 gn 123.08 g 1.00 3.42s/it
+it 1325 loss 68.767 build 22.933 (t1 5.30 t2 13.30 out 4.33) hold 23.006 mix 1.00 asq 0.02 grip 0.11 gn 314.66 g 1.00 3.41s/it
+it 1350 loss 101.202 build 33.707 (t1 6.63 t2 21.54 out 5.53) hold 33.811 mix 1.00 asq 0.02 grip 0.11 gn 393.52 g 1.00 3.40s/it
+resumed at 1250
+{"data": "data/world128.npz", "iters": 1500, "B": 16, "lr": 0.0003, "T": 64, "K": 8, "hold": 200, "hold_eval": 1000, "hold_w": 1.0, "g": 1.0, "g_warm": 0, "f_bond": 10000.0, "f_act": 3.0, "mu": 0.5, "reaction": "external", "r_sense": 3.0, "H": 32, "M": 96, "rounds": 2, "use_h": true, "see_v": true, "out_w": 1.0, "act_w": 0.0, "seed": 0, "offset": 0.0, "shuffle_targets": false, "eval_every": 250, "ema": 0.995, "clip": 1.0, "n_eval": 192, "k_c": 2000.0, "r_bond": 1.25, "r_hold": 1.15, "damage_p": 0.0, "damage_r": 2.5, "grip_fixed": null, "families": null, "g_eval": null, "compile": true, "grad_decay": 1.0, "grad_clip_step": 10.0, "dense_w": 1.0, "grip_bias": -2.0, "pre_w": 0.01, "r_touch": 1.15, "mix_start": 0, "mix_iters": 0, "ctrl": "force", "kp": 10.0, "v_max": 2.0, "air": 0.05, "k_b": 2000.0, "dt": 0.01, "c_c": 3.0, "c_b": 2.0, "name": "s5_ext_fbinf"}
+params 151491
+raw-ckpt eval: iou_build 0.327 iou_hold 0.327 cover_hold 0.453 sag 0.006 fallen 0.000 grip 0.113 iou_hold_gripall 0.328 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+it 1375 loss 104.182 build 34.678 (t1 6.24 t2 23.34 out 5.10) hold 34.808 mix 1.00 asq 0.03 grip 0.11 gn 66.62 g 1.00 3.39s/it
+it 1400 loss 109.262 build 36.377 (t1 7.24 t2 23.22 out 5.92) hold 36.494 mix 1.00 asq 0.03 grip 0.11 gn 173.73 g 1.00 3.39s/it
+it 1425 loss 46.893 build 15.588 (t1 2.77 t2 10.73 out 2.09) hold 15.660 mix 1.00 asq 0.03 grip 0.11 gn 110.02 g 1.00 3.38s/it
+it 1450 loss 108.405 build 36.080 (t1 7.34 t2 22.91 out 5.84) hold 36.194 mix 1.00 asq 0.03 grip 0.11 gn 2321.49 g 1.00 3.37s/it
+it 1475 loss 60.779 build 20.093 (t1 4.44 t2 12.04 out 3.61) hold 20.644 mix 1.00 asq 0.03 grip 0.11 gn 302.82 g 1.00 3.37s/it
+final val: iou_build 0.352 iou_hold 0.352 cover_hold 0.478 sag 0.007 fallen 0.000 grip 0.113 iou_hold_gripall 0.353 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000 base_pile_iou 0.357 base_ceiling_iou 0.918 base_ceilfreeze_iou_hold 0.543 base_ceilfreeze_sag 1.580 base_ceilfreeze_fallen 0.290 base_ceilfreeze_deg_all 4.878 base_ceilfreeze_tri_all 4.232 base_ceilfreeze_deg_ov 3.192 base_ceilfreeze_tri_ov 2.737 base_ceilfreeze_deg_sup 4.967 base_ceilfreeze_tri_sup 4.347
+final held: iou_build 0.157 iou_hold 0.157 cover_hold 0.268 sag 0.006 fallen 0.000 grip 0.113 iou_hold_gripall 0.158 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000 base_pile_iou 0.158 base_ceiling_iou 0.914 base_ceilfreeze_iou_hold 0.432 base_ceilfreeze_sag 1.789 base_ceilfreeze_fallen 0.422 base_ceilfreeze_deg_all 4.838 base_ceilfreeze_tri_all 4.189 base_ceilfreeze_deg_ov 4.819 base_ceilfreeze_tri_ov 4.149 base_ceilfreeze_deg_sup 5.022 base_ceilfreeze_tri_sup 4.438
+done

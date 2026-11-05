@@ -37,3 +37,7 @@ it 750 loss 124.713 build 41.097 (t1 8.40 t2 25.63 out 7.07) hold 41.869 mix 1.0
 it 775 loss 95.075 build 31.321 (t1 7.29 t2 18.00 out 6.03) hold 31.951 mix 1.00 asq 0.60 grip 0.81 gn 57.54 g 1.00 3.32s/it
 it 800 loss 72.597 build 23.919 (t1 4.27 t2 16.23 out 3.42) hold 24.424 mix 1.00 asq 0.61 grip 0.82 gn 33.89 g 1.00 3.31s/it
 it 825 loss 80.436 build 26.454 (t1 4.03 t2 19.24 out 3.18) hold 27.050 mix 1.00 asq 0.61 grip 0.82 gn 7.61 g 1.00 3.31s/it
+resumed at 750
+{"data": "data/world128.npz", "iters": 1000, "B": 16, "lr": 0.0003, "T": 64, "K": 4, "hold": 100, "hold_eval": 500, "hold_w": 1.0, "g": 1.0, "g_warm": 0, "f_bond": 8.0, "f_act": 3.0, "mu": 0.5, "reaction": "internal", "r_sense": 3.0, "H": 32, "M": 96, "rounds": 2, "use_h": true, "see_v": true, "out_w": 1.0, "act_w": 0.0, "seed": 0, "offset": 0.0, "shuffle_targets": false, "eval_every": 250, "ema": 0.995, "clip": 1.0, "n_eval": 192, "k_c": 200.0, "r_bond": 1.25, "r_hold": 1.15, "damage_p": 0.0, "damage_r": 2.5, "grip_fixed": null, "families": null, "g_eval": null, "compile": true, "grad_decay": 1.0, "grad_clip_step": 10.0, "dense_w": 1.0, "grip_bias": -2.0, "pre_w": 0.01, "r_touch": 2.0, "mix_start": 0, "mix_iters": 0, "ctrl": "velocity", "kp": 10.0, "v_max": 2.0, "air": 0.05, "k_b": 200.0, "dt": 0.02, "c_c": 3.0, "c_b": 2.0, "name": "w4_int_vel_lr3e4_rt2"}
+params 151491
+raw-ckpt eval: iou_build 0.322 iou_hold 0.320 cover_hold 0.443 sag 0.036 fallen 0.000 grip 0.803 iou_hold_gripall 0.321 deg_all 5.281 tri_all 4.945 deg_ov 0.000 tri_ov 0.000 deg_sup 5.499 tri_sup 5.252

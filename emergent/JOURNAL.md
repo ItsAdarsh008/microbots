@@ -455,3 +455,33 @@ it cannot cross more than about 1 cell; at L = 3 about 3. Runs: cure warm (two s
 
 **Gallery:** every run rendered on the same six shapes (`lat/gallery.py`, page from `lat/gallery_page.py`),
 published as a private artifact with settings, metrics against the reference, and a verdict per run.
+
+## 2026-11-05 tick 20: curing crosses the chasm, and the rule extends to gaps it never saw
+
+**Chasm (lat6), validation, generation 150 (s0) / 100 (s1):** with curing (warm from the cure-and-extend
+controller) fill **0.97** (s0) and **0.92** (s1) against a perfect-placement reference of 0.50. Pictures: the
+swarm lays a fully cured deck at floor level across the gap from one anchor bot on the near floor, walks over it,
+and builds the far tower (s0: 1.00 on all six gallery chasms; s1: every deck complete, towers partly built).
+Without curing it cannot cross at all: L = 1 fill **0.06** (one cell of deck, no tower; the rest of the swarm falls
+into the gap), L = 3 fill **0.20** (about three cells). The reference 0.50 is not reachable without curing because
+the far tower can only be reached over the deck. Prediction confirmed. Note: `propped` reads 0.50 on these runs by
+construction (the deck has no target cell on solid ground; its anchor is necessarily outside the target), so it is
+not informative here.
+
+**Gap-width sweep (`lat/chasm_gen.py`, 32 chasms x 2 seeds per width, s0 checkpoint):** at the training episode
+length (T = 300) deck and tower stay at 0.97 up to gap 11, the tower falls to 0.58 at gap 13 and 0 from 14 on
+(the deck still reaches 0.67 to 0.92). With **T = 600, fill 0.93 to 0.97 for every gap from 3 to 20** (training
+used 3 to 12). The failure was the time budget (each deck cell must cure for 20 steps before the next one can
+stick out), not a rule fitted to the trained widths: cure-and-extend is a general local procedure. One seed;
+not yet replicated.
+
+Hypotheses queued (lat7): (1) does crossing emerge **from scratch** (no warm start; two seeds)? (2) **narrow
+training** (gaps 3 to 7 only, then sweep to 20): a harder generalisation test; (3) **slow curing** K = 60: the
+crossing time grows with K, does it still cross within T = 300 or find another way; (4) chasm with the clean cost
+(no leftovers).
+
+Other: cure + clean warm seed 1 final: fill 0.922, site_out 3.0 (replicates cure-and-extend with a clean site;
+seed 0 final 0.777). No-cure clean control final 0.692 (ref 0.724). Cure without clean cost 0.99 at generation 700
+(site_out 32: it fills by piling). Move cost warm 0.90. Switch 0.73 at generation 900 (stuck below 0.87). Big world
+0.88 (ref 0.87). Kick 10% final 0.77; overhangs + kick warm final 0.67 (ref 0.72). Shelter objective runs: shelter
+0.24 to 0.28 per bot at generations 100 to 300, no clear growth yet.

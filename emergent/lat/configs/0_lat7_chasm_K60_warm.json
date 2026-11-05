@@ -1,0 +1,1 @@
+{"algo": "lat", "eval_every": 50, "T": 300, "spares": 0.5, "chasm": true, "families": ["chasm"], "held_out": [], "gens": 600, "name": "lat7_chasm_K60_warm", "cure": 60, "init_from": "init/cure_extend_s1_g500.pt"}

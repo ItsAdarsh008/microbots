@@ -1,0 +1,1 @@
+{"algo": "lat", "eval_every": 50, "T": 300, "spares": 0.5, "chasm": true, "families": ["chasm"], "held_out": [], "gens": 1000, "name": "lat7_chasm_cure_scratch", "cure": 20}

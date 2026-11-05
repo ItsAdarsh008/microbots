@@ -34,9 +34,10 @@ DEF = dict(H=20, W=40, L=1, T=160, settle=60, spares=0.3, C=8, M=32, pop=128, sh
            clean_w=0.0,      # fitness cost per bot left outside the target in the build site (columns >= 14), / |target|
            cure_below=False,  # True: a bot only cures while the cell under it is solid (concrete needs formwork)
            clean_ramp=0,     # generations over which clean_w ramps up from 0
-           init_from=None,
-           chasm=False)      # True: targets are a deck over a gap in the floor plus a tower on the far side; bots
-                             # that fall into the gap are lost   # path to a theta.pt / ckpt.pt to start from (a new 'cured' input channel gets zero weights)
+           init_from=None,   # path to a theta.pt / ckpt.pt to start from (a new 'cured' input channel gets zero weights)
+           chasm=False,      # True: targets are a deck over a gap in the floor plus a tower on the far side; bots
+                             # that fall into the gap are lost
+           chasm_gap=[3, 13])  # gap widths for chasm targets, [lo, hi)
 
 FAMS = ["tower", "gamma", "tee", "bridge", "stairs", "blocks", "mushroom", "tree", "chasm"]
 
@@ -118,11 +119,15 @@ def bank(fams, n, H, W, seed):
     return torch.tensor(np.array(out), dtype=torch.float32), torch.tensor(fid)
 
 
-def chasm_target(rng, H, W):
-    """A deck at floor level across a gap in the floor (gap 3..12), and a tower (height 3..8) beyond it."""
+CHASM_GAP = (3, 13)
+
+
+def chasm_target(rng, H, W, gap=None):
+    """A deck at floor level across a gap in the floor (width from CHASM_GAP, or `gap`), and a tower (height 3..8)
+    beyond it."""
     t = np.zeros((H, W), bool)
     g0 = rng.integers(16, 24)
-    gap = rng.integers(3, 13)
+    gap = rng.integers(*CHASM_GAP) if gap is None else gap
     tw, th = rng.integers(1, 3), rng.integers(3, 9)
     if g0 + gap + 2 + tw >= W:
         return None
@@ -341,6 +346,8 @@ def main(path):
         log.write(s + "\n"); log.flush()
 
     H, W = cfg["H"], cfg["W"]
+    global CHASM_GAP
+    CHASM_GAP = tuple(cfg["chasm_gap"])
     train_f = cfg["families"] or [f for f in FAMS if f not in cfg["held_out"] and f != "chasm"]
     TR, TRf = bank(train_f, cfg["n_bank"], H, W, 1)
     VA, VAf = bank(train_f, cfg["n_eval"], H, W, 2)

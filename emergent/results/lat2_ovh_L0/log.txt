@@ -1,0 +1,146 @@
+{"H": 20, "W": 40, "L": 0, "T": 160, "settle": 60, "spares": 0.3, "C": 8, "M": 32, "pop": 128, "shapes": 8, "sigma": 0.04, "lr": 0.03, "gens": 1500, "eval_every": 100, "n_eval": 64, "seed": 0, "temp": 1.0, "families": ["gamma", "bridge", "tee"], "held_out": ["mushroom", "tree"], "support_iters": 8, "speed_w": 0.2, "n_bank": 4000, "damage": 0.0, "switch": 0.0, "move_w": 0.0, "kick": 0.0, "algo": "lat", "name": "lat2_ovh_L0"}
+params 22545
+gen 0 fit mean 0.026 max 0.057 fill 0.024 falls/ep 764.9 |theta| 14.6 19.57s/gen
+gen 10 fit mean 0.094 max 0.130 fill 0.084 falls/ep 320.5 |theta| 22.6 19.04s/gen
+gen 20 fit mean 0.150 max 0.167 fill 0.132 falls/ep 321.5 |theta| 27.7 19.03s/gen
+gen 30 fit mean 0.130 max 0.141 fill 0.112 falls/ep 413.4 |theta| 31.4 19.01s/gen
+gen 40 fit mean 0.186 max 0.196 fill 0.161 falls/ep 339.0 |theta| 34.6 19.02s/gen
+gen 50 fit mean 0.144 max 0.171 fill 0.125 falls/ep 368.8 |theta| 37.4 19.03s/gen
+gen 60 fit mean 0.162 max 0.184 fill 0.139 falls/ep 741.1 |theta| 40.0 19.03s/gen
+gen 70 fit mean 0.158 max 0.175 fill 0.136 falls/ep 701.4 |theta| 42.2 19.03s/gen
+gen 80 fit mean 0.161 max 0.176 fill 0.140 falls/ep 777.4 |theta| 44.1 19.03s/gen
+gen 90 fit mean 0.163 max 0.180 fill 0.142 falls/ep 945.7 |theta| 45.9 19.03s/gen
+eval gen 100: fill 0.168 falls 628.930 outside 35.523 moves 39.896 scaffold 12.914 propped 0.000 fit 0.193 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 100 fit mean 0.208 max 0.227 fill 0.182 falls/ep 723.5 |theta| 47.8 19.10s/gen
+gen 110 fit mean 0.219 max 0.247 fill 0.190 falls/ep 440.4 |theta| 49.8 19.10s/gen
+gen 120 fit mean 0.181 max 0.197 fill 0.157 falls/ep 794.1 |theta| 51.6 19.09s/gen
+gen 130 fit mean 0.164 max 0.173 fill 0.142 falls/ep 696.4 |theta| 53.3 19.09s/gen
+gen 140 fit mean 0.215 max 0.235 fill 0.186 falls/ep 403.3 |theta| 55.0 19.08s/gen
+gen 150 fit mean 0.257 max 0.276 fill 0.223 falls/ep 606.3 |theta| 56.7 19.08s/gen
+gen 160 fit mean 0.182 max 0.219 fill 0.158 falls/ep 843.5 |theta| 58.3 19.07s/gen
+gen 170 fit mean 0.398 max 0.520 fill 0.356 falls/ep 671.9 |theta| 59.9 19.07s/gen
+gen 180 fit mean 0.558 max 0.619 fill 0.493 falls/ep 613.2 |theta| 61.7 19.06s/gen
+gen 190 fit mean 0.514 max 0.547 fill 0.450 falls/ep 452.4 |theta| 63.4 19.06s/gen
+eval gen 200: fill 0.483 falls 313.180 outside 25.180 moves 19.560 scaffold 11.336 propped 0.004 fit 0.553 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 200 fit mean 0.568 max 0.611 fill 0.497 falls/ep 365.4 |theta| 64.9 19.10s/gen
+gen 210 fit mean 0.530 max 0.586 fill 0.462 falls/ep 328.3 |theta| 66.3 19.13s/gen
+gen 220 fit mean 0.611 max 0.655 fill 0.535 falls/ep 272.4 |theta| 67.8 19.12s/gen
+gen 230 fit mean 0.610 max 0.645 fill 0.535 falls/ep 451.1 |theta| 69.2 19.12s/gen
+gen 240 fit mean 0.559 max 0.586 fill 0.490 falls/ep 441.1 |theta| 70.7 19.12s/gen
+gen 250 fit mean 0.619 max 0.637 fill 0.545 falls/ep 390.5 |theta| 71.9 19.11s/gen
+gen 260 fit mean 0.586 max 0.621 fill 0.511 falls/ep 267.7 |theta| 73.1 19.11s/gen
+gen 270 fit mean 0.523 max 0.541 fill 0.460 falls/ep 405.2 |theta| 74.3 19.11s/gen
+gen 280 fit mean 0.568 max 0.599 fill 0.496 falls/ep 381.9 |theta| 75.5 19.11s/gen
+gen 290 fit mean 0.540 max 0.581 fill 0.470 falls/ep 425.6 |theta| 76.7 19.10s/gen
+eval gen 300: fill 0.526 falls 419.078 outside 23.891 moves 22.102 scaffold 12.891 propped 0.007 fit 0.600 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 300 fit mean 0.601 max 0.630 fill 0.526 falls/ep 351.0 |theta| 78.1 19.12s/gen
+gen 310 fit mean 0.706 max 0.735 fill 0.620 falls/ep 422.4 |theta| 79.4 19.12s/gen
+gen 320 fit mean 0.509 max 0.535 fill 0.443 falls/ep 321.7 |theta| 80.7 19.12s/gen
+gen 330 fit mean 0.598 max 0.620 fill 0.521 falls/ep 351.6 |theta| 81.9 19.11s/gen
+gen 340 fit mean 0.518 max 0.552 fill 0.453 falls/ep 451.0 |theta| 82.9 19.11s/gen
+gen 350 fit mean 0.560 max 0.584 fill 0.491 falls/ep 438.0 |theta| 83.9 19.11s/gen
+gen 360 fit mean 0.604 max 0.634 fill 0.529 falls/ep 450.5 |theta| 85.1 19.11s/gen
+gen 370 fit mean 0.593 max 0.632 fill 0.516 falls/ep 299.2 |theta| 86.3 19.11s/gen
+gen 380 fit mean 0.600 max 0.639 fill 0.526 falls/ep 387.0 |theta| 87.4 19.10s/gen
+gen 390 fit mean 0.643 max 0.673 fill 0.559 falls/ep 322.9 |theta| 88.3 19.10s/gen
+eval gen 400: fill 0.522 falls 318.000 outside 23.969 moves 21.894 scaffold 13.156 propped 0.008 fit 0.599 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 400 fit mean 0.597 max 0.627 fill 0.519 falls/ep 353.3 |theta| 89.3 19.12s/gen
+gen 410 fit mean 0.614 max 0.655 fill 0.534 falls/ep 239.8 |theta| 90.4 19.11s/gen
+gen 420 fit mean 0.591 max 0.604 fill 0.518 falls/ep 311.8 |theta| 91.4 19.11s/gen
+gen 430 fit mean 0.509 max 0.536 fill 0.438 falls/ep 144.8 |theta| 92.4 19.11s/gen
+gen 440 fit mean 0.697 max 0.714 fill 0.610 falls/ep 275.4 |theta| 93.2 19.10s/gen
+gen 450 fit mean 0.634 max 0.645 fill 0.553 falls/ep 240.2 |theta| 94.0 19.10s/gen
+gen 460 fit mean 0.575 max 0.595 fill 0.504 falls/ep 322.5 |theta| 95.0 19.10s/gen
+gen 470 fit mean 0.611 max 0.640 fill 0.534 falls/ep 248.3 |theta| 96.0 19.10s/gen
+gen 480 fit mean 0.535 max 0.566 fill 0.471 falls/ep 332.3 |theta| 96.9 19.09s/gen
+gen 490 fit mean 0.587 max 0.615 fill 0.506 falls/ep 254.9 |theta| 98.0 19.09s/gen
+eval gen 500: fill 0.536 falls 232.680 outside 23.562 moves 20.526 scaffold 13.531 propped 0.007 fit 0.615 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 500 fit mean 0.644 max 0.672 fill 0.562 falls/ep 264.4 |theta| 99.0 19.10s/gen
+gen 510 fit mean 0.666 max 0.679 fill 0.579 falls/ep 230.7 |theta| 100.0 19.10s/gen
+gen 520 fit mean 0.581 max 0.614 fill 0.504 falls/ep 218.2 |theta| 100.9 19.10s/gen
+gen 530 fit mean 0.700 max 0.715 fill 0.611 falls/ep 254.3 |theta| 101.6 19.09s/gen
+gen 540 fit mean 0.581 max 0.609 fill 0.504 falls/ep 258.1 |theta| 102.3 19.09s/gen
+gen 550 fit mean 0.562 max 0.592 fill 0.490 falls/ep 330.0 |theta| 103.1 19.09s/gen
+gen 560 fit mean 0.626 max 0.641 fill 0.548 falls/ep 375.6 |theta| 103.9 19.09s/gen
+gen 570 fit mean 0.636 max 0.652 fill 0.560 falls/ep 331.8 |theta| 104.7 19.09s/gen
+gen 580 fit mean 0.587 max 0.616 fill 0.510 falls/ep 286.6 |theta| 105.5 19.08s/gen
+gen 590 fit mean 0.580 max 0.614 fill 0.504 falls/ep 225.1 |theta| 106.3 19.08s/gen
+eval gen 600: fill 0.544 falls 276.547 outside 23.273 moves 22.036 scaffold 13.180 propped 0.004 fit 0.624 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 600 fit mean 0.662 max 0.700 fill 0.581 falls/ep 381.8 |theta| 107.0 19.09s/gen
+gen 610 fit mean 0.540 max 0.561 fill 0.469 falls/ep 273.7 |theta| 107.8 19.09s/gen
+gen 620 fit mean 0.674 max 0.704 fill 0.590 falls/ep 400.8 |theta| 108.5 19.09s/gen
+gen 630 fit mean 0.684 max 0.701 fill 0.601 falls/ep 363.0 |theta| 109.2 19.09s/gen
+gen 640 fit mean 0.581 max 0.628 fill 0.506 falls/ep 287.6 |theta| 109.9 19.09s/gen
+gen 650 fit mean 0.532 max 0.550 fill 0.464 falls/ep 235.0 |theta| 110.6 19.09s/gen
+gen 660 fit mean 0.588 max 0.632 fill 0.509 falls/ep 193.1 |theta| 111.4 19.09s/gen
+gen 670 fit mean 0.567 max 0.590 fill 0.490 falls/ep 144.1 |theta| 112.4 19.09s/gen
+gen 680 fit mean 0.543 max 0.573 fill 0.472 falls/ep 252.6 |theta| 113.2 19.09s/gen
+gen 690 fit mean 0.618 max 0.636 fill 0.538 falls/ep 214.9 |theta| 114.0 19.09s/gen
+eval gen 700: fill 0.528 falls 169.109 outside 23.742 moves 20.358 scaffold 12.906 propped 0.004 fit 0.607 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 700 fit mean 0.617 max 0.641 fill 0.536 falls/ep 188.6 |theta| 114.8 19.10s/gen
+gen 710 fit mean 0.623 max 0.652 fill 0.541 falls/ep 224.4 |theta| 115.4 19.09s/gen
+gen 720 fit mean 0.524 max 0.584 fill 0.451 falls/ep 198.7 |theta| 116.1 19.09s/gen
+gen 730 fit mean 0.518 max 0.544 fill 0.447 falls/ep 204.7 |theta| 116.8 19.09s/gen
+gen 740 fit mean 0.552 max 0.572 fill 0.482 falls/ep 308.9 |theta| 117.5 19.09s/gen
+gen 750 fit mean 0.535 max 0.612 fill 0.464 falls/ep 179.9 |theta| 118.3 19.09s/gen
+gen 760 fit mean 0.498 max 0.524 fill 0.430 falls/ep 193.3 |theta| 119.0 19.09s/gen
+gen 770 fit mean 0.598 max 0.620 fill 0.519 falls/ep 187.5 |theta| 119.6 19.08s/gen
+gen 780 fit mean 0.633 max 0.655 fill 0.557 falls/ep 429.7 |theta| 120.3 19.08s/gen
+gen 790 fit mean 0.656 max 0.691 fill 0.569 falls/ep 277.3 |theta| 121.0 19.08s/gen
+eval gen 800: fill 0.529 falls 318.641 outside 23.711 moves 20.489 scaffold 13.156 propped 0.006 fit 0.605 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 800 fit mean 0.543 max 0.621 fill 0.474 falls/ep 303.5 |theta| 121.5 19.09s/gen
+gen 810 fit mean 0.633 max 0.665 fill 0.557 falls/ep 480.7 |theta| 122.2 19.09s/gen
+gen 820 fit mean 0.656 max 0.681 fill 0.573 falls/ep 233.2 |theta| 122.8 19.09s/gen
+gen 830 fit mean 0.569 max 0.594 fill 0.491 falls/ep 173.6 |theta| 123.5 19.09s/gen
+gen 840 fit mean 0.576 max 0.616 fill 0.499 falls/ep 280.5 |theta| 124.0 19.09s/gen
+gen 850 fit mean 0.618 max 0.649 fill 0.541 falls/ep 340.6 |theta| 124.6 19.08s/gen
+gen 860 fit mean 0.678 max 0.691 fill 0.595 falls/ep 258.9 |theta| 125.2 19.08s/gen
+gen 870 fit mean 0.687 max 0.707 fill 0.600 falls/ep 299.3 |theta| 125.8 19.08s/gen
+gen 880 fit mean 0.647 max 0.666 fill 0.565 falls/ep 220.4 |theta| 126.5 19.08s/gen
+gen 890 fit mean 0.603 max 0.679 fill 0.528 falls/ep 316.6 |theta| 127.2 19.08s/gen
+eval gen 900: fill 0.537 falls 345.945 outside 23.469 moves 22.674 scaffold 12.500 propped 0.004 fit 0.615 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 900 fit mean 0.653 max 0.700 fill 0.567 falls/ep 267.5 |theta| 127.8 19.09s/gen
+gen 910 fit mean 0.618 max 0.642 fill 0.541 falls/ep 413.2 |theta| 128.5 19.09s/gen
+gen 920 fit mean 0.527 max 0.561 fill 0.457 falls/ep 180.9 |theta| 129.1 19.09s/gen
+gen 930 fit mean 0.598 max 0.618 fill 0.522 falls/ep 271.7 |theta| 129.7 19.08s/gen
+gen 940 fit mean 0.665 max 0.696 fill 0.588 falls/ep 571.0 |theta| 130.4 19.08s/gen
+gen 950 fit mean 0.649 max 0.662 fill 0.566 falls/ep 278.5 |theta| 131.0 19.08s/gen
+gen 960 fit mean 0.552 max 0.569 fill 0.481 falls/ep 237.1 |theta| 131.6 19.08s/gen
+gen 970 fit mean 0.518 max 0.557 fill 0.452 falls/ep 198.5 |theta| 132.2 19.08s/gen
+gen 980 fit mean 0.688 max 0.722 fill 0.599 falls/ep 250.0 |theta| 132.7 19.08s/gen
+gen 990 fit mean 0.684 max 0.709 fill 0.596 falls/ep 263.6 |theta| 133.1 19.08s/gen
+eval gen 1000: fill 0.548 falls 190.414 outside 23.102 moves 21.254 scaffold 13.945 propped 0.007 fit 0.629 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 1000 fit mean 0.715 max 0.733 fill 0.623 falls/ep 206.6 |theta| 133.6 19.09s/gen
+gen 1010 fit mean 0.585 max 0.606 fill 0.505 falls/ep 163.5 |theta| 134.1 19.09s/gen
+gen 1020 fit mean 0.700 max 0.725 fill 0.609 falls/ep 234.0 |theta| 134.6 19.08s/gen
+gen 1030 fit mean 0.554 max 0.572 fill 0.483 falls/ep 229.7 |theta| 135.2 19.08s/gen
+gen 1040 fit mean 0.587 max 0.623 fill 0.510 falls/ep 249.9 |theta| 135.8 19.08s/gen
+gen 1050 fit mean 0.594 max 0.612 fill 0.518 falls/ep 172.3 |theta| 136.3 19.08s/gen
+gen 1060 fit mean 0.598 max 0.622 fill 0.520 falls/ep 260.4 |theta| 136.8 19.08s/gen
+gen 1070 fit mean 0.619 max 0.626 fill 0.541 falls/ep 158.5 |theta| 137.3 19.08s/gen
+gen 1080 fit mean 0.595 max 0.628 fill 0.515 falls/ep 336.9 |theta| 137.8 19.08s/gen
+gen 1090 fit mean 0.599 max 0.619 fill 0.519 falls/ep 228.0 |theta| 138.3 19.08s/gen
+eval gen 1100: fill 0.537 falls 253.484 outside 23.406 moves 21.099 scaffold 13.562 propped 0.007 fit 0.616 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 1100 fit mean 0.590 max 0.620 fill 0.519 falls/ep 317.0 |theta| 138.8 19.08s/gen
+gen 1110 fit mean 0.605 max 0.675 fill 0.529 falls/ep 343.9 |theta| 139.3 19.08s/gen
+gen 1120 fit mean 0.623 max 0.646 fill 0.541 falls/ep 340.3 |theta| 139.8 19.08s/gen
+gen 1130 fit mean 0.669 max 0.695 fill 0.584 falls/ep 290.3 |theta| 140.3 19.08s/gen
+gen 1140 fit mean 0.569 max 0.601 fill 0.496 falls/ep 228.1 |theta| 140.7 19.08s/gen
+gen 1150 fit mean 0.590 max 0.637 fill 0.509 falls/ep 275.2 |theta| 141.2 19.08s/gen
+gen 1160 fit mean 0.652 max 0.673 fill 0.568 falls/ep 257.3 |theta| 141.8 19.08s/gen
+gen 1170 fit mean 0.678 max 0.709 fill 0.591 falls/ep 296.1 |theta| 142.4 19.08s/gen
+gen 1180 fit mean 0.654 max 0.676 fill 0.572 falls/ep 270.7 |theta| 143.0 19.08s/gen
+gen 1190 fit mean 0.640 max 0.659 fill 0.561 falls/ep 383.2 |theta| 143.5 19.08s/gen
+eval gen 1200: fill 0.542 falls 224.664 outside 23.359 moves 22.854 scaffold 13.656 propped 0.010 fit 0.623 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 1200 fit mean 0.609 max 0.619 fill 0.530 falls/ep 195.0 |theta| 143.9 19.08s/gen
+gen 1210 fit mean 0.609 max 0.639 fill 0.528 falls/ep 180.7 |theta| 144.4 19.08s/gen
+gen 1220 fit mean 0.656 max 0.677 fill 0.576 falls/ep 294.9 |theta| 144.9 19.08s/gen
+gen 1230 fit mean 0.574 max 0.611 fill 0.498 falls/ep 295.9 |theta| 145.4 19.08s/gen
+gen 1240 fit mean 0.671 max 0.698 fill 0.590 falls/ep 317.2 |theta| 145.8 19.08s/gen
+gen 1250 fit mean 0.608 max 0.649 fill 0.533 falls/ep 208.1 |theta| 146.2 19.08s/gen
+gen 1260 fit mean 0.673 max 0.717 fill 0.592 falls/ep 365.8 |theta| 146.7 19.08s/gen
+gen 1270 fit mean 0.674 max 0.701 fill 0.588 falls/ep 267.8 |theta| 147.3 19.08s/gen
+gen 1280 fit mean 0.717 max 0.739 fill 0.622 falls/ep 192.8 |theta| 147.8 19.07s/gen
+gen 1290 fit mean 0.629 max 0.655 fill 0.548 falls/ep 237.9 |theta| 148.3 19.07s/gen
+eval gen 1300: fill 0.550 falls 217.805 outside 23.094 moves 21.983 scaffold 14.219 propped 0.007 fit 0.632 ref_target_stands 0.640 ref_pile_fill 0.000
+gen 1300 fit mean 0.601 max 0.643 fill 0.523 falls/ep 218.5 |theta| 148.8 19.08s/gen

@@ -361,3 +361,33 @@ keeps 3) and a clean-site cost (0.5 per bot left outside the target in the build
 learns build falsework -> wait -> remove it, that is emergent sequencing. Runs: cure + clean (seeds 0, 1),
 clean without cure (control: falsework cannot be removed without losing the overhang), cure without clean
 (does it use curing at all). T = 300, overhang families, double spares.
+
+## 2026-11-05 tick 17: wave lat1 final; falsework-removal runs collapsed, restarted warm
+
+Final (generation 1500; validation / held-out mushroom+tree; ref = the target alone, perfectly placed, settled):
+
+| run | val fill | ref val | held fill | ref held |
+|---|---|---|---|---|
+| L1 | 0.90 | 0.87 | 0.75 | 0.67 |
+| L1 seed 1 | 0.88 | 0.87 | 0.72 | 0.67 |
+| L1, 1 memory channel | 0.90 | 0.87 | 0.72 | 0.67 |
+| L1, temperature 0.5 | 0.89 | 0.87 | 0.72 | 0.67 |
+| L1, double spares | **0.94** | 0.87 | **0.88** | 0.67 |
+| L1, no spares | 0.85 | 0.87 | 0.64 | 0.67 |
+| L1, damage at half time (trained with) | 0.82 | 0.87 | 0.69 | 0.67 |
+| L1, overhangs only | 0.80 | 0.72 | 0.66 | 0.67 |
+| L3 | 0.96 | 0.96 | 0.88 | 0.91 |
+| no limit (control) | 0.99 | 1.00 | 0.93 | 1.00 |
+
+- Beating the reference (scaffolding) replicates across seeds at L1 and transfers to held-out families
+  (two seeds: 0.75, 0.72 against 0.67). It scales with spares (none: below ref; double: 0.94 / 0.88).
+- With no spares the swarm is below the reference: there is nothing to prop with, so the gap is the build error.
+- L3 and no-limit: at or just under the reference, as expected (little or nothing to prop).
+
+**Falsework removal (lat4), first attempt failed:** with curing and the clean-site cost from scratch, the swarm
+learned to stay out of the build site (generation 200: fill 0.000, site_out 0). The cost is felt before any fill
+is: a classic local optimum. Stopped the three clean-cost runs. Restarted warm (lat4b): start from the overhangs /
+double-spares falsework builder (generation 1300 checkpoint; zero weights for the new 'cured' input), ramp the
+clean cost over 200 generations. At the warm start (one generation): fill 0.91, propped 0.000 (with curing the target
+stands without its props once cured), but 36 props still left in the site: the cost should teach their removal.
+Running: cure + clean warm (seeds 0, 1), clean warm without curing (control), cure without clean (from scratch).

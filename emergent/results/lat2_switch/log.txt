@@ -1,0 +1,4 @@
+{"H": 20, "W": 40, "L": 1, "T": 240, "settle": 60, "spares": 0.3, "C": 8, "M": 32, "pop": 128, "shapes": 8, "sigma": 0.04, "lr": 0.03, "gens": 1000, "eval_every": 100, "n_eval": 64, "seed": 0, "temp": 1.0, "families": null, "held_out": ["mushroom", "tree"], "support_iters": 8, "speed_w": 0.2, "n_bank": 4000, "damage": 0.0, "switch": 0.5, "move_w": 0.0, "kick": 0.0, "obj": "fill", "cure": 0, "clean_w": 0.0, "algo": "lat", "name": "lat2_switch"}
+params 22545
+gen 0 fit mean 0.061 max 0.126 fill 0.056 falls/ep 1357.6 |theta| 14.6 28.76s/gen
+gen 10 fit mean 0.184 max 0.243 fill 0.164 falls/ep 1305.3 |theta| 22.4 28.04s/gen

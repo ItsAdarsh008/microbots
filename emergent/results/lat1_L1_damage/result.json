@@ -1,0 +1,83 @@
+{
+ "config": {
+  "H": 20,
+  "W": 40,
+  "L": 1,
+  "T": 160,
+  "settle": 60,
+  "spares": 0.3,
+  "C": 8,
+  "M": 32,
+  "pop": 128,
+  "shapes": 8,
+  "sigma": 0.04,
+  "lr": 0.03,
+  "gens": 1500,
+  "eval_every": 100,
+  "n_eval": 64,
+  "seed": 0,
+  "temp": 1.0,
+  "families": null,
+  "held_out": [
+   "mushroom",
+   "tree"
+  ],
+  "support_iters": 8,
+  "speed_w": 0.2,
+  "n_bank": 4000,
+  "damage": 0.5,
+  "algo": "lat",
+  "name": "lat1_L1_damage"
+ },
+ "commit": "6fb8c7f4439c0a7ea1221162056edf63415420cd",
+ "seconds": 28303.80920958519,
+ "metrics": {
+  "val": {
+   "fill": 0.8751692771911621,
+   "falls": 576.515625,
+   "outside": 13.4375,
+   "scaffold": 7.515625,
+   "fit": 0.9862549304962158,
+   "per_family": {
+    "tower": 1.0,
+    "gamma": 0.7779645323753357,
+    "tee": 0.7484748363494873,
+    "bridge": 0.8910355567932129,
+    "stairs": 0.9722222685813904,
+    "blocks": 0.8696388602256775
+   },
+   "ref_target_stands": 0.8676972389221191,
+   "ref_pile_fill": 0.0
+  },
+  "held": {
+   "fill": 0.69222092628479,
+   "falls": 354.3515625,
+   "outside": 14.5390625,
+   "scaffold": 11.8046875,
+   "fit": 0.7872887253761292,
+   "per_family": {
+    "mushroom": 0.709851861000061,
+    "tree": 0.6745901107788086
+   },
+   "ref_target_stands": 0.6693279147148132,
+   "ref_pile_fill": 0.0
+  },
+  "val_damage": {
+   "fill": 0.8185186982154846,
+   "falls": 536.4140625,
+   "outside": 8.1875,
+   "scaffold": 5.1484375,
+   "fit": 0.921385645866394,
+   "per_family": {
+    "tower": 0.9436807036399841,
+    "gamma": 0.7328418493270874,
+    "tee": 0.7120309472084045,
+    "bridge": 0.8293080925941467,
+    "stairs": 0.9113888740539551,
+    "blocks": 0.787482738494873
+   },
+   "ref_target_stands": 0.8676972389221191,
+   "ref_pile_fill": 0.0
+  }
+ }
+}

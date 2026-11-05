@@ -1,0 +1,6 @@
+{"H": 20, "W": 40, "L": 0, "T": 160, "settle": 60, "spares": 0.3, "C": 8, "M": 32, "pop": 128, "shapes": 8, "sigma": 0.04, "lr": 0.03, "gens": 1000, "eval_every": 100, "n_eval": 64, "seed": 0, "temp": 1.0, "families": null, "held_out": ["mushroom", "tree"], "support_iters": 8, "speed_w": 0.2, "n_bank": 4000, "damage": 0.0, "switch": 0.0, "move_w": 0.0, "kick": 0.0, "obj": "fill", "cure": 0, "clean_w": 0.0, "algo": "lat", "name": "lat2_L0"}
+params 22545
+gen 0 fit mean 0.046 max 0.076 fill 0.043 falls/ep 829.8 |theta| 14.6 19.59s/gen
+gen 10 fit mean 0.278 max 0.318 fill 0.246 falls/ep 1072.5 |theta| 22.6 18.08s/gen
+gen 20 fit mean 0.107 max 0.136 fill 0.090 falls/ep 1201.2 |theta| 27.9 18.45s/gen
+gen 30 fit mean 0.153 max 0.189 fill 0.134 falls/ep 1087.3 |theta| 31.6 18.59s/gen

@@ -23,14 +23,16 @@ from latworld import MOVES, INF, support_span, valid_moves, apply_moves, gravity
 DEF = dict(H=20, W=40, L=1, T=160, settle=60, spares=0.3, C=8, M=32, pop=128, shapes=8, sigma=0.04, lr=0.03,
            gens=1500, eval_every=50, n_eval=64, seed=0, temp=1.0, families=None, held_out=["mushroom", "tree"],
            support_iters=8, speed_w=0.2, n_bank=4000, damage=0.0,
-           switch=0.0,   # >0: the target changes to another shape at this fraction of T (reconfiguration)
-           move_w=0.0,   # fitness cost per move per bot (energy)
-           kick=0.0,
-           obj="fill",
-           cure=0,       # >0: a bot that has not moved for this many steps is cured (rigid: it adds no span), and
-                         # the bots see a 'cured' channel; moving or falling resets it
-           clean_w=0.0)  # fitness cost per bot left outside the target in the build site (columns >= 14), / |target|   # "fill" (the target), or target-free: "shelter" (empty cells with a bot somewhere above,
-                         # per bot) or "height" (top of the highest bot / H); the target is then hidden from the bots     # after settling, remove this fraction of bots at random and settle again (robustness)
+           switch=0.0,       # >0: the target changes to another shape at this fraction of T (reconfiguration)
+           move_w=0.0,       # fitness cost per move per bot (energy)
+           kick=0.0,         # after settling, remove this fraction of bots at random and settle again (robustness)
+           obj="fill",       # "fill" (the target), or target-free: "shelter" (empty cells with a bot somewhere above,
+                             # per bot) or "height" (top of the highest bot / H); the target is then hidden from the bots
+           cure=0,           # >0: a bot that has not moved for this many steps is cured (rigid: it adds no span), and
+                             # the bots see a 'cured' channel; moving or falling resets it
+           clean_w=0.0,      # fitness cost per bot left outside the target in the build site (columns >= 14), / |target|
+           clean_ramp=0,     # generations over which clean_w ramps up from 0
+           init_from=None)   # path to a theta.pt / ckpt.pt to start from (a new 'cured' input channel gets zero weights)
 
 FAMS = ["tower", "gamma", "tee", "bridge", "stairs", "blocks", "mushroom", "tree"]
 
@@ -308,6 +310,15 @@ def main(path):
     gen = torch.Generator().manual_seed(cfg["seed"])
     ggen = torch.Generator(device=dev).manual_seed(cfg["seed"])
     theta = nca.init(gen).to(dev)
+    if cfg["init_from"]:
+        src = torch.load(cfg["init_from"], map_location=dev)["theta"]
+        snca = [n_ for n_ in (NCA(cfg["C"], cfg["M"], 4), NCA(cfg["C"], cfg["M"], 5)) if n_.n == len(src)][0]
+        parts = snca.unpack(src[None])
+        w0 = parts[0][0]
+        if snca.cin != nca.cin:
+            w0 = torch.cat([w0[:, :4], torch.zeros(w0.shape[0], nca.cin - snca.cin, 3, 3, device=dev), w0[:, 4:]], 1)
+        theta = torch.cat([w0.reshape(-1)] + [p_[0].reshape(-1) for p_ in parts[1:]])
+        assert len(theta) == nca.n
     m = torch.zeros_like(theta); v = torch.zeros_like(theta)
     start = 0
     ck = os.path.join(out, "ckpt.pt")
@@ -328,7 +339,8 @@ def main(path):
         tgt2 = TR[torch.randint(0, len(TR), (S,), device=dev, generator=ggen)].repeat(Pp, 1, 1) if cfg["switch"] > 0 else None
         dmg = cfg["T"] // 2 if (cfg["damage"] > 0 and torch.rand(1, generator=gen).item() < cfg["damage"]) else None
         with torch.no_grad():
-            fit, st = rollout(nca, thetas, tgt, cfg, ggen, damage_at=dmg, tgt2=tgt2)
+            cfg_g = dict(cfg, clean_w=cfg["clean_w"] * min(1.0, (g + 1) / cfg["clean_ramp"])) if cfg["clean_ramp"] else cfg
+            fit, st = rollout(nca, thetas, tgt, cfg_g, ggen, damage_at=dmg, tgt2=tgt2)
         f = fit.reshape(Pp, S).mean(1)
         r = torch.argsort(torch.argsort(f)).float()
         r = r / (Pp - 1) - 0.5                                # centred ranks

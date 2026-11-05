@@ -1,0 +1,67 @@
+{
+ "config": {
+  "H": 20,
+  "W": 40,
+  "L": 1,
+  "T": 160,
+  "settle": 60,
+  "spares": 0.3,
+  "C": 8,
+  "M": 32,
+  "pop": 128,
+  "shapes": 8,
+  "sigma": 0.04,
+  "lr": 0.03,
+  "gens": 1500,
+  "eval_every": 100,
+  "n_eval": 64,
+  "seed": 0,
+  "temp": 1.0,
+  "families": [
+   "gamma",
+   "bridge",
+   "tee"
+  ],
+  "held_out": [
+   "mushroom",
+   "tree"
+  ],
+  "support_iters": 8,
+  "speed_w": 0.2,
+  "n_bank": 4000,
+  "damage": 0.0,
+  "algo": "lat",
+  "name": "lat1_L1_overhangs_only"
+ },
+ "commit": "6fb8c7f4439c0a7ea1221162056edf63415420cd",
+ "seconds": 28258.037333488464,
+ "metrics": {
+  "val": {
+   "fill": 0.7987947463989258,
+   "falls": 307.2265625,
+   "outside": 15.4921875,
+   "scaffold": 12.6328125,
+   "fit": 0.9230015873908997,
+   "per_family": {
+    "gamma": 0.7841620445251465,
+    "tee": 0.7599886655807495,
+    "bridge": 0.8529304265975952
+   },
+   "ref_target_stands": 0.7237128019332886,
+   "ref_pile_fill": 0.0
+  },
+  "held": {
+   "fill": 0.6582856774330139,
+   "falls": 221.640625,
+   "outside": 15.25,
+   "scaffold": 7.21875,
+   "fit": 0.7669074535369873,
+   "per_family": {
+    "mushroom": 0.719023585319519,
+    "tree": 0.5975477695465088
+   },
+   "ref_target_stands": 0.6693279147148132,
+   "ref_pile_fill": 0.0
+  }
+ }
+}

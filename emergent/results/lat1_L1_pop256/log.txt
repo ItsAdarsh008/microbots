@@ -1,0 +1,16 @@
+{"H": 20, "W": 40, "L": 1, "T": 160, "settle": 60, "spares": 0.3, "C": 8, "M": 32, "pop": 256, "shapes": 8, "sigma": 0.04, "lr": 0.03, "gens": 1500, "eval_every": 100, "n_eval": 64, "seed": 0, "temp": 1.0, "families": null, "held_out": ["mushroom", "tree"], "support_iters": 8, "speed_w": 0.2, "n_bank": 4000, "damage": 0.0, "algo": "lat", "name": "lat1_L1_pop256"}
+params 22545
+gen 0 fit mean 0.029 max 0.059 fill 0.027 falls/ep 898.3 |theta| 14.6 30.02s/gen
+gen 10 fit mean 0.221 max 0.268 fill 0.198 falls/ep 896.2 |theta| 22.6 33.27s/gen
+gen 20 fit mean 0.255 max 0.308 fill 0.227 falls/ep 742.9 |theta| 27.8 33.43s/gen
+gen 30 fit mean 0.219 max 0.299 fill 0.200 falls/ep 912.2 |theta| 31.6 33.49s/gen
+gen 40 fit mean 0.355 max 0.476 fill 0.324 falls/ep 1069.5 |theta| 34.9 33.52s/gen
+gen 50 fit mean 0.646 max 0.767 fill 0.584 falls/ep 568.1 |theta| 37.9 33.54s/gen
+gen 60 fit mean 0.659 max 0.816 fill 0.584 falls/ep 429.6 |theta| 40.6 33.54s/gen
+gen 70 fit mean 0.771 max 0.856 fill 0.679 falls/ep 662.8 |theta| 42.9 33.55s/gen
+gen 80 fit mean 0.739 max 0.883 fill 0.657 falls/ep 605.4 |theta| 45.0 33.56s/gen
+gen 90 fit mean 0.834 max 0.916 fill 0.738 falls/ep 656.8 |theta| 47.1 33.56s/gen
+eval gen 100: fill 0.769 falls 521.984 outside 16.727 scaffold 7.539 fit 0.875 ref_target_stands 0.868 ref_pile_fill 0.000
+gen 100 fit mean 0.869 max 1.046 fill 0.753 falls/ep 378.0 |theta| 49.2 33.63s/gen
+gen 110 fit mean 0.762 max 0.799 fill 0.673 falls/ep 467.4 |theta| 51.3 33.63s/gen
+gen 120 fit mean 0.850 max 0.891 fill 0.744 falls/ep 365.0 |theta| 52.9 33.74s/gen

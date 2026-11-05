@@ -22,7 +22,10 @@ from latworld import MOVES, INF, support_span, valid_moves, apply_moves, gravity
 
 DEF = dict(H=20, W=40, L=1, T=160, settle=60, spares=0.3, C=8, M=32, pop=128, shapes=8, sigma=0.04, lr=0.03,
            gens=1500, eval_every=50, n_eval=64, seed=0, temp=1.0, families=None, held_out=["mushroom", "tree"],
-           support_iters=8, speed_w=0.2, n_bank=4000, damage=0.0)
+           support_iters=8, speed_w=0.2, n_bank=4000, damage=0.0,
+           switch=0.0,   # >0: the target changes to another shape at this fraction of T (reconfiguration)
+           move_w=0.0,   # fitness cost per move per bot (energy)
+           kick=0.0)     # after settling, remove this fraction of bots at random and settle again (robustness)
 
 FAMS = ["tower", "gamma", "tee", "bridge", "stairs", "blocks", "mushroom", "tree"]
 
@@ -159,8 +162,8 @@ class NCA:
         return h.reshape(S, P, -1, H, W).transpose(0, 1).reshape(E, -1, H, W)
 
 
-def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None):
-    """theta (P, n); tgt (P*S, H, W). Returns fitness (P*S,) and stats."""
+def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
+    """theta (P, n); tgt (P*S, H, W). Returns fitness (P*S,) and stats. tgt2: the target after the switch."""
     E, H, W = tgt.shape
     dev = tgt.device
     occ = pile(tgt, cfg["spares"], H)
@@ -172,7 +175,13 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None):
     falls = torch.zeros(E, device=dev)
     frames = []
     nt = tgt.flatten(1).sum(1)
+    nb = occ.flatten(1).sum(1)
+    moves = torch.zeros(E, device=dev)
+    t_sw = int(cfg["switch"] * cfg["T"]) if (cfg["switch"] > 0 and tgt2 is not None) else -1
     for t in range(cfg["T"]):
+        if t == t_sw:
+            tgt = tgt2
+            nt = tgt.flatten(1).sum(1)
         held = occ * (s <= cfg["L"]).float()
         inp = torch.cat([occ[:, None], tgt[:, None], held[:, None], floor, hid], 1)
         out = nca.forward(theta, inp)
@@ -182,7 +191,8 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None):
         g = -torch.log(-torch.log(torch.rand(logits.shape, device=dev, generator=gen).clamp(1e-9, 1 - 1e-9)))
         act = torch.where(mask > 0, logits + g, torch.full_like(logits, -1e9)).argmax(1)
         prio = torch.rand(occ.shape, device=dev, generator=gen)
-        occ, hid, _ = apply_moves(occ, hid_new, act, prio)
+        occ, hid, mv = apply_moves(occ, hid_new, act, prio)
+        moves += mv.flatten(1).sum(1)
         s = support_span(occ, cfg["L"], s, cfg["support_iters"])
         occ, hid, unheld = gravity(occ, hid, cfg["L"], s)
         falls += unheld
@@ -198,10 +208,15 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None):
         falls += unheld
         if record and _ % 3 == 0:
             frames.append(occ.cpu())
+    if cfg["kick"] > 0:
+        occ = occ * (torch.rand(occ.shape, device=dev, generator=gen) >= cfg["kick"]).float()
+        for _ in range(cfg["settle"]):
+            s = support_span(occ, cfg["L"], s, cfg["support_iters"])
+            occ, hid, unheld = gravity(occ, hid, cfg["L"], s)
     fill = (occ * tgt).flatten(1).sum(1) / nt
-    fit = fill + cfg["speed_w"] * fill_sum / cfg["T"]
+    fit = fill + cfg["speed_w"] * fill_sum / cfg["T"] - cfg["move_w"] * moves / nb
     outside = (occ * (1 - tgt)).flatten(1).sum(1)
-    return fit, dict(fill=fill, falls=falls, outside=outside, occ=occ, frames=frames)
+    return fit, dict(fill=fill, falls=falls, outside=outside, occ=occ, frames=frames, moves=moves / nb, tgt=tgt)
 
 
 def cut_mask(tgt, gen):
@@ -217,6 +232,13 @@ def struct_stats(occ, tgt):
     above_tgt = torch.flip(torch.cumsum(torch.flip(tgt, [1]), 1), [1]) - tgt > 0
     under = (occ * (1 - tgt) * above_tgt.float()).flatten(1).sum(1)
     return under
+
+
+def propped(occ, tgt, L):
+    """Fraction of target cells that are filled but would not be held without the bots outside the target."""
+    inside = occ * tgt
+    s = support_span(inside, L, None, occ.shape[-2] + occ.shape[-1])
+    return (inside * (s > L).float()).flatten(1).sum(1) / tgt.flatten(1).sum(1)
 
 
 # ---------------------------------------------------------------- main
@@ -262,9 +284,10 @@ def main(path):
         thetas = theta[None] + cfg["sigma"] * eps
         idx = torch.randint(0, len(TR), (S,), device=dev, generator=ggen)
         tgt = TR[idx].repeat(Pp, 1, 1)                      # member-major: same shapes for every member
+        tgt2 = TR[torch.randint(0, len(TR), (S,), device=dev, generator=ggen)].repeat(Pp, 1, 1) if cfg["switch"] > 0 else None
         dmg = cfg["T"] // 2 if (cfg["damage"] > 0 and torch.rand(1, generator=gen).item() < cfg["damage"]) else None
         with torch.no_grad():
-            fit, st = rollout(nca, thetas, tgt, cfg, ggen, damage_at=dmg)
+            fit, st = rollout(nca, thetas, tgt, cfg, ggen, damage_at=dmg, tgt2=tgt2)
         f = fit.reshape(Pp, S).mean(1)
         r = torch.argsort(torch.argsort(f)).float()
         r = r / (Pp - 1) - 0.5                                # centred ranks
@@ -308,9 +331,11 @@ def evaluate(nca, theta, T_, Tf, cfg, dev, reps=2, damage=False):
     for rep in range(reps):
         gen = torch.Generator(device=dev).manual_seed(1000 + rep)
         with torch.no_grad():
-            fit, st = rollout(nca, theta[None], T_, cfg, gen, damage_at=cfg["T"] // 2 if damage else None)
-        accs.append(dict(fill=st["fill"], falls=st["falls"], outside=st["outside"],
-                         scaffold=struct_stats(st["occ"], T_), fit=fit))
+            fit, st = rollout(nca, theta[None], T_, cfg, gen, damage_at=cfg["T"] // 2 if damage else None,
+                              tgt2=T_.roll(1, 0) if cfg["switch"] > 0 else None)
+        Tf_ = st["tgt"]
+        accs.append(dict(fill=st["fill"], falls=st["falls"], outside=st["outside"], moves=st["moves"],
+                         scaffold=struct_stats(st["occ"], Tf_), propped=propped(st["occ"], Tf_, cfg["L"]), fit=fit))
     res = {k: float(torch.stack([a[k] for a in accs]).mean()) for k in accs[0]}
     fill = torch.stack([a["fill"] for a in accs]).mean(0)
     res["per_family"] = {FAMS[f]: float(fill[Tf == f].mean()) for f in Tf.unique().tolist()}
@@ -339,7 +364,9 @@ def draw(nca, theta, VA, HO, cfg, dev, out):
         tg = T_[idx]
         gen = torch.Generator(device=dev).manual_seed(7)
         with torch.no_grad():
-            _, st = rollout(nca, theta[None], tg, cfg, gen, record=(si == 0))
+            _, st = rollout(nca, theta[None], tg, cfg, gen, record=(si == 0),
+                            tgt2=tg.roll(1, 0) if cfg["switch"] > 0 else None)
+        tg = st["tgt"]
         if si == 0:
             gif = (st["frames"], tg.cpu())
         for k in range(6):

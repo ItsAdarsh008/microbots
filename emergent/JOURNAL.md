@@ -276,3 +276,44 @@ overlaps the teammate's lattice-policy work on `main`, so it needs the owner's g
 Same picture as wave 6: the structure stands about as well as the even sample frozen, three quarters of the bots
 fall, and the gravity-trained run cannot be told apart from the no-gravity control. Nothing queued; waiting for a
 decision on the next direction (tick 12).
+
+## 2026-11-05 tick 14: lattice track (`lat/`), wave lat1 at generation 200 of 1500: first propping
+
+Go-ahead given for the lattice. Side-view lattice under gravity, cantilever limit L, NCA controller trained by
+evolution strategies on target fill only (README in `lat/`). Fourteen runs launched (7 per box, GPUs 94%).
+
+New measure, `propped`: the fraction of target cells that are filled at the end but would not be held if every bot
+outside the target were removed (computed per shape, `lat/peek.py`, now also in `es.py` evaluate). The control is
+the untrained controller (uniform over the allowed moves): fill 0.02, propped 0.000 on validation and held-out.
+
+Checkpoints at generation 200 (validation set, one evaluation seed; held-out = mushroom, tree):
+
+| run | val fill | val propped | held fill | held propped | ref: target alone stands (val) |
+|---|---|---|---|---|---|
+| L1 | 0.83 | 0.035 | 0.63 | 0.063 | 0.87 |
+| L1 seed 1 | 0.84 | 0.027 | 0.64 | 0.057 | 0.87 |
+| L1, no spares | 0.82 | 0.010 | 0.62 | 0.046 | 0.87 |
+| L1, double spares | 0.83 | 0.079 | 0.72 | 0.153 | 0.87 |
+| L1, 1 memory channel | 0.86 | 0.035 | 0.70 | 0.078 | 0.87 |
+| L1, overhang families only | 0.79 | 0.069 | 0.69 | 0.075 | 0.72 |
+| L3 | 0.90 | 0.016 | 0.76 | 0.008 | 0.96 |
+| no limit (control) | 0.93 | 0.003 | 0.76 | 0.032 | 1.00 |
+
+Readings (partial, single seeds, not yet replicated):
+- Propping appears with no term asking for it, and grows with the number of spare bots (no spares 0.010, default
+  0.035, double 0.079 on validation; 0.046 / 0.063 / 0.153 held-out). It is near zero without a cantilever limit,
+  as it should be (nothing needs propping there).
+- Pictures: the overhang-only run builds columns of spare bots directly under bridge decks, T arms and mushroom caps,
+  and parks the remaining spares against the right wall. The double-spares run fills the space under the bridge
+  deck and under the held-out mushroom cap with spares.
+- The overhang-only run's validation fill (0.79) is above what a perfect placement of the target alone keeps
+  (0.72): the first case of beating the reference. Everywhere else fill is still below the reference (the
+  swarm props some overhang cells but misses others). Replicates queued (seeds 1, 2).
+- Many bots fall during the build (about 500 bot-steps unheld per episode against about 15 for nothing); the
+  swarm climbs and drops a lot. Not penalised; a move-cost run tests whether it matters.
+
+Changes: stopped three optimiser-knob runs (population 256, sigma 0.02, width 64; nothing distinctive at
+generation 100 to 200) to make room. Running now: overhang-only seed 1, overhang-only with L = 0 (only columns hold:
+every overhang must be propped), overhang-only with double spares. Queued (new options in `es.py`): target switch
+at half time (reconfiguration), move cost, kick (remove 10% of bots after settling, then settle again), no memory
+(C = 0), bigger world (32 x 64), L = 0 on all families, overhang-only with kick, overhang-only seed 2.

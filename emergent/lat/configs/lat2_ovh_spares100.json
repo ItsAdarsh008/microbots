@@ -1,0 +1,1 @@
+{"algo": "lat", "eval_every": 100, "gens": 1500, "families": ["gamma", "bridge", "tee"], "spares": 1.0}

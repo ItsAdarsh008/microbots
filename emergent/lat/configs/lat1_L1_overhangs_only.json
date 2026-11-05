@@ -1,0 +1,11 @@
+{
+ "algo": "lat",
+ "gens": 1500,
+ "eval_every": 100,
+ "families": [
+  "gamma",
+  "bridge",
+  "tee"
+ ],
+ "name": "lat1_L1_overhangs_only"
+}

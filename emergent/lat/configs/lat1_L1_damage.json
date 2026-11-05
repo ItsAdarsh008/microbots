@@ -1,0 +1,7 @@
+{
+ "algo": "lat",
+ "gens": 1500,
+ "eval_every": 100,
+ "damage": 0.5,
+ "name": "lat1_L1_damage"
+}

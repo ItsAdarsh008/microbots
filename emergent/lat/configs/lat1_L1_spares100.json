@@ -1,0 +1,7 @@
+{
+ "algo": "lat",
+ "gens": 1500,
+ "eval_every": 100,
+ "spares": 1.0,
+ "name": "lat1_L1_spares100"
+}

@@ -1,0 +1,7 @@
+{
+ "algo": "lat",
+ "gens": 1500,
+ "eval_every": 100,
+ "pop": 256,
+ "name": "lat1_L1_pop256"
+}

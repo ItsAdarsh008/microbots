@@ -19,7 +19,7 @@ while True:
         continue
     import json
     try:
-        script = "rl.py" if json.load(open(f"{Q}/running/{j}")).get("algo") == "rl" else "train.py"
+        script = {"rl": "rl.py", "lat": "lat/es.py"}.get(json.load(open(f"{Q}/running/{j}")).get("algo"), "train.py")
     except Exception:
         script = "train.py"
     r = subprocess.run([sys.executable, script, f"{Q}/running/{j}"], cwd=os.path.expanduser("~/emergent"),

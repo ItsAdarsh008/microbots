@@ -1,0 +1,7 @@
+{
+ "algo": "lat",
+ "gens": 1500,
+ "eval_every": 100,
+ "T": 300,
+ "name": "lat1_L1_T300"
+}

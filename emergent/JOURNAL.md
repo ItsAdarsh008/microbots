@@ -485,3 +485,29 @@ seed 0 final 0.777). No-cure clean control final 0.692 (ref 0.724). Cure without
 (site_out 32: it fills by piling). Move cost warm 0.90. Switch 0.73 at generation 900 (stuck below 0.87). Big world
 0.88 (ref 0.87). Kick 10% final 0.77; overhangs + kick warm final 0.67 (ref 0.72). Shelter objective runs: shelter
 0.24 to 0.28 per bot at generations 100 to 300, no clear growth yet.
+
+## 2026-11-05 tick 21: chasm crossing emerges from scratch; no-limit shelter makes a gallows
+
+**Chasm from scratch (lat7, no warm start, curing K = 20):** seed 0 fill **0.956** at generation 300 (gallery: four
+of six chasms at 1.00): the same cure-and-extend deck, plus a few spares left as a staircase to finish the far
+tower. Seed 1 is slower, 0.54 at generation 250 (decks partly laid). Seed 2 queued. So crossing does not need the
+warm start (one seed so far). Warm runs: s0 0.998 at 450, s1 0.993 at 400 (replicated). No-cure controls flat (L1
+0.06, L3 0.20 at 400 to 500).
+
+**Slow curing K = 60 (warm):** 0.35 at generation 300; decks are only partly laid. Consistent with the time-budget
+reading: a 12-cell gap needs about 12 x 60 / 2 = 360 steps of curing alone, more than T = 300.
+
+**Chasm + clean cost 0.5 (warm):** 0.90 with 1.5 bots left on the site: crossing with almost no leftovers.
+
+**Shelter, no cantilever limit (L = 64):** shelter 7.2 covered cells per bot (L = 1: 0.55; L = 3: 0.30). Picture: a
+**gallows**, one column to the ceiling and one long roof cantilevered from its top, on every episode. That is the
+best shape for this objective once the physics allows it, and it emerged without any shape in the reward. With L
+= 1 or 3 the swarm only makes a low porous mat. Queued (lat8): shelter at L = 1 **with curing** (T = 300, two
+seeds): does cure-and-extend turn the mat into a roof?
+
+**Formwork curing + clean cost 0.2 (lat6_formwork_clean02):** fill 0.92 but 32 bots left on the site: the props
+stay and cure into solid blocks under every overhang. Cheap enough to keep, so no striking. Third negative for
+build-then-strike.
+
+Finals: switch 0.715 (ref 0.87, fails); overhangs seed 2 0.822 (ref 0.72, third replicate); cure without clean
+cost 0.988 (31 leftovers); move cost warm 0.909; big world 0.87 at generation 500 (at the reference).

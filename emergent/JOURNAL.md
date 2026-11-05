@@ -248,3 +248,20 @@ All 192 validation shapes; EMA (raw weights in brackets). Even sample after hold
 - Summary of the emergent-physics track so far: shape formation is learnable with drone forces; with
   momentum-conserving forces under gravity nothing leaves the pile (gradients and PPO); standing structure has not
   emerged under any objective tried. Wave 7 (twice the build time) is the last planned wave of this design.
+
+## 2026-11-05 tick 12: wave 7 (twice the build time) is worse; pausing this design
+
+Validation IoU at iteration 500 to 750 (EMA / raw): bond 2 always latched 0.31 / 0.31 (pile), bond 3 0.32,
+learned grip bond 16 (two seeds) 0.27 to 0.31, bond 64 0.32, bond 2 hold weight 3 0.29 / 0.25: **six of eight runs
+never left the pile.** Only the no-gravity control learns (build 0.59, hold 0.34 at iteration 750) and the second
+seed of bond 2 is slowly moving (raw build 0.43 at 500). A longer horizon weakens the gradient signal through the
+physics rather than helping. The six stuck runs were stopped; the two moving ones finish.
+
+**Diminishing returns (operating rule):** across seven waves (about 60 runs) the emergent-physics design has given
+one reliable positive (shape formation with drone forces) and consistent negatives on everything the direction is
+about: no run with momentum-conserving forces under gravity leaves the pile (gradients or PPO), and no objective
+produced structure that stands better than the even sample frozen. Further sweeps of this design would fill in
+curves already understood. **Proposal:** move the structural question to the 3D lattice (`linking/`), where moves
+are already valid and never drop a bot, and replace the hand-written support planner and readiness rule with a
+learned local policy judged only by whether the structure stands under a strength-limited connector model. This
+overlaps the teammate's lattice-policy work on `main`, so it needs the owner's go-ahead.

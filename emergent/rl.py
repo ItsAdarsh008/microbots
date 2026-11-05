@@ -23,7 +23,7 @@ from sim import Physics, pile
 from policy import Policy
 
 RL_DEF = dict(envs=32, epochs=4, mb=16, clip_eps=0.2, gamma=0.99, lam=0.95, ent_w=0.0, vf_w=0.5, log_std0=-0.5,
-              updates=600, rl_lr=3e-4, rew_scale=1.0)
+              updates=600, rl_lr=3e-4, rew_scale=1.0, per_bot=False)
 
 
 class RLPolicy(Policy):
@@ -31,6 +31,7 @@ class RLPolicy(Policy):
         super().__init__(**kw)
         self.log_std = nn.Parameter(torch.full((3,), float(log_std0)))
         self.vhead = nn.Sequential(nn.Linear(self.M, self.M), nn.SiLU(), nn.Linear(self.M, 1))
+        self.vhead_bot = nn.Sequential(nn.Linear(2 * self.M, self.M), nn.SiLU(), nn.Linear(self.M, 1))
 
     def raw(self, x, v, h, mapf, alive):
         """Returns the raw mean output o (B, N, 3), new memory, embedding e."""
@@ -59,8 +60,10 @@ class RLPolicy(Policy):
         grip = torch.sigmoid(o[..., 2] + self.grip_bias)
         return a, grip
 
-    def value(self, e, alive):
+    def value(self, e, alive, per_bot=False):
         g = (e * alive[..., None]).sum(1) / alive.sum(1, keepdim=True).clamp(min=1)
+        if per_bot:
+            return self.vhead_bot(torch.cat([e, g[:, None].expand_as(e)], -1))[..., 0]   # (B, N)
         return self.vhead(g)[..., 0]
 
 
@@ -115,39 +118,44 @@ def main(path):
         alive = torch.ones(E, N, device=dev)
         gs = torch.tensor(float(cfg["g"]), device=dev)
         buf = dict(x=[], v=[], h=[], u=[], logp=[], val=[], rew=[])
+        PB = cfg["per_bot"]
+        lossf = (lambda x_: shape_loss_per_bot(x_, alive, Q, maps, data.W, cfg["out_w"])) if PB else \
+                (lambda x_: shape_loss_per_env(x_, alive, Q, maps, data.W, cfg["out_w"]))
         with torch.no_grad():
-            L_prev = shape_loss_per_env(x, alive, Q, maps, data.W, cfg["out_w"])
+            L_prev = lossf(x)
             for t in range(T):
                 mf = map_features(maps, x, data.W)
                 o, hn, e = pol.raw(x, v, h, mf, alive)
                 std = pol.log_std.exp()
                 u = o + std * torch.randn_like(o)
                 logp = (-0.5 * ((u - o) / std) ** 2 - pol.log_std - 0.5 * math.log(2 * math.pi)).sum(-1)  # per bot (E, N)
-                val = pol.value(e, alive)
+                val = pol.value(e, alive, PB)
                 buf["x"].append(x); buf["v"].append(v); buf["h"].append(h); buf["u"].append(u)
                 buf["logp"].append(logp); buf["val"].append(val)
                 a, grip = pol.act_from(u)
                 for _ in range(K):
                     x, v = ph.step(x, v, a, grip, alive, gs, 1.0)
                 h = hn
-                L = shape_loss_per_env(x, alive, Q, maps, data.W, cfg["out_w"])
+                L = lossf(x)
                 buf["rew"].append((L_prev - L) * cfg["rew_scale"])
                 L_prev = L
             xb = x
             for _ in range(cfg["hold"] // K):
                 for _ in range(K):
                     x, v = ph.step(x, v, None, grip, alive, gs, 1.0)
+            Lh_ = lossf(x)
+            buf["rew"][-1] = buf["rew"][-1] - cfg["hold_w"] * (Lh_ - lossf(xb)) * cfg["rew_scale"]
             Lh = shape_loss_per_env(x, alive, Q, maps, data.W, cfg["out_w"])
-            buf["rew"][-1] = buf["rew"][-1] - cfg["hold_w"] * (Lh - shape_loss_per_env(xb, alive, Q, maps, data.W, cfg["out_w"])) * cfg["rew_scale"]
-            rew = torch.stack(buf["rew"])          # (T, E)
+            rew = torch.stack(buf["rew"])          # (T, E) or (T, E, N)
             val = torch.stack(buf["val"])
             # reward normalisation by a running scale of returns
-            ret_rms[0] = 0.99 * ret_rms[0] + 0.01 * float(rew.sum(0).std().clamp(min=1e-3))
+            sd_now = float(rew.sum(0).std().clamp(min=1e-3))
+            ret_rms[0] = sd_now if upd == start else 0.99 * ret_rms[0] + 0.01 * sd_now
             rn = rew / ret_rms[0]
             adv = torch.zeros_like(rn)
-            last = torch.zeros(E, device=dev)
+            last = torch.zeros_like(rn[0])
             for t in reversed(range(T)):
-                nv = val[t + 1] if t + 1 < T else torch.zeros(E, device=dev)
+                nv = val[t + 1] if t + 1 < T else torch.zeros_like(rn[0])
                 delta = rn[t] + cfg["gamma"] * nv - val[t]
                 last = delta + cfg["gamma"] * cfg["lam"] * last
                 adv[t] = last
@@ -170,9 +178,9 @@ def main(path):
                 o, _, e = pol.raw(xs, vs, hs, map_features(ms, xs, data.W), al)
                 lp = (-0.5 * ((us - o) / pol.log_std.exp()) ** 2 - pol.log_std - 0.5 * math.log(2 * math.pi)).sum(-1)
                 ratio = torch.exp(torch.clamp(lp - LP[ts, es], -20, 20))      # per bot (mb, N)
-                a_ = A[ts, es][:, None]                                         # shared team advantage
+                a_ = A[ts, es] if PB else A[ts, es][:, None]                     # per-bot or shared team advantage
                 pl = -torch.min(ratio * a_, torch.clamp(ratio, 1 - cfg["clip_eps"], 1 + cfg["clip_eps"]) * a_).mean()
-                vl = ((pol.value(e, al) - ret[ts, es]) ** 2).mean()
+                vl = ((pol.value(e, al, PB) - ret[ts, es]) ** 2).mean()
                 ent = pol.log_std.sum()
                 loss = pl + cfg["vf_w"] * vl - cfg["ent_w"] * ent + cfg["pre_w"] * (o[..., :2] ** 2).mean()
                 opt.zero_grad(set_to_none=True)
@@ -183,7 +191,7 @@ def main(path):
         if upd % 10 == 0:
             s = np.mean(stats, 0)
             P(f"upd {upd} build_loss {shape_loss_per_env(xb, alive, Q, maps, data.W, cfg['out_w']).mean().item():.2f} "
-              f"hold_loss {Lh.mean().item():.2f} ret {rew.sum(0).mean().item():.2f} pl {s[0]:.3f} vl {s[1]:.3f} "
+              f"hold_loss {Lh.mean().item():.2f} ret {rew.sum(0).mean().item():.3f} pl {s[0]:.3f} vl {s[1]:.3f} "
               f"|r-1| {s[2]:.3f} std {pol.log_std.exp().tolist()} grip {grip.mean().item():.2f} {(time.time() - t0) / (upd - start + 1):.1f}s/upd")
         if (upd + 1) % 25 == 0 or upd + 1 == cfg["updates"]:
             tmp = ck + f".tmp{os.getpid()}"
@@ -222,6 +230,19 @@ class DetWrap(nn.Module):
         o, hn, _ = self.pol.raw(x, v, h, mf, alive)
         a, grip = self.pol.act_from(o)
         return a, grip, hn, (o[..., :2] ** 2).mean()
+
+
+def shape_loss_per_bot(x, alive, Q, maps, W, out_w):
+    """The Chamfer shape loss split exactly into per-bot parts: a bot's own squared distance to the shape, plus the
+    squared distances of the target points it is the nearest bot to, plus its outside penalty. (B, N)."""
+    D = torch.cdist(x, Q) ** 2                          # (B, N, M)
+    big = 1e4 * (1 - alive)[:, :, None]
+    own = D.min(2).values * alive
+    dq, iq = (D + big).min(1)                           # nearest bot per target point
+    cov = torch.zeros_like(own).scatter_add_(1, iq, dq)
+    sd = map_features(maps[:, :1], x, W)[..., 0] * 4.0
+    out = (torch.relu(sd) ** 2) * alive
+    return own + cov + out_w * out
 
 
 def shape_loss_per_env(x, alive, Q, maps, W, out_w):

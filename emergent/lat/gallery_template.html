@@ -1,0 +1,150 @@
+<title>Lattice Swarm Gallery</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: specimen plates. A header with the colour key, a filterable summary table, then one grid of GIF plates per question. */
+:root {
+  --bg: #f3f2ec; --paper: #fbfaf6; --ink: #1d2230; --muted: #51555f; --rule: #d9d7cd;
+  --blue: #2f5496; --orange: #e28034; --red: #d02c2c; --grey: #d6d6ce; --dblue: #162a58; --brown: #8c4814;
+  --ok: #17633b; --ok-bg: #dcefe2; --mid: #8a5a00; --mid-bg: #f6e7c4; --bad: #a3241f; --bad-bg: #f6d9d6;
+  --ctl: #3d4f74; --ctl-bg: #dfe4ee; --run: #5b3f8c; --run-bg: #e7e0f3; --inc: #51555f; --inc-bg: #e6e5df;
+  --above: #1f7a4a; --below: #a3241f;
+  --f-display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --f-body: "Instrument Sans", "Helvetica Neue", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15171d; --paper: #1d2028; --ink: #e9e8e2; --muted: #a2a5b1; --rule: #343844;
+  --ok: #7fd3a2; --ok-bg: #1d3a2a; --mid: #f0c46a; --mid-bg: #3d3018; --bad: #f2948d; --bad-bg: #42201e;
+  --ctl: #aebde0; --ctl-bg: #262e42; --run: #c7b2ef; --run-bg: #2f2645; --inc: #a2a5b1; --inc-bg: #2a2d36;
+  --above: #7fd3a2; --below: #f2948d; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #15171d; --paper: #1d2028; --ink: #e9e8e2; --muted: #a2a5b1; --rule: #343844;
+  --ok: #7fd3a2; --ok-bg: #1d3a2a; --mid: #f0c46a; --mid-bg: #3d3018; --bad: #f2948d; --bad-bg: #42201e;
+  --ctl: #aebde0; --ctl-bg: #262e42; --run: #c7b2ef; --run-bg: #2f2645; --inc: #a2a5b1; --inc-bg: #2a2d36;
+  --above: #7fd3a2; --below: #f2948d; color-scheme: dark }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 28px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(30px, 4.4vw, 46px); letter-spacing: -0.01em; line-height: 1.05; }
+h2 { font-size: 24px; margin-bottom: 4px; }
+h3 { font-size: 17px; line-height: 1.25; }
+code, .num, .mv { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+header { display: grid; gap: 18px; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start;
+  border-bottom: 1px solid var(--rule); padding-bottom: 24px; }
+header .intro p { max-width: 62ch; color: var(--muted); margin: 10px 0 0; }
+.eyebrow { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.key { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 16px; display: grid; gap: 10px; }
+.key h4 { margin: 0; font-size: 12px; font-family: var(--f-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+.sw { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; font-size: 13.5px; }
+.sw span { display: flex; gap: 8px; align-items: center; }
+.sw i { width: 14px; height: 14px; border-radius: 2px; flex: none; border: 1px solid rgba(0,0,0,.12); }
+.key p { margin: 0; font-size: 13.5px; color: var(--muted); }
+.filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 26px 0 12px; align-items: center; }
+.filters button { font: 500 13.5px var(--f-body); border: 1px solid var(--rule); background: var(--paper); color: var(--ink);
+  padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.filters button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.filters button:focus-visible, a:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.tablebox { overflow-x: auto; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { text-align: left; padding: 7px 12px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th { font: 500 12px var(--f-mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+tr:last-child td { border-bottom: 0; }
+td a { color: var(--ink); text-decoration-color: var(--rule); text-underline-offset: 3px; }
+section { margin-top: 44px; }
+.lede { color: var(--muted); margin: 0 0 16px; max-width: 75ch; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 400px), 1fr)); gap: 18px; }
+.card { background: var(--paper); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
+.card img { display: block; width: 100%; height: auto; image-rendering: pixelated; background: #f8f7f3; border-bottom: 1px solid var(--rule); }
+.card .body { padding: 12px 14px 14px; display: grid; gap: 8px; }
+.top { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
+.id { font-size: 12.5px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.id code { color: var(--ink); }
+.pill { font: 600 11.5px var(--f-body); letter-spacing: 0.04em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.pill.works { color: var(--ok); background: var(--ok-bg); }
+.pill.partial { color: var(--mid); background: var(--mid-bg); }
+.pill.fails { color: var(--bad); background: var(--bad-bg); }
+.pill.control { color: var(--ctl); background: var(--ctl-bg); }
+.pill.running { color: var(--run); background: var(--run-bg); }
+.pill.inconclusive { color: var(--inc); background: var(--inc-bg); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12.5px; border: 1px solid var(--rule); border-radius: 4px; padding: 3px 8px; font-family: var(--f-mono); }
+.chip .k { font-family: var(--f-body); color: var(--muted); }
+.chip.base { color: var(--muted); font-family: var(--f-body); }
+.metrics { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.m { display: flex; gap: 8px; align-items: baseline; }
+.mv { font-size: 19px; font-weight: 500; }
+.m.above .mv { color: var(--above); } .m.below .mv { color: var(--below); }
+.ml { font-size: 12px; line-height: 1.2; color: var(--muted); }
+.ml span { font-family: var(--f-mono); }
+.note { margin: 0; font-size: 14px; }
+footer { margin-top: 48px; color: var(--muted); font-size: 13px; border-top: 1px solid var(--rule); padding-top: 16px; }
+@media (max-width: 820px) { header { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="intro">
+    <div class="eyebrow">microbots · lattice under gravity · evolution strategies</div>
+    <h1>Lattice Swarm Gallery</h1>
+    <p>Every lattice run, each replayed on the same six shapes: tower, gamma, bridge, tee, mushroom and tree. The swarm starts as a pile on the left and is trained only to fill the target. Nothing in the objective mentions supports, build order or falling. Mushroom and tree are held out: no run trained on them.</p>
+    <p>A run <strong>works</strong> when it fills more than the target could keep on its own (the perfect-placement reference). Numbers in green beat that reference and numbers in red fall short of it.</p>
+  </div>
+  <div class="key" aria-label="Colour key for the GIFs">
+    <h4>Reading the GIFs</h4>
+    <div class="sw">
+      <span><i style="background:#2f5496"></i>target cell filled</span>
+      <span><i style="background:#d6d6ce"></i>target cell still empty</span>
+      <span><i style="background:#e28034"></i>bot outside the target</span>
+      <span><i style="background:#d02c2c"></i>falling (unheld) bot</span>
+      <span><i style="background:#162a58"></i>cured bot in target</span>
+      <span><i style="background:#8c4814"></i>cured bot outside</span>
+    </div>
+    <p><strong>L</strong> (cantilever limit) is how many cells a bot can stick out sideways and stay held. Unheld bots fall one cell per step. Each GIF shows the build steps, then gravity alone with no actions. It pauses on the final state.</p>
+    <p><strong>Chips</strong> list what differs from the base run (L = 1, 30% spare bots, 8 memory channels, 160 build steps, all shape families).</p>
+  </div>
+</header>
+
+<div class="filters" role="group" aria-label="Filter by verdict">
+  <button type="button" data-f="all" aria-pressed="true">All ({{N}})</button>
+  <button type="button" data-f="works" aria-pressed="false">Works</button>
+  <button type="button" data-f="partial" aria-pressed="false">Partial</button>
+  <button type="button" data-f="fails" aria-pressed="false">Fails</button>
+  <button type="button" data-f="control" aria-pressed="false">Controls</button>
+  <button type="button" data-f="running" aria-pressed="false">Still running</button>
+</div>
+
+<div class="tablebox">
+<table>
+  <thead><tr><th>Run</th><th>Verdict</th><th>Fill / ref (training shapes)</th><th>Fill / ref (held-out)</th><th>Status</th></tr></thead>
+  <tbody>
+{{TABLE}}
+  </tbody>
+</table>
+</div>
+
+{{SECTIONS}}
+
+<footer>Rendered from checkpoints on the two A100 boxes (Nov 5, 2026). Running runs show their latest checkpoint. Metrics come from each run's own evaluation on 64 validation and 64 held-out shapes. The GIFs show one fixed sample of six shapes, so a single panel can be better or worse than the run's average. Branch <code>emergent-physics</code>, code in <code>emergent/lat/</code>, notes in <code>emergent/JOURNAL.md</code>.</footer>
+</div>
+
+<script>
+(function () {
+  var btns = document.querySelectorAll('.filters button');
+  function apply(f) {
+    btns.forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.f === f)); });
+    document.querySelectorAll('[data-verdict]').forEach(function (el) {
+      el.hidden = !(f === 'all' || el.dataset.verdict === f);
+    });
+    document.querySelectorAll('section').forEach(function (s) {
+      var any = s.querySelector('.card:not([hidden])');
+      s.hidden = !any;
+    });
+  }
+  btns.forEach(function (b) { b.addEventListener('click', function () { apply(b.dataset.f); }); });
+})();
+</script>

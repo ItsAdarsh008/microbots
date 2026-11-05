@@ -174,6 +174,14 @@ class NCA:
         return h.reshape(S, P, -1, H, W).transpose(0, 1).reshape(E, -1, H, W)
 
 
+def _snap(occ, s, inc, age, K, tgt, L):
+    """For pictures: (occ, unheld, cured, target) on the CPU."""
+    s2 = support_span(occ, L, s, 2, inc)
+    unheld = occ * (s2 > L).float()
+    cured = occ * (age >= K).float() if K > 0 else torch.zeros_like(occ)
+    return torch.stack([occ, unheld, cured, tgt]).cpu()
+
+
 def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
     """theta (P, n); tgt (P*S, H, W). Returns fitness (P*S,) and stats. tgt2: the target after the switch."""
     E, H, W = tgt.shape
@@ -188,7 +196,7 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
     s = support_span(occ, cfg["L"], None, H + W)
     fill_sum = torch.zeros(E, device=dev)
     falls = torch.zeros(E, device=dev)
-    frames = []
+    frames, xframes = [], []
     nt = tgt.flatten(1).sum(1)
     nb = occ.flatten(1).sum(1)
     moves = torch.zeros(E, device=dev)
@@ -227,6 +235,7 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
         fill_sum += (occ * tgt).flatten(1).sum(1) / nt
         if record:
             frames.append(occ.cpu())
+            xframes.append(("build", t, _snap(occ, s, inc, age, K, tgt, cfg["L"])))
     for _ in range(cfg["settle"]):
         s = support_span(occ, cfg["L"], s, cfg["support_iters"], inc)
         occ, hid, unheld = gravity(occ, hid, cfg["L"], s)
@@ -235,6 +244,7 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
         falls += unheld
         if record and _ % 3 == 0:
             frames.append(occ.cpu())
+            xframes.append(("settle", _, _snap(occ, s, inc, age, K, tgt, cfg["L"])))
     if cfg["kick"] > 0:
         occ = occ * (torch.rand(occ.shape, device=dev, generator=gen) >= cfg["kick"]).float()
         for _ in range(cfg["settle"]):
@@ -242,6 +252,8 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
             occ, hid, unheld = gravity(occ, hid, cfg["L"], s)
             if K > 0:
                 age = age * occ * (s <= cfg["L"]).float(); inc = 1.0 - (age >= K).float()
+            if record and _ % 3 == 0:
+                xframes.append(("after kick", _, _snap(occ, s, inc, age, K, tgt, cfg["L"])))
     fill = (occ * tgt).flatten(1).sum(1) / nt
     shelter, height = shelter_height(occ)
     shelter = shelter / nb
@@ -251,7 +263,7 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
     site_out = (occ * (1 - tgt) * cols).flatten(1).sum(1)
     fit = main_term + speed - cfg["move_w"] * moves / nb - cfg.get("clean_w", 0.0) * site_out / nt
     outside = (occ * (1 - tgt)).flatten(1).sum(1)
-    return fit, dict(fill=fill, falls=falls, outside=outside, occ=occ, frames=frames, moves=moves / nb, tgt=tgt, site_out=site_out, inc=inc,
+    return fit, dict(fill=fill, falls=falls, outside=outside, occ=occ, frames=frames, xframes=xframes, moves=moves / nb, tgt=tgt, site_out=site_out, inc=inc,
                      shelter=shelter, height=height)
 
 

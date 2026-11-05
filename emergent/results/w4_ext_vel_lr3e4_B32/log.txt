@@ -38,3 +38,11 @@ it 775 loss 20.815 build 5.209 (t1 0.97 t2 3.65 out 0.59) hold 6.570 mix 1.00 as
 it 800 loss 19.219 build 4.755 (t1 1.29 t2 2.61 out 0.85) hold 6.651 mix 1.00 asq 1.01 grip 0.10 gn 3848.47 g 1.00 3.35s/it
 it 825 loss 27.409 build 6.835 (t1 1.30 t2 4.70 out 0.84) hold 9.025 mix 1.00 asq 0.99 grip 0.10 gn 1783.44 g 1.00 3.35s/it
 it 850 loss 23.164 build 5.684 (t1 1.15 t2 3.81 out 0.72) hold 7.288 mix 1.00 asq 1.00 grip 0.10 gn 1777.09 g 1.00 3.33s/it
+it 875 loss 24.134 build 6.103 (t1 1.21 t2 4.10 out 0.79) hold 7.355 mix 1.00 asq 1.01 grip 0.10 gn 1675.58 g 1.00 3.34s/it
+it 900 loss 25.425 build 6.271 (t1 1.39 t2 3.95 out 0.93) hold 7.566 mix 1.00 asq 1.02 grip 0.10 gn 2099.61 g 1.00 3.35s/it
+it 925 loss 20.374 build 4.970 (t1 1.11 t2 3.17 out 0.69) hold 6.471 mix 1.00 asq 1.04 grip 0.10 gn 869.62 g 1.00 3.35s/it
+it 950 loss 35.440 build 9.119 (t1 1.44 t2 6.72 out 0.96) hold 10.640 mix 1.00 asq 1.04 grip 0.10 gn 3292.23 g 1.00 3.36s/it
+it 975 loss 17.585 build 4.262 (t1 0.97 t2 2.70 out 0.60) hold 5.567 mix 1.00 asq 0.96 grip 0.10 gn 1227.28 g 1.00 3.37s/it
+final val: iou_build 0.539 iou_hold 0.272 cover_hold 0.423 sag 3.004 fallen 0.620 grip 0.097 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000 base_pile_iou 0.357 base_ceiling_iou 0.918 base_ceilfreeze_iou_hold 0.384 base_ceilfreeze_sag 4.470 base_ceilfreeze_fallen 0.704 base_ceilfreeze_deg_all 4.869 base_ceilfreeze_tri_all 4.133 base_ceilfreeze_deg_ov 2.260 base_ceilfreeze_tri_ov 1.865 base_ceilfreeze_deg_sup 5.103 base_ceilfreeze_tri_sup 4.436
+final held: iou_build 0.401 iou_hold 0.137 cover_hold 0.254 sag 3.801 fallen 0.705 grip 0.091 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000 base_pile_iou 0.158 base_ceiling_iou 0.914 base_ceilfreeze_iou_hold 0.136 base_ceilfreeze_sag 7.821 base_ceilfreeze_fallen 0.901 base_ceilfreeze_deg_all 4.811 base_ceilfreeze_tri_all 4.037 base_ceilfreeze_deg_ov 3.327 base_ceilfreeze_tri_ov 2.450 base_ceilfreeze_deg_sup 5.054 base_ceilfreeze_tri_sup 4.347
+done

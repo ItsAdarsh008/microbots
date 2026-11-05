@@ -1,0 +1,60 @@
+{"data": "data/world128.npz", "iters": 1500, "B": 16, "lr": 0.0003, "T": 64, "K": 8, "hold": 200, "hold_eval": 1000, "hold_w": 1.0, "g": 1.0, "g_warm": 0, "f_bond": 16.0, "f_act": 3.0, "mu": 0.5, "reaction": "external", "r_sense": 3.0, "H": 32, "M": 96, "rounds": 2, "use_h": true, "see_v": true, "out_w": 1.0, "act_w": 0.0, "seed": 1, "offset": 0.0, "shuffle_targets": false, "eval_every": 250, "ema": 0.995, "clip": 1.0, "n_eval": 192, "k_c": 2000.0, "r_bond": 1.25, "r_hold": 1.15, "damage_p": 0.0, "damage_r": 2.5, "grip_fixed": null, "families": null, "g_eval": null, "compile": true, "grad_decay": 1.0, "grad_clip_step": 10.0, "dense_w": 1.0, "grip_bias": -2.0, "pre_w": 0.01, "r_touch": 1.15, "mix_start": 0, "mix_iters": 0, "ctrl": "force", "kp": 10.0, "v_max": 2.0, "air": 0.05, "k_b": 2000.0, "dt": 0.01, "c_c": 3.0, "c_b": 2.0, "name": "s5_ext_fb16_s1"}
+params 151491
+it 0 loss 72.063 build 24.416 (t1 6.10 t2 13.27 out 5.05) hold 26.248 mix 1.00 asq 0.00 grip 0.12 gn 368.91 g 1.00 6.48s/it
+it 25 loss 71.413 build 23.751 (t1 5.90 t2 13.14 out 4.71) hold 26.476 mix 1.00 asq 0.00 grip 0.12 gn 313.92 g 1.00 3.08s/it
+it 50 loss 81.062 build 27.325 (t1 7.84 t2 13.07 out 6.41) hold 29.285 mix 1.00 asq 0.00 grip 0.12 gn 953.09 g 1.00 3.11s/it
+it 75 loss 112.569 build 37.052 (t1 9.24 t2 20.39 out 7.42) hold 42.849 mix 1.00 asq 0.00 grip 0.12 gn 398.54 g 1.00 3.30s/it
+it 100 loss 66.087 build 22.106 (t1 6.57 t2 10.15 out 5.38) hold 23.943 mix 1.00 asq 0.02 grip 0.13 gn 295.87 g 1.00 3.39s/it
+it 125 loss 64.886 build 21.887 (t1 5.85 t2 11.34 out 4.69) hold 22.576 mix 1.00 asq 0.01 grip 0.12 gn 308.06 g 1.00 3.45s/it
+it 150 loss 89.848 build 30.729 (t1 9.01 t2 14.67 out 7.04) hold 32.017 mix 1.00 asq 0.09 grip 0.12 gn 934.30 g 1.00 3.49s/it
+it 175 loss 125.300 build 42.053 (t1 10.56 t2 23.18 out 8.32) hold 44.531 mix 1.00 asq 0.10 grip 0.14 gn 3435.67 g 1.00 3.51s/it
+it 200 loss 167.889 build 57.535 (t1 15.09 t2 31.31 out 11.14) hold 58.127 mix 1.00 asq 0.25 grip 0.14 gn 399.92 g 1.00 3.54s/it
+it 225 loss 88.449 build 30.657 (t1 8.72 t2 15.08 out 6.86) hold 30.866 mix 1.00 asq 0.34 grip 0.13 gn 2340.63 g 1.00 3.55s/it
+eval it 250: iou_build 0.279 iou_hold 0.273 cover_hold 0.411 sag 0.211 fallen 0.022 grip 0.124 iou_hold_gripall 0.284 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+it 250 loss 146.208 build 49.955 (t1 12.93 t2 27.28 out 9.74) hold 51.315 mix 1.00 asq 0.14 grip 0.13 gn 1526.99 g 1.00 3.58s/it
+it 275 loss 138.414 build 47.710 (t1 11.70 t2 26.74 out 9.28) hold 49.798 mix 1.00 asq 0.10 grip 0.12 gn 1878.85 g 1.00 3.59s/it
+it 300 loss 120.208 build 40.826 (t1 9.62 t2 23.34 out 7.86) hold 43.121 mix 1.00 asq 0.12 grip 0.11 gn 853.92 g 1.00 3.59s/it
+it 325 loss 87.627 build 29.653 (t1 8.58 t2 14.36 out 6.71) hold 32.077 mix 1.00 asq 0.17 grip 0.11 gn 764.06 g 1.00 3.60s/it
+it 350 loss 114.107 build 39.297 (t1 10.76 t2 19.88 out 8.66) hold 40.938 mix 1.00 asq 0.11 grip 0.11 gn 472.86 g 1.00 3.61s/it
+it 375 loss 133.366 build 45.895 (t1 13.70 t2 21.49 out 10.70) hold 48.613 mix 1.00 asq 0.27 grip 0.10 gn 741.05 g 1.00 3.61s/it
+it 400 loss 93.338 build 32.167 (t1 10.07 t2 14.37 out 7.73) hold 33.011 mix 1.00 asq 0.35 grip 0.09 gn 808.22 g 1.00 3.62s/it
+it 425 loss 104.391 build 35.756 (t1 9.16 t2 19.06 out 7.54) hold 36.658 mix 1.00 asq 0.43 grip 0.10 gn 5712.33 g 1.00 3.62s/it
+it 450 loss 120.766 build 41.122 (t1 11.03 t2 21.46 out 8.63) hold 41.559 mix 1.00 asq 0.34 grip 0.11 gn 698.21 g 1.00 3.62s/it
+it 475 loss 121.646 build 41.017 (t1 10.46 t2 22.15 out 8.40) hold 43.529 mix 1.00 asq 0.32 grip 0.11 gn 936.42 g 1.00 3.63s/it
+eval it 500: iou_build 0.271 iou_hold 0.267 cover_hold 0.404 sag 0.144 fallen 0.009 grip 0.113 iou_hold_gripall 0.273 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+it 500 loss 106.624 build 36.444 (t1 10.09 t2 18.48 out 7.87) hold 37.487 mix 1.00 asq 0.54 grip 0.11 gn 1671.21 g 1.00 3.64s/it
+it 525 loss 139.256 build 47.436 (t1 13.72 t2 22.83 out 10.88) hold 48.377 mix 1.00 asq 0.55 grip 0.11 gn 1004.98 g 1.00 3.64s/it
+it 550 loss 195.682 build 66.578 (t1 18.12 t2 34.97 out 13.49) hold 67.375 mix 1.00 asq 0.69 grip 0.11 gn 959.98 g 1.00 3.64s/it
+it 575 loss 131.635 build 45.257 (t1 12.87 t2 22.16 out 10.22) hold 46.003 mix 1.00 asq 0.83 grip 0.11 gn 802.53 g 1.00 3.64s/it
+it 600 loss 115.312 build 39.578 (t1 10.17 t2 20.83 out 8.58) hold 39.787 mix 1.00 asq 1.03 grip 0.12 gn 3031.94 g 1.00 3.64s/it
+it 625 loss 112.197 build 38.835 (t1 11.47 t2 18.19 out 9.18) hold 38.662 mix 1.00 asq 0.88 grip 0.11 gn 3894.45 g 1.00 3.65s/it
+it 650 loss 128.238 build 43.575 (t1 11.75 t2 22.26 out 9.57) hold 44.132 mix 1.00 asq 0.96 grip 0.12 gn 6050.19 g 1.00 3.65s/it
+it 675 loss 113.106 build 38.762 (t1 9.13 t2 22.14 out 7.49) hold 38.876 mix 1.00 asq 0.86 grip 0.12 gn 1523.11 g 1.00 3.65s/it
+it 700 loss 153.035 build 52.075 (t1 14.09 t2 27.01 out 10.97) hold 53.040 mix 1.00 asq 0.92 grip 0.12 gn 1620.29 g 1.00 3.65s/it
+it 725 loss 110.633 build 38.354 (t1 13.01 t2 15.81 out 9.54) hold 38.219 mix 1.00 asq 0.61 grip 0.12 gn 750.39 g 1.00 3.65s/it
+eval it 750: iou_build 0.266 iou_hold 0.266 cover_hold 0.398 sag 0.133 fallen 0.005 grip 0.114 iou_hold_gripall 0.270 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+it 750 loss 102.103 build 34.584 (t1 7.79 t2 20.24 out 6.56) hold 35.460 mix 1.00 asq 0.32 grip 0.12 gn 1871.03 g 1.00 3.66s/it
+it 775 loss 65.568 build 22.367 (t1 5.71 t2 12.24 out 4.42) hold 23.261 mix 1.00 asq 0.17 grip 0.12 gn 655.69 g 1.00 3.66s/it
+it 800 loss 103.708 build 35.437 (t1 7.36 t2 22.00 out 6.08) hold 35.502 mix 1.00 asq 0.24 grip 0.12 gn 596.78 g 1.00 3.65s/it
+it 825 loss 121.347 build 41.402 (t1 10.38 t2 23.04 out 7.99) hold 42.118 mix 1.00 asq 0.24 grip 0.12 gn 543.01 g 1.00 3.62s/it
+it 850 loss 112.156 build 38.559 (t1 11.21 t2 18.61 out 8.74) hold 39.094 mix 1.00 asq 0.34 grip 0.12 gn 128.43 g 1.00 3.60s/it
+it 875 loss 131.893 build 45.054 (t1 11.86 t2 24.47 out 8.73) hold 46.344 mix 1.00 asq 0.36 grip 0.12 gn 881.22 g 1.00 3.59s/it
+it 900 loss 103.773 build 35.620 (t1 8.09 t2 21.15 out 6.37) hold 36.128 mix 1.00 asq 0.36 grip 0.12 gn 653.07 g 1.00 3.57s/it
+it 925 loss 82.330 build 28.405 (t1 6.82 t2 16.08 out 5.50) hold 28.797 mix 1.00 asq 0.39 grip 0.13 gn 2094.51 g 1.00 3.55s/it
+it 950 loss 90.575 build 30.888 (t1 7.82 t2 16.74 out 6.33) hold 31.028 mix 1.00 asq 0.36 grip 0.13 gn 792.90 g 1.00 3.54s/it
+it 975 loss 104.651 build 36.207 (t1 9.44 t2 19.27 out 7.49) hold 36.955 mix 1.00 asq 0.38 grip 0.13 gn 215.42 g 1.00 3.53s/it
+eval it 1000: iou_build 0.274 iou_hold 0.269 cover_hold 0.402 sag 0.108 fallen 0.007 grip 0.121 iou_hold_gripall 0.274 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+it 1000 loss 132.326 build 45.262 (t1 10.80 t2 25.94 out 8.52) hold 45.296 mix 1.00 asq 0.43 grip 0.13 gn 709.97 g 1.00 3.52s/it
+it 1025 loss 192.002 build 65.920 (t1 16.93 t2 36.19 out 12.80) hold 67.199 mix 1.00 asq 0.43 grip 0.13 gn 1549.41 g 1.00 3.50s/it
+it 1050 loss 113.627 build 38.498 (t1 11.46 t2 19.14 out 7.90) hold 41.046 mix 1.00 asq 0.42 grip 0.13 gn 984.82 g 1.00 3.49s/it
+it 1075 loss 177.259 build 60.048 (t1 16.55 t2 31.51 out 11.99) hold 60.567 mix 1.00 asq 0.39 grip 0.13 gn 438.87 g 1.00 3.48s/it
+it 1100 loss 161.253 build 54.575 (t1 13.11 t2 30.80 out 10.67) hold 56.764 mix 1.00 asq 0.31 grip 0.13 gn 1457.18 g 1.00 3.47s/it
+it 1125 loss 181.704 build 62.297 (t1 15.61 t2 34.62 out 12.08) hold 62.712 mix 1.00 asq 0.32 grip 0.13 gn 649.84 g 1.00 3.45s/it
+it 1150 loss 93.165 build 31.740 (t1 7.61 t2 17.81 out 6.32) hold 32.354 mix 1.00 asq 0.32 grip 0.13 gn 2680.36 g 1.00 3.44s/it
+it 1175 loss 70.260 build 24.081 (t1 6.10 t2 13.06 out 4.92) hold 24.885 mix 1.00 asq 0.36 grip 0.13 gn 655.62 g 1.00 3.43s/it
+it 1200 loss 169.369 build 57.401 (t1 14.15 t2 32.22 out 11.03) hold 58.984 mix 1.00 asq 0.35 grip 0.13 gn 508.81 g 1.00 3.43s/it
+it 1225 loss 109.163 build 36.999 (t1 8.68 t2 20.99 out 7.33) hold 38.091 mix 1.00 asq 0.37 grip 0.13 gn 753.28 g 1.00 3.42s/it
+eval it 1250: iou_build 0.275 iou_hold 0.270 cover_hold 0.405 sag 0.108 fallen 0.005 grip 0.125 iou_hold_gripall 0.277 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+it 1250 loss 128.179 build 43.888 (t1 11.23 t2 23.84 out 8.82) hold 43.511 mix 1.00 asq 0.37 grip 0.13 gn 787.24 g 1.00 3.41s/it
+it 1275 loss 124.466 build 42.132 (t1 10.88 t2 22.51 out 8.74) hold 44.214 mix 1.00 asq 0.36 grip 0.13 gn 3392.98 g 1.00 3.40s/it
+it 1300 loss 171.592 build 58.464 (t1 15.72 t2 31.30 out 11.44) hold 59.029 mix 1.00 asq 0.34 grip 0.13 gn 493.69 g 1.00 3.39s/it

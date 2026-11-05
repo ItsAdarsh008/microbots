@@ -1,2 +1,21 @@
 {"data": "data/world128.npz", "iters": 3000, "B": 16, "lr": 0.001, "T": 64, "K": 4, "hold": 100, "hold_eval": 500, "hold_w": 1.0, "g": 1.0, "g_warm": 0, "f_bond": 8.0, "f_act": 3.0, "mu": 0.5, "reaction": "external", "r_sense": 3.0, "H": 32, "M": 96, "rounds": 2, "use_h": true, "see_v": true, "out_w": 1.0, "act_w": 0.0, "seed": 0, "offset": 0.0, "shuffle_targets": false, "eval_every": 50, "ema": 0.995, "clip": 1.0, "n_eval": 192, "k_c": 200.0, "r_bond": 1.25, "r_hold": 1.15, "damage_p": 0.0, "damage_r": 2.5, "grip_fixed": null, "families": null, "g_eval": null, "compile": true, "grad_decay": 1.0, "grad_clip_step": 0.0, "dense_w": 0.0, "grip_bias": -2.0, "pre_w": 0.01, "r_touch": 2.0, "mix_start": 0, "mix_iters": 0, "ctrl": "velocity", "kp": 10.0, "v_max": 2.0, "air": 0.05, "envs": 64, "epochs": 4, "mb": 64, "clip_eps": 0.2, "gamma": 0.99, "lam": 0.95, "ent_w": 0.0, "vf_w": 0.5, "log_std0": -0.5, "updates": 400, "rl_lr": 0.0003, "rew_scale": 1.0, "algo": "rl", "name": "rl2_ext"}
 upd 0 build_loss 35.89 hold_loss 39.33 ret -8.28 pl -0.000 vl 1.155 |r-1| 0.039 std [0.6052507758140564, 0.60207599401474, 0.6022194027900696] grip 0.13 37.2s/upd
+upd 10 build_loss 35.27 hold_loss 39.46 ret -5.98 pl -0.000 vl 0.148 |r-1| 0.048 std [0.5825485587120056, 0.587543785572052, 0.581479549407959] grip 0.12 29.0s/upd
+upd 20 build_loss 33.96 hold_loss 38.46 ret -4.89 pl -0.000 vl 0.096 |r-1| 0.049 std [0.5564147233963013, 0.5638829469680786, 0.5751110911369324] grip 0.13 28.5s/upd
+upd 30 build_loss 30.13 hold_loss 35.79 ret -3.68 pl 0.000 vl 0.166 |r-1| 0.047 std [0.5369378924369812, 0.5473906397819519, 0.5540257692337036] grip 0.13 28.4s/upd
+upd 40 build_loss 28.77 hold_loss 35.54 ret -0.20 pl -0.000 vl 0.215 |r-1| 0.048 std [0.5174879431724548, 0.5212659239768982, 0.5360199213027954] grip 0.12 28.3s/upd
+eval upd 50: iou_build 0.368 iou_hold 0.252 cover_hold 0.389 sag 1.909 fallen 0.508 grip 0.113 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+upd 50 build_loss 20.00 hold_loss 23.61 ret -1.21 pl -0.000 vl 0.113 |r-1| 0.048 std [0.5000774264335632, 0.5067867636680603, 0.5266039967536926] grip 0.12 28.5s/upd
+upd 60 build_loss 21.03 hold_loss 26.53 ret -0.42 pl 0.000 vl 0.199 |r-1| 0.048 std [0.4793713390827179, 0.4872274100780487, 0.5072452425956726] grip 0.12 27.3s/upd
+upd 70 build_loss 24.71 hold_loss 30.81 ret -0.71 pl 0.000 vl 0.154 |r-1| 0.047 std [0.4627869129180908, 0.46424582600593567, 0.498984158039093] grip 0.12 26.9s/upd
+upd 80 build_loss 17.31 hold_loss 20.75 ret 4.75 pl -0.000 vl 0.085 |r-1| 0.049 std [0.4514487087726593, 0.4421749711036682, 0.47676336765289307] grip 0.12 27.0s/upd
+upd 90 build_loss 17.95 hold_loss 20.40 ret 8.54 pl -0.000 vl 0.127 |r-1| 0.046 std [0.4342218339443207, 0.4164057970046997, 0.4622724652290344] grip 0.12 27.1s/upd
+eval upd 100: iou_build 0.350 iou_hold 0.272 cover_hold 0.410 sag 2.468 fallen 0.555 grip 0.112 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+upd 100 build_loss 19.99 hold_loss 22.57 ret 13.10 pl 0.000 vl 0.074 |r-1| 0.048 std [0.42198243737220764, 0.3936834931373596, 0.4491562843322754] grip 0.12 27.1s/upd
+upd 110 build_loss 17.91 hold_loss 19.64 ret 12.17 pl -0.000 vl 0.045 |r-1| 0.049 std [0.4053058326244354, 0.3799517750740051, 0.43546101450920105] grip 0.12 27.2s/upd
+upd 120 build_loss 19.59 hold_loss 22.17 ret 8.74 pl -0.000 vl 0.022 |r-1| 0.051 std [0.3942350149154663, 0.3565101623535156, 0.42007380723953247] grip 0.13 27.2s/upd
+upd 130 build_loss 16.58 hold_loss 18.40 ret 9.64 pl -0.000 vl 0.013 |r-1| 0.050 std [0.38463255763053894, 0.33740898966789246, 0.4092958867549896] grip 0.13 27.2s/upd
+upd 140 build_loss 17.13 hold_loss 18.92 ret 10.16 pl -0.000 vl 0.015 |r-1| 0.052 std [0.37220004200935364, 0.3195570409297943, 0.4045989513397217] grip 0.12 27.3s/upd
+eval upd 150: iou_build 0.311 iou_hold 0.259 cover_hold 0.395 sag 1.536 fallen 0.324 grip 0.122 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+upd 150 build_loss 15.25 hold_loss 17.11 ret 10.10 pl -0.000 vl 0.009 |r-1| 0.053 std [0.3593578040599823, 0.3039843440055847, 0.3926633298397064] grip 0.13 27.3s/upd
+upd 160 build_loss 14.86 hold_loss 16.42 ret 13.73 pl -0.000 vl 0.016 |r-1| 0.053 std [0.3477189242839813, 0.2883061468601227, 0.37923961877822876] grip 0.13 27.3s/upd

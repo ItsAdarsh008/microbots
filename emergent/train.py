@@ -370,6 +370,11 @@ def main(path):
     t0 = time.time()
     bad = 0
     eval_only = "--eval-only" in sys.argv
+    if "--raw-ckpt" in sys.argv:      # diagnostic: evaluate the raw (not averaged) weights of the latest checkpoint
+        ema.load_state_dict(torch.load(os.path.join(out, "ckpt.pt"), map_location=dev)["pol"])
+        m, _ = evaluate(run_ema, ph_eval, data, cfg, "val", n=64, dev=dev)
+        P("raw-ckpt eval: " + " ".join(f"{k} {v:.3f}" for k, v in m.items() if not k.endswith("_ci")))
+        return
     if eval_only:
         ema.load_state_dict(torch.load(os.path.join(out, "ema.pt"), map_location=dev)["ema"])
         start = cfg["iters"]
@@ -423,6 +428,8 @@ def main(path):
         if (it + 1) % cfg["eval_every"] == 0 and it + 1 < cfg["iters"]:
             m, _ = evaluate(run_ema, ph_eval, data, cfg, "val", n=64, dev=dev)
             P(f"eval it {it + 1}: " + " ".join(f"{k} {v:.3f}" for k, v in m.items() if not k.endswith("_ci")))
+            mr, _ = evaluate(run_pol, ph_eval, data, cfg, "val", n=64, dev=dev)
+            P(f"eval-raw it {it + 1}: " + " ".join(f"{k} {v:.3f}" for k, v in mr.items() if not k.endswith("_ci")))
     if not eval_only:
         torch.save(dict(ema=ema.state_dict(), cfg=cfg), os.path.join(out, "ema.pt"))
     res = dict(config=cfg, commit=open("GIT_COMMIT").read().strip() if os.path.exists("GIT_COMMIT") else None,
@@ -432,6 +439,11 @@ def main(path):
         res["metrics"][split] = m
         res["per_family"][split] = pf
         P(f"final {split}: " + " ".join(f"{k} {v:.3f}" for k, v in m.items() if not k.endswith("_ci")))
+        if not eval_only:
+            mr, pfr = evaluate(run_pol, ph_eval, data, cfg, split, dev=dev)
+            res["metrics"][split + "_raw"] = mr
+            res["per_family"][split + "_raw"] = pfr
+            P(f"final-raw {split}: " + " ".join(f"{k} {v:.3f}" for k, v in mr.items() if not k.endswith("_ci")))
     try:
         draw(run_ema, ph_eval, data, cfg, os.path.join(out, "samples.png"), os.path.join(out, "traj.gif"), dev)
     except Exception as e:  # pictures must not lose the result

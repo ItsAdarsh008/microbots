@@ -194,3 +194,13 @@ pile about 0.32; stiff physics; drone build forces; 1 seed unless noted):
   bot's push (4 or 16 vs 3) a misplaced bot cannot free itself, so assembly order matters (growth-like); with
   strength 2 bots can pull free. Drone build, stiff physics, passive hold. Bond 2 / 4 / 16, no-gravity control,
   second seed, hold weight 3.
+
+## 2026-11-05 tick 9: the averaged weights hide learning when bots are always latched
+
+Wave 6 (always latched) at iteration 500 looked stuck at the pile in the evaluation (EMA weights: build 0.33),
+while the training-batch losses were low. Evaluating the **raw** weights of the same checkpoint: bond 16 build 0.41
+(EMA 0.33), bond 4 build 0.40 (EMA 0.33); both collapse in the hold (88 to 90% of bots fall). With latching,
+breaking free is all-or-nothing, and an average of weights pushes slightly too weakly to break any bond.
+Re-checked the runs called "not learning" earlier with raw weights: stiff bond 16 (seeds 0 and 1), unbreakable,
+physical reach 2, physical curriculum: raw equals EMA within 0.01, so those verdicts stand.
+From now on every in-training and final evaluation reports both (`eval-raw`, `val_raw`, `held_raw`).

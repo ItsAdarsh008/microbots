@@ -144,3 +144,4 @@ gen 1280 fit mean 0.717 max 0.739 fill 0.622 falls/ep 192.8 |theta| 147.8 19.07s
 gen 1290 fit mean 0.629 max 0.655 fill 0.548 falls/ep 237.9 |theta| 148.3 19.07s/gen
 eval gen 1300: fill 0.550 falls 217.805 outside 23.094 moves 21.983 scaffold 14.219 propped 0.007 fit 0.632 ref_target_stands 0.640 ref_pile_fill 0.000
 gen 1300 fit mean 0.601 max 0.643 fill 0.523 falls/ep 218.5 |theta| 148.8 19.08s/gen
+gen 1310 fit mean 0.595 max 0.625 fill 0.519 falls/ep 146.8 |theta| 149.3 19.08s/gen

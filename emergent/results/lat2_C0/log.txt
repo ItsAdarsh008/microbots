@@ -6,3 +6,5 @@ gen 20 fit mean 0.223 max 0.291 fill 0.197 falls/ep 1574.3 |theta| 26.7 12.99s/g
 gen 30 fit mean 0.361 max 0.502 fill 0.315 falls/ep 1355.1 |theta| 30.2 13.17s/gen
 gen 40 fit mean 0.370 max 0.450 fill 0.323 falls/ep 1171.3 |theta| 33.1 13.27s/gen
 gen 50 fit mean 0.432 max 0.521 fill 0.371 falls/ep 766.6 |theta| 35.6 13.32s/gen
+gen 60 fit mean 0.587 max 0.633 fill 0.519 falls/ep 1115.7 |theta| 38.0 13.42s/gen
+gen 70 fit mean 0.663 max 0.732 fill 0.589 falls/ep 931.5 |theta| 40.2 13.49s/gen

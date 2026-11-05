@@ -3,3 +3,5 @@ params 22545
 gen 0 fit mean 0.025 max 0.053 fill 0.023 falls/ep 861.6 |theta| 14.5 17.67s/gen
 gen 10 fit mean 0.097 max 0.117 fill 0.081 falls/ep 967.6 |theta| 22.6 18.74s/gen
 gen 20 fit mean 0.173 max 0.213 fill 0.154 falls/ep 979.8 |theta| 28.0 18.83s/gen
+gen 30 fit mean 0.140 max 0.172 fill 0.123 falls/ep 765.9 |theta| 32.0 18.86s/gen
+gen 40 fit mean 0.108 max 0.144 fill 0.095 falls/ep 759.9 |theta| 35.3 19.05s/gen

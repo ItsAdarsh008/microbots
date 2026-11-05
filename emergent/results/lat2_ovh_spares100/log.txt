@@ -146,3 +146,4 @@ eval gen 1300: fill 0.888 falls 339.250 outside 34.859 moves 36.353 scaffold 28.
 gen 1300 fit mean 1.035 max 1.036 fill 0.909 falls/ep 235.7 |theta| 147.3 18.80s/gen
 gen 1310 fit mean 0.982 max 0.988 fill 0.867 falls/ep 253.0 |theta| 147.8 18.80s/gen
 gen 1320 fit mean 1.040 max 1.046 fill 0.914 falls/ep 233.7 |theta| 148.4 18.80s/gen
+gen 1330 fit mean 0.974 max 0.977 fill 0.859 falls/ep 237.6 |theta| 148.9 18.80s/gen

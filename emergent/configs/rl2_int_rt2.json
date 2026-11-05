@@ -1,0 +1,12 @@
+{
+ "algo": "rl",
+ "updates": 400,
+ "eval_every": 50,
+ "envs": 64,
+ "mb": 64,
+ "grip_bias": -2.0,
+ "pre_w": 0.01,
+ "ctrl": "velocity",
+ "r_touch": 2.0,
+ "name": "rl2_int_rt2"
+}

@@ -119,3 +119,19 @@ started before `worker.py` learned to route `algo: rl` configs to `rl.py`, so th
 defaults (learning rate 1e-3, force bound unused options ignored). That is why two of them gave identical numbers.
 Their results are discarded; the PPO runs were restarted directly with `rl.py`. Lesson: a long-running worker keeps
 the code it started with; restart workers between waves when the worker itself changes.
+
+## 2026-11-04 tick 6: gradients through the physics are out for physical actuation; PPO starts moving
+
+Wave 4 at iteration 750 (validation IoU at the end of the build / after the hold; pile 0.32; 1 seed):
+- Drone, force output, lr 3e-4: **0.61** / 0.25. With air damping 0.5: 0.58 / 0.33. lr 1e-4: 0.58 / 0.27.
+  Velocity commands: 0.49 (batch 16) and 0.55 (batch 32). A second seed of the velocity run diverged at
+  iteration 500 (0.25), so even the drone setting is not reliably stable.
+- Physical actuation under gravity, every variant (reach 2 or touch, lr 3e-4 or 1e-4, gravity ramp, drone->physical
+  curriculum with or without the gravity ramp, no hold loss): 0.29 to 0.32, the pile. No gravity: 0.36.
+- Conclusion: backprop through the contact physics learns shape formation when force is free, never with
+  momentum-conserving actuation under gravity in this setup. Remaining gradient runs on physical actuation stopped.
+
+PPO (`rl.py`, first 10 updates, physical actuation under gravity, reach 2): batch build loss 43 -> 27, the first
+movement away from the pile any physical run has shown (gradient runs stayed at 34 to 40). Not yet evaluated.
+Wave "rl2" (bigger minibatches: 64 envs, 64 frames per step): reach 2 and touch, bond 16, second seed, hold weight 3,
+no-gravity control, drone; plus the first three PPO runs, 11 PPO runs in total.

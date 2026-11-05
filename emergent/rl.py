@@ -83,7 +83,8 @@ def main(path):
     data = Data(cfg["data"], dev, cfg["families"])
     mk = lambda: Physics(g=1.0, f_bond=cfg["f_bond"], f_act=cfg["f_act"], mu=cfg["mu"], reaction=cfg["reaction"], W=data.W,
                          k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"], r_touch=cfg["r_touch"],
-                         ctrl=cfg["ctrl"], kp=cfg["kp"], air=cfg["air"])
+                         ctrl=cfg["ctrl"], kp=cfg["kp"], air=cfg["air"], k_b=cfg["k_b"], dt=cfg["dt"],
+                         c_c=cfg["c_c"], c_b=cfg["c_b"])
     ph, ph_eval = mk(), mk()
     pol = RLPolicy(log_std0=cfg["log_std0"], H=cfg["H"], M=cfg["M"], rounds=cfg["rounds"], r_sense=cfg["r_sense"],
                    f_act=cfg["f_act"], use_h=cfg["use_h"], see_v=cfg["see_v"], grip_bias=cfg["grip_bias"],

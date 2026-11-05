@@ -135,3 +135,38 @@ PPO (`rl.py`, first 10 updates, physical actuation under gravity, reach 2): batc
 movement away from the pile any physical run has shown (gradient runs stayed at 34 to 40). Not yet evaluated.
 Wave "rl2" (bigger minibatches: 64 envs, 64 frames per step): reach 2 and touch, bond 16, second seed, hold weight 3,
 no-gravity control, drone; plus the first three PPO runs, 11 PPO runs in total.
+
+## 2026-11-05 tick 7: the physics was too soft for anything to stand; split locomotion from structure
+
+**Can a perfectly placed target stand at all?** (`standability.py`: the even sample of every validation and
+held-out shape, every grip on, 10 time units of passive hold.)
+
+| physics | bond strength | val IoU after hold (placed 0.92) | tee | arch | tower | held-out (mushroom, Y) |
+|---|---|---|---|---|---|---|
+| soft (k 200, dt 0.02) | 8 | 0.38 | 0.20 | 0.31 | 0.63 | 0.14 |
+| soft | unbreakable | 0.45 | 0.23 | 0.36 | 0.77 | 0.19 |
+| stiff (k 2000, dt 0.01) | 16 | 0.44 | 0.24 | 0.35 | 0.71 | 0.21 |
+| stiff | 64 | 0.53 | 0.30 | 0.48 | 0.81 | 0.36 |
+| stiff | unbreakable | 0.55 | 0.31 | 0.54 | 0.82 | 0.44 |
+
+- Rendered: in the soft physics a densely packed T beam bends down like rubber **even with unbreakable bonds**:
+  bond *stiffness* was fixed at 200 and a bond disappears beyond 0.25 of stretch, which the root of a long beam
+  exceeds. Not a structural effect, a modelling error. Bond stiffness is now a parameter.
+- Hand test (symmetric T: 3-wide, 10-high column, two-row beam with 7-bot arms each side, dense packing): stiff
+  physics with unbreakable bonds holds (tip drop 0.8 at k 2000, 0.4 at k 4000); with strength 16 (about the real
+  v1 connector-to-weight ratio) the arms break off (drop 6.5), consistent with the v1 note that only one bot can
+  cantilever sideways. Soft physics: drops 7.8 even unbreakable. A lopsided Gamma tips over as a whole (no floor
+  anchoring), which is correct.
+- Even with stiff unbreakable bonds, the *even sample* loses 40% of its overlap: an irregular arrangement leaves
+  neighbours out of bond range and the bond network has floppy modes. Whether a shape stands depends on the
+  arrangement, which is the question the swarm has to answer.
+- My hexagonal-packing reference was flawed (filling deepest points first leaves thin stems unselected, so caps
+  detach); discarded.
+- **PPO (team reward) does not learn the physical task** in 50 to 60 updates (validation 0.29 to 0.30, policy
+  updates near zero): one reward shared by 128 bots gives each bot almost no credit signal. Drone PPO: 0.37 at
+  update 50 (slow). Four PPO runs kept, the rest stopped.
+- **Split the problem.** (1) Locomotion with momentum-conserving forces: still unsolved; revisit with per-bot
+  rewards. (2) **Structure:** wave 5 builds with drone forces (which learn), under the stiff physics, then holds
+  passively with motors off: does training find arrangements and latching that stand, without any rule about
+  rigidity, triangulation or bending? Bond strength 16 / 64 / unbreakable, hold weight 0 / 1 / 3, no-gravity
+  control, second seeds.

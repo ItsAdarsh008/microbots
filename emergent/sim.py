@@ -19,7 +19,7 @@ import torch
 class Physics:
     def __init__(self, g=1.0, k_c=200.0, c_c=3.0, mu=0.5, f_bond=4.0, r_hold=1.15, r_bond=1.25, c_b=2.0,
                  f_act=3.0, reaction="internal", r_touch=1.15, air=0.05, dt=0.02, W=24.0, v_slip=0.05,
-                 ctrl="force", kp=10.0):
+                 ctrl="force", kp=10.0, k_b=200.0):
         self.__dict__.update(locals())
         del self.__dict__["self"]
 
@@ -55,7 +55,7 @@ class Physics:
         wb = self.bond_weight(dist, grip, pm)
         stretch = torch.relu(dist - 1.0)
         cap = self.f_bond * wb
-        T = cap * torch.tanh(200.0 * stretch / (self.f_bond + 1e-6)) + self.c_b * wb * vn
+        T = cap * torch.tanh(self.k_b * stretch / (self.f_bond + 1e-6)) + self.c_b * wb * vn
         T = torch.relu(T)
         F = F + (T[..., None] * n).sum(2)
         # floor

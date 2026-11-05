@@ -20,7 +20,7 @@ DEF = dict(data="data/world128.npz", iters=3000, B=16, lr=1e-3, T=64, K=4, hold=
            g=1.0, g_warm=0, f_bond=8.0, f_act=3.0, mu=0.5, reaction="internal", r_sense=3.0, H=32, M=96, rounds=2,
            use_h=True, see_v=True, out_w=1.0, act_w=0.0, seed=0, offset=0.0, shuffle_targets=False, eval_every=500,
            ema=0.995, clip=1.0, n_eval=192, k_c=200.0, r_bond=1.25, r_hold=1.15, damage_p=0.0, damage_r=2.5,
-           grip_fixed=None, families=None, g_eval=None, compile=True, grad_decay=1.0, grad_clip_step=0.0, dense_w=0.0, grip_bias=-2.0, pre_w=0.0, r_touch=1.15, mix_start=0, mix_iters=0, ctrl="force", kp=10.0, v_max=2.0, air=0.05)
+           grip_fixed=None, families=None, g_eval=None, compile=True, grad_decay=1.0, grad_clip_step=0.0, dense_w=0.0, grip_bias=-2.0, pre_w=0.0, r_touch=1.15, mix_start=0, mix_iters=0, ctrl="force", kp=10.0, v_max=2.0, air=0.05, k_b=200.0, dt=0.02, c_c=3.0, c_b=2.0)
 
 
 def load_cfg(path):
@@ -342,9 +342,9 @@ def main(path):
 
     data = Data(cfg["data"], dev, cfg["families"])
     ph = Physics(g=1.0, f_bond=cfg["f_bond"], f_act=cfg["f_act"], mu=cfg["mu"], reaction=cfg["reaction"],
-                 W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"], r_touch=cfg["r_touch"], ctrl=cfg["ctrl"], kp=cfg["kp"], air=cfg["air"])
+                 W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"], r_touch=cfg["r_touch"], ctrl=cfg["ctrl"], kp=cfg["kp"], air=cfg["air"], k_b=cfg["k_b"], dt=cfg["dt"], c_c=cfg["c_c"], c_b=cfg["c_b"])
     ph_eval = Physics(g=1.0, f_bond=cfg["f_bond"], f_act=cfg["f_act"],
-                      mu=cfg["mu"], reaction=cfg["reaction"], W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"], r_touch=cfg["r_touch"], ctrl=cfg["ctrl"], kp=cfg["kp"], air=cfg["air"])
+                      mu=cfg["mu"], reaction=cfg["reaction"], W=data.W, k_c=cfg["k_c"], r_bond=cfg["r_bond"], r_hold=cfg["r_hold"], r_touch=cfg["r_touch"], ctrl=cfg["ctrl"], kp=cfg["kp"], air=cfg["air"], k_b=cfg["k_b"], dt=cfg["dt"], c_c=cfg["c_c"], c_b=cfg["c_b"])
     pol = Policy(H=cfg["H"], M=cfg["M"], rounds=cfg["rounds"], r_sense=cfg["r_sense"], f_act=cfg["f_act"],
                  use_h=cfg["use_h"], see_v=cfg["see_v"], grip_bias=cfg["grip_bias"],
                  out_scale=cfg["v_max"] if cfg["ctrl"] == "velocity" else None).to(dev)

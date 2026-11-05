@@ -511,3 +511,46 @@ build-then-strike.
 
 Finals: switch 0.715 (ref 0.87, fails); overhangs seed 2 0.822 (ref 0.72, third replicate); cure without clean
 cost 0.988 (31 leftovers); move cost warm 0.909; big world 0.87 at generation 500 (at the reference).
+
+## 2026-11-05 tick 22: shutdown
+
+Stopped at the user's request. Workers and jobs killed on both boxes. Everything in `~/emergent` on both boxes
+went to the private Hugging Face repo (`emergent/box137`, `emergent/box150`; see `ARCHIVE.md`), checked file by file
+(685 + 664 files) and byte-checked on two checkpoints. Then the boxes were cleared.
+
+**Last gap sweeps (T = 600, 32 chasms x 2 seeds per width, gaps 3 to 20), run on the idle GPUs before clearing:**
+- chasm from scratch, seed 0 (generation 400): fill **0.99 to 1.00 at every width up to 20** (trained 3 to 12).
+- narrow training (gaps 3 to 7 only, warm, generation 90 of 600): decks 0.97 to 1.00 at every width up to 20;
+  far towers 0.83 to 0.95 up to 17, 0.52 to 0.55 at 19 to 20; fill 0.87 to 0.97.
+- warm seed 0 (tick 20): 0.93 to 0.97 up to 20.
+Three controllers, including one trained only on gaps of 7 or less, cross gaps up to 20 when given enough time.
+Cure-and-extend is a local procedure, not fitted to the training widths.
+
+**State at shutdown (last validation):**
+
+| run | gen | fill | note |
+|---|---|---|---|
+| lat6 chasm cure warm s0 / s1 | 550 / 500 | 1.000 / 0.998 | replicated; ref 0.50 |
+| lat6 chasm no cure L1 / L3 | 500 / 500 | 0.057 / 0.196 | cannot cross |
+| lat7 chasm cure scratch s0 / s1 | 400 / 350 | 0.997 / 0.575 | emerges from scratch on seed 0; s1 slower; s2 never started |
+| lat7 chasm narrow (gaps 3 to 7) | 50 | 0.913 | see sweep above |
+| lat7 chasm cure + clean | 300 | 0.971 | 3.9 bots outside |
+| lat7 chasm K = 60 | 400 | 0.356 | too slow to cure within T = 300 |
+| lat6 formwork clean 0.2 | 350 | 0.850 | props kept and cured; no striking |
+| lat3 shelter L64 | 600 | shelter 7.2 / bot | gallows |
+| lat8 shelter cure L1 s1 | 100 | shelter ? | only started; s0 never started |
+| lat2 big | 500 | 0.872 | at the reference (0.87) |
+
+**Summary of the lattice track.** Under gravity with a cantilever limit and a fill-only reward, the swarm finds
+scaffolding (pillars, colonnades, falsework under overhangs) on its own and beats what the target alone keeps
+(three seeds on overhangs; held-out shapes too). Memory is not needed (C = 0 matches C = 8). Given curing (still
+bots turn rigid), it finds cure-and-extend: grow an overhang one cell at a time and let each cure. That strategy
+crosses a chasm that is otherwise impossible, emerges from scratch, and extends to gaps far wider than trained.
+With no cantilever limit, a target-free shelter reward gives a gallows. Negatives: build-then-strike (prop, cure,
+remove the props) never appeared in three designs; target switching and post-build kicks stay below the
+reference; costs felt before any reward (move cost, clean cost from scratch) collapse the search to doing
+nothing, fixed by warm starts and ramps.
+
+**Open next steps:** replicate the from-scratch chasm (seed 2) and the narrow run to the end; shelter with curing
+at L = 1 (does a cured roof appear?); a chasm whose far side is higher (cure-and-extend upward); build-then-strike
+with a cost that only applies after curing is complete.

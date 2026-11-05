@@ -147,3 +147,23 @@ gen 1300 fit mean 1.035 max 1.036 fill 0.909 falls/ep 235.7 |theta| 147.3 18.80s
 gen 1310 fit mean 0.982 max 0.988 fill 0.867 falls/ep 253.0 |theta| 147.8 18.80s/gen
 gen 1320 fit mean 1.040 max 1.046 fill 0.914 falls/ep 233.7 |theta| 148.4 18.80s/gen
 gen 1330 fit mean 0.974 max 0.977 fill 0.859 falls/ep 237.6 |theta| 148.9 18.80s/gen
+gen 1340 fit mean 1.005 max 1.016 fill 0.887 falls/ep 395.0 |theta| 149.5 18.80s/gen
+gen 1350 fit mean 0.984 max 1.001 fill 0.864 falls/ep 245.2 |theta| 150.0 18.80s/gen
+gen 1360 fit mean 1.034 max 1.043 fill 0.908 falls/ep 280.9 |theta| 150.5 18.80s/gen
+gen 1370 fit mean 0.991 max 0.993 fill 0.881 falls/ep 282.8 |theta| 151.0 18.80s/gen
+gen 1380 fit mean 1.006 max 1.008 fill 0.882 falls/ep 160.0 |theta| 151.4 18.80s/gen
+gen 1390 fit mean 0.938 max 0.944 fill 0.826 falls/ep 291.9 |theta| 151.9 18.80s/gen
+eval gen 1400: fill 0.886 falls 244.805 outside 34.922 moves 34.472 scaffold 28.734 propped 0.164 fit 1.005 ref_target_stands 0.724 ref_pile_fill 0.000
+gen 1400 fit mean 1.017 max 1.029 fill 0.901 falls/ep 340.9 |theta| 152.5 18.81s/gen
+gen 1410 fit mean 1.012 max 1.022 fill 0.886 falls/ep 220.4 |theta| 153.0 18.81s/gen
+gen 1420 fit mean 1.044 max 1.053 fill 0.916 falls/ep 209.0 |theta| 153.4 18.81s/gen
+gen 1430 fit mean 1.086 max 1.089 fill 0.953 falls/ep 167.2 |theta| 153.9 18.81s/gen
+gen 1440 fit mean 1.039 max 1.048 fill 0.913 falls/ep 254.4 |theta| 154.4 18.80s/gen
+gen 1450 fit mean 0.979 max 0.989 fill 0.869 falls/ep 388.1 |theta| 154.8 18.80s/gen
+gen 1460 fit mean 0.961 max 0.966 fill 0.843 falls/ep 218.1 |theta| 155.1 18.80s/gen
+gen 1470 fit mean 0.941 max 0.943 fill 0.822 falls/ep 152.1 |theta| 155.6 18.80s/gen
+gen 1480 fit mean 0.952 max 0.957 fill 0.831 falls/ep 181.9 |theta| 156.0 18.80s/gen
+gen 1490 fit mean 1.047 max 1.048 fill 0.922 falls/ep 227.1 |theta| 156.3 18.80s/gen
+final val: fill 0.882 falls 260.242 outside 35.031 moves 33.718 scaffold 28.430 propped 0.160 fit 1.001 ref_target_stands 0.724 ref_pile_fill 0.000
+final held: fill 0.794 falls 214.711 outside 28.711 moves 38.577 scaffold 21.211 propped 0.159 fit 0.907 ref_target_stands 0.669 ref_pile_fill 0.000
+done

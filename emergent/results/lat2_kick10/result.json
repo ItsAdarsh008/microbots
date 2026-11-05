@@ -1,0 +1,84 @@
+{
+ "config": {
+  "H": 20,
+  "W": 40,
+  "L": 1,
+  "T": 160,
+  "settle": 60,
+  "spares": 0.3,
+  "C": 8,
+  "M": 32,
+  "pop": 128,
+  "shapes": 8,
+  "sigma": 0.04,
+  "lr": 0.03,
+  "gens": 1000,
+  "eval_every": 100,
+  "n_eval": 64,
+  "seed": 0,
+  "temp": 1.0,
+  "families": null,
+  "held_out": [
+   "mushroom",
+   "tree"
+  ],
+  "support_iters": 8,
+  "speed_w": 0.2,
+  "n_bank": 4000,
+  "damage": 0.0,
+  "switch": 0.0,
+  "move_w": 0.0,
+  "kick": 0.1,
+  "obj": "fill",
+  "cure": 0,
+  "clean_w": 0.0,
+  "clean_ramp": 0,
+  "init_from": null,
+  "algo": "lat",
+  "name": "lat2_kick10"
+ },
+ "commit": "79e8508bff57ecfecbcc2a9a9b55529e7cd6da80",
+ "seconds": 19547.596545934677,
+ "metrics": {
+  "val": {
+   "fill": 0.7709873914718628,
+   "falls": 410.46875,
+   "outside": 12.5625,
+   "moves": 28.74567413330078,
+   "site_out": 12.5625,
+   "shelter": 0.17463597655296326,
+   "height": 0.49687501788139343,
+   "scaffold": 7.171875,
+   "propped": 0.040000006556510925,
+   "fit": 0.8914958834648132,
+   "per_family": {
+    "tower": 0.9172096252441406,
+    "gamma": 0.6895292401313782,
+    "tee": 0.6399438977241516,
+    "bridge": 0.759870707988739,
+    "stairs": 0.8213889002799988,
+    "blocks": 0.8057219386100769
+   },
+   "ref_target_stands": 0.8676972389221191,
+   "ref_pile_fill": 0.0
+  },
+  "held": {
+   "fill": 0.5655290484428406,
+   "falls": 234.8203125,
+   "outside": 14.65625,
+   "moves": 26.93067169189453,
+   "site_out": 14.65625,
+   "shelter": 0.1676124483346939,
+   "height": 0.4921875,
+   "scaffold": 11.4453125,
+   "propped": 0.1191391795873642,
+   "fit": 0.6653896570205688,
+   "per_family": {
+    "mushroom": 0.553601861000061,
+    "tree": 0.5774562358856201
+   },
+   "ref_target_stands": 0.6693279147148132,
+   "ref_pile_fill": 0.0
+  }
+ }
+}

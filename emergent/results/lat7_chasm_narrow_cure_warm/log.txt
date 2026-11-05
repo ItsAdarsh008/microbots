@@ -1,0 +1,13 @@
+{"H": 20, "W": 40, "L": 1, "T": 300, "settle": 60, "spares": 0.5, "C": 8, "M": 32, "pop": 128, "shapes": 8, "sigma": 0.04, "lr": 0.03, "gens": 600, "eval_every": 50, "n_eval": 64, "seed": 0, "temp": 1.0, "families": ["chasm"], "held_out": [], "support_iters": 8, "speed_w": 0.2, "n_bank": 4000, "damage": 0.0, "switch": 0.0, "move_w": 0.0, "kick": 0.0, "obj": "fill", "cure": 20, "clean_w": 0.0, "cure_below": false, "clean_ramp": 0, "init_from": "init/cure_extend_s1_g500.pt", "chasm": true, "chasm_gap": [3, 8], "algo": "lat", "name": "lat7_chasm_narrow_cure_warm"}
+params 22833
+gen 0 fit mean 0.000 max 0.000 fill 0.000 falls/ep 150.5 |theta| 169.4 38.71s/gen
+gen 10 fit mean 0.246 max 0.583 fill 0.219 falls/ep 201.0 |theta| 170.0 36.07s/gen
+gen 20 fit mean 0.552 max 0.780 fill 0.491 falls/ep 188.8 |theta| 170.4 35.92s/gen
+gen 30 fit mean 0.845 max 1.041 fill 0.776 falls/ep 409.1 |theta| 170.9 35.88s/gen
+gen 40 fit mean 0.978 max 1.080 fill 0.887 falls/ep 355.2 |theta| 171.3 35.87s/gen
+eval gen 50: fill 0.913 falls 344.977 outside 4.336 moves 73.918 site_out 4.281 shelter 0.160 height 0.298 scaffold 0.000 propped 0.360 fit 1.001 ref_target_stands 0.634 ref_pile_fill 0.000
+gen 50 fit mean 1.003 max 1.098 fill 0.916 falls/ep 383.7 |theta| 171.6 36.07s/gen
+gen 60 fit mean 0.992 max 1.093 fill 0.899 falls/ep 303.7 |theta| 172.0 36.03s/gen
+gen 70 fit mean 1.039 max 1.123 fill 0.931 falls/ep 245.4 |theta| 172.3 35.99s/gen
+gen 80 fit mean 1.001 max 1.112 fill 0.894 falls/ep 222.4 |theta| 172.7 35.97s/gen
+gen 90 fit mean 1.079 max 1.120 fill 0.970 falls/ep 270.0 |theta| 173.1 35.95s/gen

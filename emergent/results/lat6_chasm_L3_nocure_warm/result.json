@@ -1,0 +1,62 @@
+{
+ "config": {
+  "H": 20,
+  "W": 40,
+  "L": 3,
+  "T": 300,
+  "settle": 60,
+  "spares": 0.5,
+  "C": 8,
+  "M": 32,
+  "pop": 128,
+  "shapes": 8,
+  "sigma": 0.04,
+  "lr": 0.03,
+  "gens": 600,
+  "eval_every": 50,
+  "n_eval": 64,
+  "seed": 0,
+  "temp": 1.0,
+  "families": [
+   "chasm"
+  ],
+  "held_out": [],
+  "support_iters": 8,
+  "speed_w": 0.2,
+  "n_bank": 4000,
+  "damage": 0.0,
+  "switch": 0.0,
+  "move_w": 0.0,
+  "kick": 0.0,
+  "obj": "fill",
+  "cure": 0,
+  "clean_w": 0.0,
+  "cure_below": false,
+  "clean_ramp": 0,
+  "init_from": "init/L1_final.pt",
+  "chasm": true,
+  "algo": "lat",
+  "name": "lat6_chasm_L3_nocure_warm"
+ },
+ "commit": "5530d51454b4ca6ad575d0ead36f47fbc1d0e166",
+ "seconds": 20518.09805750847,
+ "metrics": {
+  "val": {
+   "fill": 0.1960044801235199,
+   "falls": 236.4765625,
+   "outside": 1.21875,
+   "moves": 16.93376350402832,
+   "site_out": 1.21875,
+   "shelter": 0.0050223213620483875,
+   "height": 0.06210937350988388,
+   "scaffold": 0.0,
+   "propped": 0.17082735896110535,
+   "fit": 0.23418143391609192,
+   "per_family": {
+    "chasm": 0.1960044801235199
+   },
+   "ref_target_stands": 0.5017428398132324,
+   "ref_pile_fill": 0.0
+  }
+ }
+}

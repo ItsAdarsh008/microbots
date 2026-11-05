@@ -1,0 +1,85 @@
+{
+ "config": {
+  "H": 20,
+  "W": 40,
+  "L": 1,
+  "T": 300,
+  "settle": 60,
+  "spares": 1.0,
+  "C": 8,
+  "M": 32,
+  "pop": 128,
+  "shapes": 8,
+  "sigma": 0.04,
+  "lr": 0.03,
+  "gens": 600,
+  "eval_every": 50,
+  "n_eval": 64,
+  "seed": 1,
+  "temp": 1.0,
+  "families": [
+   "gamma",
+   "bridge",
+   "tee"
+  ],
+  "held_out": [
+   "mushroom",
+   "tree"
+  ],
+  "support_iters": 8,
+  "speed_w": 0.2,
+  "n_bank": 4000,
+  "damage": 0.0,
+  "switch": 0.0,
+  "move_w": 0.0,
+  "kick": 0.0,
+  "obj": "fill",
+  "cure": 20,
+  "clean_w": 0.5,
+  "clean_ramp": 200,
+  "init_from": "init/ovh_sp100_g1300.pt",
+  "algo": "lat",
+  "name": "lat4b_cure_clean_warm_s1"
+ },
+ "commit": "79e8508bff57ecfecbcc2a9a9b55529e7cd6da80",
+ "seconds": 21731.682012081146,
+ "metrics": {
+  "val": {
+   "fill": 0.9216601848602295,
+   "falls": 560.09375,
+   "outside": 33.828125,
+   "moves": 32.44389724731445,
+   "site_out": 2.9765625,
+   "shelter": 0.8074876070022583,
+   "height": 0.5296875238418579,
+   "scaffold": 1.8984375,
+   "propped": 0.003196022706106305,
+   "fit": 1.0118638277053833,
+   "per_family": {
+    "gamma": 0.9032159447669983,
+    "tee": 0.9120954275131226,
+    "bridge": 0.9505472183227539
+   },
+   "ref_target_stands": 0.7237128019332886,
+   "ref_pile_fill": 0.0
+  },
+  "held": {
+   "fill": 0.7776343822479248,
+   "falls": 633.390625,
+   "outside": 28.7890625,
+   "moves": 44.431495666503906,
+   "site_out": 5.234375,
+   "shelter": 0.8070207834243774,
+   "height": 0.513671875,
+   "scaffold": 2.25,
+   "propped": 0.06650105118751526,
+   "fit": 0.7806528806686401,
+   "per_family": {
+    "mushroom": 0.8669619560241699,
+    "tree": 0.6883066892623901
+   },
+   "ref_target_stands": 0.6693279147148132,
+   "ref_pile_fill": 0.0
+  }
+ }
+}

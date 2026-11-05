@@ -1,0 +1,14 @@
+{"H": 20, "W": 40, "L": 1, "T": 300, "settle": 60, "spares": 0.3, "C": 8, "M": 32, "pop": 128, "shapes": 8, "sigma": 0.04, "lr": 0.03, "gens": 800, "eval_every": 100, "n_eval": 64, "seed": 1, "temp": 1.0, "families": null, "held_out": ["mushroom", "tree"], "support_iters": 8, "speed_w": 0.2, "n_bank": 4000, "damage": 0.0, "switch": 0.0, "move_w": 0.0, "kick": 0.0, "obj": "shelter", "cure": 20, "clean_w": 0.0, "cure_below": false, "clean_ramp": 0, "init_from": null, "chasm": false, "chasm_gap": [3, 13], "algo": "lat", "name": "lat8_shelter_cure_L1_s1"}
+params 22833
+gen 0 fit mean 0.098 max 0.164 fill 0.030 falls/ep 1525.1 |theta| 14.7 37.27s/gen
+gen 10 fit mean 0.144 max 0.193 fill 0.016 falls/ep 2203.4 |theta| 22.9 36.34s/gen
+gen 20 fit mean 0.171 max 0.219 fill 0.040 falls/ep 4532.4 |theta| 28.2 36.30s/gen
+gen 30 fit mean 0.202 max 0.275 fill 0.001 falls/ep 2912.0 |theta| 32.3 35.69s/gen
+gen 40 fit mean 0.206 max 0.270 fill 0.026 falls/ep 3191.5 |theta| 35.6 34.55s/gen
+gen 50 fit mean 0.214 max 0.298 fill 0.097 falls/ep 4291.0 |theta| 38.5 33.87s/gen
+gen 60 fit mean 0.222 max 0.281 fill 0.029 falls/ep 3724.8 |theta| 41.0 33.41s/gen
+gen 70 fit mean 0.219 max 0.284 fill 0.022 falls/ep 3283.8 |theta| 43.4 33.08s/gen
+gen 80 fit mean 0.225 max 0.290 fill 0.015 falls/ep 3392.9 |theta| 45.7 32.83s/gen
+gen 90 fit mean 0.227 max 0.316 fill 0.070 falls/ep 4726.8 |theta| 47.8 32.63s/gen
+eval gen 100: fill 0.055 falls 3851.734 outside 38.328 moves 148.951 site_out 15.898 shelter 0.229 height 0.184 scaffold 2.773 propped 0.003 fit 0.229 ref_target_stands 0.868 ref_pile_fill 0.000
+gen 100 fit mean 0.234 max 0.300 fill 0.101 falls/ep 4623.7 |theta| 49.8 32.05s/gen

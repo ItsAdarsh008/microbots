@@ -25,7 +25,9 @@ DEF = dict(H=20, W=40, L=1, T=160, settle=60, spares=0.3, C=8, M=32, pop=128, sh
            support_iters=8, speed_w=0.2, n_bank=4000, damage=0.0,
            switch=0.0,   # >0: the target changes to another shape at this fraction of T (reconfiguration)
            move_w=0.0,   # fitness cost per move per bot (energy)
-           kick=0.0)     # after settling, remove this fraction of bots at random and settle again (robustness)
+           kick=0.0,
+           obj="fill")   # "fill" (the target), or target-free: "shelter" (empty cells with a bot somewhere above,
+                         # per bot) or "height" (top of the highest bot / H); the target is then hidden from the bots     # after settling, remove this fraction of bots at random and settle again (robustness)
 
 FAMS = ["tower", "gamma", "tee", "bridge", "stairs", "blocks", "mushroom", "tree"]
 
@@ -183,7 +185,7 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
             tgt = tgt2
             nt = tgt.flatten(1).sum(1)
         held = occ * (s <= cfg["L"]).float()
-        inp = torch.cat([occ[:, None], tgt[:, None], held[:, None], floor, hid], 1)
+        inp = torch.cat([occ[:, None], tgt[:, None] * (cfg["obj"] == "fill"), held[:, None], floor, hid], 1)
         out = nca.forward(theta, inp)
         logits = out[:, :9] / cfg["temp"]
         hid_new = torch.tanh(out[:, 9:]) * occ[:, None]
@@ -214,9 +216,24 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
             s = support_span(occ, cfg["L"], s, cfg["support_iters"])
             occ, hid, unheld = gravity(occ, hid, cfg["L"], s)
     fill = (occ * tgt).flatten(1).sum(1) / nt
-    fit = fill + cfg["speed_w"] * fill_sum / cfg["T"] - cfg["move_w"] * moves / nb
+    shelter, height = shelter_height(occ)
+    shelter = shelter / nb
+    main_term = {"fill": fill, "shelter": shelter, "height": height}[cfg["obj"]]
+    speed = cfg["speed_w"] * fill_sum / cfg["T"] if cfg["obj"] == "fill" else 0.0
+    fit = main_term + speed - cfg["move_w"] * moves / nb
     outside = (occ * (1 - tgt)).flatten(1).sum(1)
-    return fit, dict(fill=fill, falls=falls, outside=outside, occ=occ, frames=frames, moves=moves / nb, tgt=tgt)
+    return fit, dict(fill=fill, falls=falls, outside=outside, occ=occ, frames=frames, moves=moves / nb, tgt=tgt,
+                     shelter=shelter, height=height)
+
+
+def shelter_height(occ):
+    """Empty cells with a bot somewhere above them (count), and the top of the highest bot / H."""
+    H = occ.shape[-2]
+    above = torch.flip(torch.cumsum(torch.flip(occ, [1]), 1), [1]) - occ > 0
+    shelter = ((1 - occ) * above.float()).flatten(1).sum(1)
+    rows = torch.arange(1, H + 1, device=occ.device, dtype=occ.dtype)[None, :, None]
+    height = (occ * rows).flatten(1).amax(1) / H
+    return shelter, height
 
 
 def cut_mask(tgt, gen):
@@ -335,6 +352,7 @@ def evaluate(nca, theta, T_, Tf, cfg, dev, reps=2, damage=False):
                               tgt2=T_.roll(1, 0) if cfg["switch"] > 0 else None)
         Tf_ = st["tgt"]
         accs.append(dict(fill=st["fill"], falls=st["falls"], outside=st["outside"], moves=st["moves"],
+                         shelter=st["shelter"], height=st["height"],
                          scaffold=struct_stats(st["occ"], Tf_), propped=propped(st["occ"], Tf_, cfg["L"]), fit=fit))
     res = {k: float(torch.stack([a[k] for a in accs]).mean()) for k in accs[0]}
     fill = torch.stack([a["fill"] for a in accs]).mean(0)

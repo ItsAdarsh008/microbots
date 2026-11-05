@@ -343,3 +343,21 @@ Checkpoints (validation and held-out, one evaluation seed; ref = the target plac
   the only way up that stands. But it does not prop the overhangs, and its fill (0.48) is below its reference (0.64).
   Second structure that nobody asked for: a ramp.
 - Still: lots of falling and spares littered on the floor in the all-family runs.
+
+## 2026-11-05 tick 16: falsework under every overhang; next: can the swarm strike it?
+
+Evaluation lines (validation, ref = target alone): L1 0.91 at gen 900 (ref 0.87); seed 1 0.86 (lagging); 1 memory
+channel 0.90; double spares 0.90; temperature 0.5 0.89; damage run 0.88; L3 0.95 (ref 0.96: little to prop);
+no-spares 0.81 (below ref: nothing to prop with). Overhangs only: seed 0 0.80, seed 1 0.80, **double spares 0.87
+(ref 0.72), propped 0.15**, L = 0 0.54 (ref 0.64).
+
+Picture of overhangs-only with double spares (gen 675): a solid block of spare bots under every Γ arm, T arm and
+mushroom cap (held-out), i.e. falsework; 97% of validation shapes have propped cells.
+
+New hypothesis (lat4, queued first): in construction, falsework is removed once the structure has cured. Added
+curing (a bot that has not moved for K = 20 steps becomes rigid: it adds no cantilever span; moving or falling
+resets it; the bots see a 'cured' channel; unit test: an uncured 3-cell arm at L = 1 keeps 1 cell, a cured one
+keeps 3) and a clean-site cost (0.5 per bot left outside the target in the build site, / |target|). If the swarm
+learns build falsework -> wait -> remove it, that is emergent sequencing. Runs: cure + clean (seeds 0, 1),
+clean without cure (control: falsework cannot be removed without losing the overhang), cure without clean
+(does it use curing at all). T = 300, overhang families, double spares.

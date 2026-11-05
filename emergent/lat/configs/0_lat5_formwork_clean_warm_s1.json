@@ -1,0 +1,1 @@
+{"algo": "lat", "eval_every": 50, "gens": 600, "T": 300, "spares": 1.0, "families": ["gamma", "bridge", "tee"], "init_from": "init/ovh_sp100_g1300.pt", "clean_ramp": 200, "cure": 20, "cure_below": true, "clean_w": 0.5, "name": "lat5_formwork_clean_warm_s1", "seed": 1}

@@ -1,0 +1,1 @@
+{"algo": "lat", "eval_every": 100, "gens": 800, "name": "lat5_movecost_warm", "init_from": "init/L1_final.pt", "move_w": 0.005}

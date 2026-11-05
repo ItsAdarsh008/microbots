@@ -1,0 +1,1 @@
+{"algo": "lat", "eval_every": 100, "gens": 800, "name": "lat5_ovh_kick_warm", "init_from": "init/ovh_final.pt", "kick": 0.1, "families": ["gamma", "bridge", "tee"]}

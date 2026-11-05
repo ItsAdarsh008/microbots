@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from latworld import MOVES, INF, support_span, valid_moves, apply_moves, gravity, look
+from latworld import MOVES, INF, support_span, valid_moves, apply_moves, gravity, look, solid_at
 
 DEF = dict(H=20, W=40, L=1, T=160, settle=60, spares=0.3, C=8, M=32, pop=128, shapes=8, sigma=0.04, lr=0.03,
            gens=1500, eval_every=50, n_eval=64, seed=0, temp=1.0, families=None, held_out=["mushroom", "tree"],
@@ -31,6 +31,7 @@ DEF = dict(H=20, W=40, L=1, T=160, settle=60, spares=0.3, C=8, M=32, pop=128, sh
            cure=0,           # >0: a bot that has not moved for this many steps is cured (rigid: it adds no span), and
                              # the bots see a 'cured' channel; moving or falling resets it
            clean_w=0.0,      # fitness cost per bot left outside the target in the build site (columns >= 14), / |target|
+           cure_below=False,  # True: a bot only cures while the cell under it is solid (concrete needs formwork)
            clean_ramp=0,     # generations over which clean_w ramps up from 0
            init_from=None)   # path to a theta.pt / ckpt.pt to start from (a new 'cured' input channel gets zero weights)
 
@@ -211,6 +212,8 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
         moves += mv.flatten(1).sum(1)
         if K > 0:
             age = (age + 1) * occ_b * (1 - mv)                 # bots that stayed age; movers arrive with 0
+            if cfg["cure_below"]:                              # ...but only while something is under them
+                age = torch.where((solid_at(occ, -1, 0) > 0) | (age > K), age, torch.zeros_like(age))  # cured stays
             inc = 1.0 - (age >= K).float()
         s = support_span(occ, cfg["L"], s, cfg["support_iters"], inc)
         if K > 0:

@@ -398,3 +398,37 @@ arms and under the held-out mushroom and tree caps (filled 1.00 for three of six
 over a gap of up to 2 cells between pillars is held, so pillars with gaps are the economical support, and the swarm
 uses gap 1 (close to, not at, the sparsest spacing allowed). Nothing in the objective rewards using fewer bots;
 the spacing likely comes from bots climbing up the existing pillars.
+
+## 2026-11-05 tick 18: curing gives cure-and-extend, not falsework removal; formwork curing next; three collapses
+
+**Warm falsework runs (generation 250; overhang families, double spares, T = 300, clean cost ramped to 0.5):**
+
+| run | val fill (ref 0.72) | site_out (bots left in the site) | propped |
+|---|---|---|---|
+| warm start (falsework builder) | 0.91 | 36 | 0.00 (cured) |
+| cure + clean, seed 0 | 0.77 | 9.5 | 0.00 |
+| cure + clean, seed 1 | 0.93 | 13.5 | 0.01 |
+| clean, no curing (control) | 0.65 | 3.6 | 0.01 |
+
+Time series (`lat/traj_stats.py`, validation, every 25 steps): **the scaffold count never rises and then falls**
+(seed 1: 0.8 -> 4.2 -> 3.8 bots under overhangs; seed 0: rises to 7.9 and stays). No build-then-strike. Instead the
+cured fraction of target cells tracks the fill all the way (seed 1 at step 299: fill 0.92, cured 0.91): the swarm
+builds slowly enough that each overhang cell cures before the next one goes out: **cure-and-extend**. With
+sideways curing, falsework is unnecessary, so the hypothesis was not tested by this design. The control without
+curing cleans the site and loses the overhangs (0.65, below the reference), as expected.
+
+Next (lat5): **formwork curing** (`cure_below`): a bot only cures while the cell under it is solid, as concrete
+needs formwork; once cured it stays rigid. Then cure-and-extend sideways is impossible and the only way to keep an
+overhang with a clean site is prop -> cure -> remove the prop. Two seeds, warm from the falsework builder.
+
+**Collapses (cost felt before reward, same local optimum as before):**
+- move cost 0.02 per move per bot from scratch: the swarm froze (fill 0.000, moves 0.000 from generation 300).
+- overhangs + kick 10% from scratch: stuck at fill 0.13.
+Both restarted warm from wave-1 controllers (move cost 0.005 from L1 final; kick from overhangs-only final).
+- height objective: solved at once (0.98 of the world height by generation 100: a tower to the ceiling); stopped.
+
+**Other wave-2 readings (in progress, validation):** no memory at all (C = 0) 0.90 at generation 700, as good as L1
+with 8 channels: **memory is not needed**, the swarm is reactive. L = 0 on all families 0.59 (ref 0.80): hard.
+Target switch at half time 0.54 to 0.64 (ref 0.87): reconfiguration is hard and not improving. Kick 10% (all
+families) 0.74. Overhangs only seed 2: 0.82 (third seed above the 0.72 reference). Bigger world 0.82 at
+generation 100.

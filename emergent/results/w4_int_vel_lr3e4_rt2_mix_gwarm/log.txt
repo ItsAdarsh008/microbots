@@ -1,0 +1,27 @@
+{"data": "data/world128.npz", "iters": 1000, "B": 16, "lr": 0.0003, "T": 64, "K": 4, "hold": 100, "hold_eval": 500, "hold_w": 1.0, "g": 1.0, "g_warm": 600, "f_bond": 8.0, "f_act": 3.0, "mu": 0.5, "reaction": "internal", "r_sense": 3.0, "H": 32, "M": 96, "rounds": 2, "use_h": true, "see_v": true, "out_w": 1.0, "act_w": 0.0, "seed": 0, "offset": 0.0, "shuffle_targets": false, "eval_every": 250, "ema": 0.995, "clip": 1.0, "n_eval": 192, "k_c": 200.0, "r_bond": 1.25, "r_hold": 1.15, "damage_p": 0.0, "damage_r": 2.5, "grip_fixed": null, "families": null, "g_eval": null, "compile": true, "grad_decay": 1.0, "grad_clip_step": 10.0, "dense_w": 1.0, "grip_bias": -2.0, "pre_w": 0.01, "r_touch": 2.0, "mix_start": 150, "mix_iters": 450, "ctrl": "velocity", "kp": 10.0, "v_max": 2.0, "air": 0.05, "name": "w4_int_vel_lr3e4_rt2_mix_gwarm"}
+params 151491
+it 0 loss 98.315 build 32.892 (t1 6.92 t2 20.36 out 5.62) hold 32.568 mix 0.00 asq 0.00 grip 0.12 gn 463.51 g 0.00 7.17s/it
+it 25 loss 97.945 build 32.581 (t1 6.54 t2 20.65 out 5.40) hold 32.225 mix 0.00 asq 0.00 grip 0.12 gn 698.96 g 0.04 3.46s/it
+it 50 loss 57.183 build 18.724 (t1 4.41 t2 10.72 out 3.59) hold 17.214 mix 0.00 asq 0.11 grip 0.10 gn 513.70 g 0.09 3.38s/it
+it 75 loss 38.943 build 12.143 (t1 4.10 t2 4.78 out 3.27) hold 10.019 mix 0.00 asq 0.29 grip 0.08 gn 495.81 g 0.13 3.36s/it
+it 100 loss 46.731 build 12.963 (t1 3.87 t2 6.13 out 2.96) hold 15.753 mix 0.00 asq 0.84 grip 0.05 gn 524.57 g 0.17 3.36s/it
+it 125 loss 21.254 build 6.146 (t1 2.13 t2 2.48 out 1.54) hold 5.866 mix 0.00 asq 0.45 grip 0.07 gn 1563.64 g 0.21 3.35s/it
+it 150 loss 32.099 build 8.699 (t1 3.33 t2 2.82 out 2.55) hold 6.961 mix 0.00 asq 0.80 grip 0.06 gn 1825.59 g 0.25 3.35s/it
+it 175 loss 32.709 build 10.260 (t1 2.19 t2 6.48 out 1.59) hold 8.626 mix 0.06 asq 0.22 grip 0.10 gn 731.86 g 0.29 3.34s/it
+it 200 loss 19.530 build 5.206 (t1 2.03 t2 1.72 out 1.46) hold 3.871 mix 0.11 asq 0.86 grip 0.06 gn 307.46 g 0.34 3.34s/it
+it 225 loss 24.561 build 6.726 (t1 2.75 t2 1.86 out 2.12) hold 5.364 mix 0.17 asq 1.07 grip 0.07 gn 583.25 g 0.38 3.33s/it
+eval it 250: iou_build 0.290 iou_hold 0.253 cover_hold 0.388 sag 0.761 fallen 0.169 grip 0.068 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+it 250 loss 23.706 build 5.746 (t1 1.86 t2 2.53 out 1.36) hold 4.653 mix 0.22 asq 0.76 grip 0.09 gn 1406.81 g 0.42 3.37s/it
+it 275 loss 58.471 build 15.454 (t1 5.59 t2 5.38 out 4.49) hold 28.680 mix 0.28 asq 1.90 grip 0.02 gn 647.20 g 0.46 3.46s/it
+it 300 loss 17.693 build 4.318 (t1 1.55 t2 1.71 out 1.05) hold 4.469 mix 0.33 asq 1.12 grip 0.07 gn 518.64 g 0.50 3.54s/it
+it 325 loss 25.071 build 7.416 (t1 1.63 t2 4.60 out 1.18) hold 6.107 mix 0.39 asq 0.71 grip 0.08 gn 1411.38 g 0.54 3.60s/it
+it 350 loss 17.173 build 4.451 (t1 1.48 t2 1.99 out 0.98) hold 3.632 mix 0.44 asq 1.17 grip 0.07 gn 847.29 g 0.58 3.66s/it
+it 375 loss 21.122 build 5.273 (t1 1.71 t2 2.34 out 1.22) hold 6.164 mix 0.50 asq 0.95 grip 0.08 gn 780.43 g 0.63 3.71s/it
+it 400 loss 38.142 build 10.477 (t1 2.59 t2 5.95 out 1.93) hold 10.092 mix 0.56 asq 0.85 grip 0.08 gn 962.01 g 0.67 3.75s/it
+it 425 loss 17.206 build 4.470 (t1 1.63 t2 1.66 out 1.18) hold 4.175 mix 0.61 asq 1.03 grip 0.07 gn 402.62 g 0.71 3.79s/it
+it 450 loss 30.975 build 8.485 (t1 2.21 t2 4.63 out 1.64) hold 9.359 mix 0.67 asq 1.27 grip 0.06 gn 489.87 g 0.75 3.78s/it
+it 475 loss 30.838 build 8.572 (t1 2.84 t2 3.57 out 2.16) hold 10.478 mix 0.72 asq 1.68 grip 0.02 gn 233.57 g 0.79 3.75s/it
+eval it 500: iou_build 0.302 iou_hold 0.263 cover_hold 0.403 sag 0.575 fallen 0.113 grip 0.047 deg_all 0.000 tri_all 0.000 deg_ov 0.000 tri_ov 0.000 deg_sup 0.000 tri_sup 0.000
+it 500 loss 38.790 build 10.907 (t1 3.11 t2 5.40 out 2.40) hold 12.507 mix 0.78 asq 2.04 grip 0.01 gn 265.64 g 0.83 3.73s/it
+it 525 loss 49.443 build 14.177 (t1 4.19 t2 6.64 out 3.34) hold 18.033 mix 0.83 asq 2.19 grip 0.01 gn 334.35 g 0.88 3.70s/it
+it 550 loss 40.981 build 11.796 (t1 3.51 t2 5.53 out 2.75) hold 16.235 mix 0.89 asq 2.38 grip 0.00 gn 123.61 g 0.92 3.68s/it

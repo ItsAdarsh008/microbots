@@ -225,6 +225,12 @@ def evaluate(pol, ph, data, cfg, split, n=None, dev="cuda", bs=32, seed=123, wit
             add(acc, "sag", drop.mean(1), fam)
             add(acc, "fallen", (drop > 1.5).float().mean(1), fam)
             add(acc, "grip", r["grip"].mean(1), fam)
+            # diagnostic: the same end-of-build arrangement with every grip on, held passively
+            ones_ = torch.ones_like(r["grip"])
+            xg, vg = r["xb"].clone(), torch.zeros_like(r["xb"])
+            for _ in range(cfg["hold_eval"]):
+                xg, vg = ph.step(xg, vg, None, ones_, al, gh)
+            add(acc, "iou_hold_gripall", iou(footprint(xg, al, data.R, data.W), occ), fam)
             st = struct_stats(ph, r["xh"], r["grip"], al, occ, data.W)
             for k, vv in st.items():
                 acc.setdefault(k, []).append(torch.tensor([vv]))
@@ -266,7 +272,7 @@ def draw(pol, ph, data, cfg, path_png, path_gif, dev):
         S = data.sets[split]
         idx = torch.linspace(0, len(S["fam"]) - 1, 8).long()
         rows.append((split, idx))
-    fig, axes = plt.subplots(4, 8, figsize=(20, 10.5))
+    fig, axes = plt.subplots(6, 8, figsize=(20, 15.5))
     gif_src = None
     for ri, (split, idx) in enumerate(rows):
         S = data.sets[split]
@@ -282,23 +288,24 @@ def draw(pol, ph, data, cfg, path_png, path_gif, dev):
         if ri == 0:
             gif_src = (r["frames"], occ.cpu())
         A = ph.bonds(r["xh"], r["grip"], r["alive"]).cpu()
+        Ab = ph.bonds(r["xb"], r["grip"], r["alive"]).cpu()
         Aq = ph.bonds(xq, ones, ones).cpu()
         for k in range(8):
-            for rr, (xs, AA, title) in enumerate([(r["xh"][k].cpu(), A[k], "learned"), (xq[k].cpu(), Aq[k], "even sample, frozen")]):
-                ax = axes[ri * 2 + rr, k]
+            for rr, (xs, AA, title) in enumerate([(r["xb"][k].cpu(), Ab[k], "learned, end of build"),
+                                                  (r["xh"][k].cpu(), A[k], "learned, after hold"),
+                                                  (xq[k].cpu(), Aq[k], "even sample, after hold")]):
+                ax = axes[ri * 3 + rr, k]
                 ax.imshow(occ[k].cpu(), origin="lower", extent=[0, data.W, 0, data.W], cmap="Greys", alpha=0.35, vmin=0, vmax=1)
-                if rr == 0:
-                    xb = r["xb"][k].cpu()
-                    ax.scatter(xb[:, 0], xb[:, 1], s=6, c="#9ab", alpha=0.6)
                 ii, jj = torch.nonzero(torch.triu(AA), as_tuple=True)
                 for a_, b_ in zip(ii.tolist(), jj.tolist()):
                     ax.plot([xs[a_, 0], xs[b_, 0]], [xs[a_, 1], xs[b_, 1]], c="#c63", lw=0.5)
                 ax.scatter(xs[:, 0], xs[:, 1], s=9, c="#236")
                 ax.set_xlim(0, data.W); ax.set_ylim(0, data.W); ax.set_xticks([]); ax.set_yticks([])
                 fp = footprint(xs[None].to(dev), torch.ones(1, xs.shape[0], device=dev), data.R, data.W)
-                ax.set_title(f"{split} {title} IoU {iou(fp, occ[k:k+1]).item():.2f}", fontsize=7)
-    plt.suptitle(f"{cfg['name']}: rows 1,3 learned (grey = end of build, dark = after passive hold, lines = bonds); "
-                 f"rows 2,4 the even sample placed and frozen in the same physics", fontsize=9)
+                ax.set_title(f"{split}, {title}: IoU {iou(fp, occ[k:k+1]).item():.2f}", fontsize=7)
+    plt.suptitle(f"{cfg['name']}: per set (validation, then held-out families): learned swarm at the end of the build, "
+                 f"the same after the passive hold, and the even sample of the target placed and held in the same physics "
+                 f"(lines = bonds)", fontsize=9)
     plt.tight_layout()
     plt.savefig(path_png, dpi=70)
     plt.close(fig)

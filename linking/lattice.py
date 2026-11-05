@@ -78,7 +78,15 @@ def shape_tower():
     return t
 
 
-SHAPES = {"sheet": shape_sheet, "arch": shape_arch, "tower": shape_tower}
+def shape_pyramid():
+    """A stepped pyramid, 7x7 at the base. Kept out of training: a shape the network never sees."""
+    t = _empty()
+    for z, r in enumerate(range(3, -1, -1)):
+        t[16 - r:17 + r, 7 - r:8 + r, z] = True
+    return t
+
+
+SHAPES = {"sheet": shape_sheet, "arch": shape_arch, "tower": shape_tower, "pyramid": shape_pyramid}
 
 
 def initial_blocks(target, extra=12):

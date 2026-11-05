@@ -317,3 +317,29 @@ generation 100 to 200) to make room. Running now: overhang-only seed 1, overhang
 every overhang must be propped), overhang-only with double spares. Queued (new options in `es.py`): target switch
 at half time (reconfiguration), move cost, kick (remove 10% of bots after settling, then settle again), no memory
 (C = 0), bigger world (32 x 64), L = 0 on all families, overhang-only with kick, overhang-only seed 2.
+
+## 2026-11-05 tick 15: propping replicates; most L = 1 runs now beat the reference; L = 0 grows a staircase
+
+Checkpoints (validation and held-out, one evaluation seed; ref = the target placed perfectly then settled, val / held):
+
+| run | gen | val fill | val propped | held fill | held propped | ref val / held |
+|---|---|---|---|---|---|---|
+| overhangs only, seed 0 | 425 | 0.79 | 0.074 | 0.68 | 0.064 | 0.72 / 0.68 |
+| overhangs only, seed 1 (replicate) | 300 | 0.79 (eval) | 0.075 | 0.68 (gen 200) | 0.071 | 0.72 / 0.68 |
+| overhangs only, double spares | 300 | 0.76 (eval) | 0.123 | 0.70 (gen 200) | 0.175 | 0.72 / 0.68 |
+| overhangs only, L = 0 | 200 | 0.48 | 0.004 | 0.41 | 0.039 | 0.64 / - |
+| L1 | 425 | 0.87 | 0.044 | 0.70 | 0.069 | 0.87 / 0.68 |
+| L1, double spares | 425 | 0.90 | 0.068 | 0.81 | 0.141 | 0.87 / 0.68 |
+| L1, 1 memory channel | 575 | 0.89 | 0.043 | 0.72 | 0.098 | 0.87 / 0.68 |
+| no limit (control) | 425 | 0.99 | 0.000 | 0.93 | 0.017 | 1.00 / 1.00 |
+
+- **Replicated (two seeds):** trained on overhang shapes only, the swarm fills more of the target than the target
+  alone can hold (0.79 against 0.72), with 7% of target cells standing only on bots outside the target.
+- On all families, the double-spares and one-memory-channel runs now beat the reference on validation, and three
+  runs beat it on the held-out mushrooms and trees they never saw (double spares: 0.81 against 0.68; the pictures
+  show columns of spares under both sides of mushroom caps).
+- **L = 0 (only columns hold):** the swarm builds a diagonal staircase of spare bots against the stem and climbs it,
+  in every shape (validation and held-out). At L = 0 a side neighbour gives no support, so a staircase of columns is
+  the only way up that stands. But it does not prop the overhangs, and its fill (0.48) is below its reference (0.64).
+  Second structure that nobody asked for: a ramp.
+- Still: lots of falling and spares littered on the floor in the all-family runs.

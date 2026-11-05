@@ -1,0 +1,1 @@
+{"algo": "lat", "eval_every": 100, "gens": 800, "T": 300, "spares": 1.0, "families": ["gamma", "bridge", "tee"], "name": "lat4_cure_clean_s1", "cure": 20, "clean_w": 0.5, "seed": 1}

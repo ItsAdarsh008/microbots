@@ -48,17 +48,19 @@ def solid_at(occ, di, dj):
     return s
 
 
-def support_span(occ, L, s0=None, iters=8):
+def support_span(occ, L, s0=None, iters=8, inc=None):
     """Support span per cell (INF where empty or unheld). Bellman-style update from a warm start s0 (the previous
     step's values), `iters` rounds per call: values can go up as well as down, so removing a support is felt within
-    a few steps (a short physical delay). L is finite; use a large L (e.g. 64) for 'no cantilever limit'."""
+    a few steps (a short physical delay). L is finite; use a large L (e.g. 64) for 'no cantilever limit'.
+    inc: per-cell span increment for side/upper support (default 1); 0 for a cured (rigid) bot."""
+    inc = 1.0 if inc is None else inc
     floor = torch.zeros_like(occ)
     floor[..., 0, :] = 1.0
     s = torch.where(occ > 0, torch.full_like(occ, INF), torch.full_like(occ, INF)) if s0 is None else s0
     for _ in range(iters):
         below = look(s, -1, 0, INF)
-        side = torch.minimum(look(s, 0, 1, INF), look(s, 0, -1, INF)) + 1
-        above = look(s, 1, 0, INF) + 1
+        side = torch.minimum(look(s, 0, 1, INF), look(s, 0, -1, INF)) + inc
+        above = look(s, 1, 0, INF) + inc
         cand = torch.minimum(torch.minimum(below, side), above)
         cand = torch.where(floor > 0, torch.zeros_like(cand), cand)
         cand = torch.where(cand <= L, cand, torch.full_like(cand, INF))     # unheld bots pass no support on

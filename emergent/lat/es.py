@@ -26,7 +26,10 @@ DEF = dict(H=20, W=40, L=1, T=160, settle=60, spares=0.3, C=8, M=32, pop=128, sh
            switch=0.0,   # >0: the target changes to another shape at this fraction of T (reconfiguration)
            move_w=0.0,   # fitness cost per move per bot (energy)
            kick=0.0,
-           obj="fill")   # "fill" (the target), or target-free: "shelter" (empty cells with a bot somewhere above,
+           obj="fill",
+           cure=0,       # >0: a bot that has not moved for this many steps is cured (rigid: it adds no span), and
+                         # the bots see a 'cured' channel; moving or falling resets it
+           clean_w=0.0)  # fitness cost per bot left outside the target in the build site (columns >= 14), / |target|   # "fill" (the target), or target-free: "shelter" (empty cells with a bot somewhere above,
                          # per bot) or "height" (top of the highest bot / H); the target is then hidden from the bots     # after settling, remove this fraction of bots at random and settle again (robustness)
 
 FAMS = ["tower", "gamma", "tee", "bridge", "stairs", "blocks", "mushroom", "tree"]
@@ -121,6 +124,10 @@ def pile(tgt, spares, H):
     return occ
 
 
+def make_nca(cfg):
+    return NCA(cfg["C"], cfg["M"], cin=4 + (1 if cfg.get("cure", 0) > 0 else 0))
+
+
 # ---------------------------------------------------------------- controller (population in one grouped conv)
 class NCA:
     def __init__(self, C, M, cin=4):
@@ -172,6 +179,9 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
     hid = torch.zeros(E, cfg["C"], H, W, device=dev)
     floor = torch.zeros(E, 1, H, W, device=dev)
     floor[:, :, 0, :] = 1
+    K = cfg.get("cure", 0)
+    age = torch.zeros_like(occ)
+    inc = None
     s = support_span(occ, cfg["L"], None, H + W)
     fill_sum = torch.zeros(E, device=dev)
     falls = torch.zeros(E, device=dev)
@@ -185,7 +195,8 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
             tgt = tgt2
             nt = tgt.flatten(1).sum(1)
         held = occ * (s <= cfg["L"]).float()
-        inp = torch.cat([occ[:, None], tgt[:, None] * (cfg["obj"] == "fill"), held[:, None], floor, hid], 1)
+        extra = [(age >= K).float()[:, None] * occ[:, None]] if K > 0 else []
+        inp = torch.cat([occ[:, None], tgt[:, None] * (cfg["obj"] == "fill"), held[:, None], floor] + extra + [hid], 1)
         out = nca.forward(theta, inp)
         logits = out[:, :9] / cfg["temp"]
         hid_new = torch.tanh(out[:, 9:]) * occ[:, None]
@@ -193,10 +204,17 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
         g = -torch.log(-torch.log(torch.rand(logits.shape, device=dev, generator=gen).clamp(1e-9, 1 - 1e-9)))
         act = torch.where(mask > 0, logits + g, torch.full_like(logits, -1e9)).argmax(1)
         prio = torch.rand(occ.shape, device=dev, generator=gen)
+        occ_b = occ
         occ, hid, mv = apply_moves(occ, hid_new, act, prio)
         moves += mv.flatten(1).sum(1)
-        s = support_span(occ, cfg["L"], s, cfg["support_iters"])
+        if K > 0:
+            age = (age + 1) * occ_b * (1 - mv)                 # bots that stayed age; movers arrive with 0
+            inc = 1.0 - (age >= K).float()
+        s = support_span(occ, cfg["L"], s, cfg["support_iters"], inc)
+        if K > 0:
+            age = age * (s <= cfg["L"]).float()                # unheld (falling) bots lose their cure
         occ, hid, unheld = gravity(occ, hid, cfg["L"], s)
+        age = age * occ
         falls += unheld
         if damage_at is not None and t == damage_at:
             occ = occ * (1 - cut_mask(tgt, gen))
@@ -205,24 +223,30 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
         if record:
             frames.append(occ.cpu())
     for _ in range(cfg["settle"]):
-        s = support_span(occ, cfg["L"], s, cfg["support_iters"])
+        s = support_span(occ, cfg["L"], s, cfg["support_iters"], inc)
         occ, hid, unheld = gravity(occ, hid, cfg["L"], s)
+        if K > 0:
+            age = age * occ * (s <= cfg["L"]).float(); inc = 1.0 - (age >= K).float()
         falls += unheld
         if record and _ % 3 == 0:
             frames.append(occ.cpu())
     if cfg["kick"] > 0:
         occ = occ * (torch.rand(occ.shape, device=dev, generator=gen) >= cfg["kick"]).float()
         for _ in range(cfg["settle"]):
-            s = support_span(occ, cfg["L"], s, cfg["support_iters"])
+            s = support_span(occ, cfg["L"], s, cfg["support_iters"], inc)
             occ, hid, unheld = gravity(occ, hid, cfg["L"], s)
+            if K > 0:
+                age = age * occ * (s <= cfg["L"]).float(); inc = 1.0 - (age >= K).float()
     fill = (occ * tgt).flatten(1).sum(1) / nt
     shelter, height = shelter_height(occ)
     shelter = shelter / nb
     main_term = {"fill": fill, "shelter": shelter, "height": height}[cfg["obj"]]
     speed = cfg["speed_w"] * fill_sum / cfg["T"] if cfg["obj"] == "fill" else 0.0
-    fit = main_term + speed - cfg["move_w"] * moves / nb
+    cols = torch.arange(W, device=dev)[None, None, :] >= 14
+    site_out = (occ * (1 - tgt) * cols).flatten(1).sum(1)
+    fit = main_term + speed - cfg["move_w"] * moves / nb - cfg.get("clean_w", 0.0) * site_out / nt
     outside = (occ * (1 - tgt)).flatten(1).sum(1)
-    return fit, dict(fill=fill, falls=falls, outside=outside, occ=occ, frames=frames, moves=moves / nb, tgt=tgt,
+    return fit, dict(fill=fill, falls=falls, outside=outside, occ=occ, frames=frames, moves=moves / nb, tgt=tgt, site_out=site_out, inc=inc,
                      shelter=shelter, height=height)
 
 
@@ -251,10 +275,10 @@ def struct_stats(occ, tgt):
     return under
 
 
-def propped(occ, tgt, L):
+def propped(occ, tgt, L, inc=None):
     """Fraction of target cells that are filled but would not be held without the bots outside the target."""
     inside = occ * tgt
-    s = support_span(inside, L, None, occ.shape[-2] + occ.shape[-1])
+    s = support_span(inside, L, None, occ.shape[-2] + occ.shape[-1], inc)
     return (inside * (s > L).float()).flatten(1).sum(1) / tgt.flatten(1).sum(1)
 
 
@@ -280,7 +304,7 @@ def main(path):
     HO, HOf = bank(cfg["held_out"], cfg["n_eval"], H, W, 3) if cfg["held_out"] else (None, None)
     TR, VA = TR.to(dev), VA.to(dev)
     HO = HO.to(dev) if HO is not None else None
-    nca = NCA(cfg["C"], cfg["M"])
+    nca = make_nca(cfg)
     gen = torch.Generator().manual_seed(cfg["seed"])
     ggen = torch.Generator(device=dev).manual_seed(cfg["seed"])
     theta = nca.init(gen).to(dev)
@@ -351,9 +375,9 @@ def evaluate(nca, theta, T_, Tf, cfg, dev, reps=2, damage=False):
             fit, st = rollout(nca, theta[None], T_, cfg, gen, damage_at=cfg["T"] // 2 if damage else None,
                               tgt2=T_.roll(1, 0) if cfg["switch"] > 0 else None)
         Tf_ = st["tgt"]
-        accs.append(dict(fill=st["fill"], falls=st["falls"], outside=st["outside"], moves=st["moves"],
+        accs.append(dict(fill=st["fill"], falls=st["falls"], outside=st["outside"], moves=st["moves"], site_out=st["site_out"],
                          shelter=st["shelter"], height=st["height"],
-                         scaffold=struct_stats(st["occ"], Tf_), propped=propped(st["occ"], Tf_, cfg["L"]), fit=fit))
+                         scaffold=struct_stats(st["occ"], Tf_), propped=propped(st["occ"], Tf_, cfg["L"], st["inc"]), fit=fit))
     res = {k: float(torch.stack([a[k] for a in accs]).mean()) for k in accs[0]}
     fill = torch.stack([a["fill"] for a in accs]).mean(0)
     res["per_family"] = {FAMS[f]: float(fill[Tf == f].mean()) for f in Tf.unique().tolist()}

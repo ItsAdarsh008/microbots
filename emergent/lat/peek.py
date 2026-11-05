@@ -17,9 +17,9 @@ import es  # noqa: E402
 from latworld import support_span  # noqa: E402
 
 
-def propped(occ, tgt, L, H, W):
+def propped(occ, tgt, L, H, W, inc=None):
     inside = occ * tgt
-    s = support_span(inside, L, None, H + W)
+    s = support_span(inside, L, None, H + W, inc)
     return (inside * (s > L).float()).flatten(1).sum(1)
 
 
@@ -38,7 +38,7 @@ def main(dirs):
         VA, VAf = es.bank(train_f, cfg["n_eval"], H, W, 2)
         HO, HOf = es.bank(cfg["held_out"], cfg["n_eval"], H, W, 3)
         VA, HO = VA.to(dev), HO.to(dev)
-        nca = es.NCA(cfg["C"], cfg["M"])
+        nca = es.make_nca(cfg)
         theta = s["theta"]
         line = [f"{d} gen {s.get('gen', 'final')}"]
         if os.environ.get("PEEK_INIT"):     # control: the untrained controller (uniform over the allowed moves)
@@ -48,7 +48,7 @@ def main(dirs):
             g = torch.Generator(device=dev).manual_seed(1000)
             with torch.no_grad():
                 _, st = es.rollout(nca, theta[None], T_, cfg, g)
-            pr = propped(st["occ"], T_, cfg["L"], H, W)
+            pr = propped(st["occ"], T_, cfg["L"], H, W, st.get("inc"))
             nt = T_.flatten(1).sum(1)
             line.append(f"{name}: fill {st['fill'].mean():.3f} propped/target {(pr / nt).mean():.3f} "
                         f"shapes_with_propped {(pr > 0).float().mean():.2f} outside {st['outside'].mean():.1f} "

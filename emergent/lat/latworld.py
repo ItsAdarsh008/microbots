@@ -20,6 +20,12 @@ import torch.nn.functional as F
 # move index: 0 stay, 1 E, 2 W, 3 U, 4 D, 5 UE, 6 UW, 7 DE, 8 DW  (di = row change, dj = column change)
 MOVES = [(0, 0), (0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
 INF = 1000.0
+FLOOR = None   # (B, W) 1 where the floor exists; None = floor everywhere. Set per rollout with set_floor().
+
+
+def set_floor(mask):
+    global FLOOR
+    FLOOR = mask
 
 
 def shift(x, di, dj, fill=0.0):
@@ -44,7 +50,7 @@ def solid_at(occ, di, dj):
     s = look(occ, di, dj, 0.0)
     if di == -1:
         s = s.clone()
-        s[..., 0, :] = 1.0
+        s[..., 0, :] = 1.0 if FLOOR is None else FLOOR
     return s
 
 
@@ -55,7 +61,7 @@ def support_span(occ, L, s0=None, iters=8, inc=None):
     inc: per-cell span increment for side/upper support (default 1); 0 for a cured (rigid) bot."""
     inc = 1.0 if inc is None else inc
     floor = torch.zeros_like(occ)
-    floor[..., 0, :] = 1.0
+    floor[..., 0, :] = 1.0 if FLOOR is None else FLOOR
     s = torch.where(occ > 0, torch.full_like(occ, INF), torch.full_like(occ, INF)) if s0 is None else s0
     for _ in range(iters):
         below = look(s, -1, 0, INF)

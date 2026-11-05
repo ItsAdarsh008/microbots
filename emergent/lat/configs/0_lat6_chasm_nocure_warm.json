@@ -1,0 +1,1 @@
+{"algo": "lat", "eval_every": 50, "gens": 600, "T": 300, "spares": 0.5, "chasm": true, "families": ["chasm"], "held_out": [], "name": "lat6_chasm_nocure_warm", "init_from": "init/L1_final.pt"}

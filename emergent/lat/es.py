@@ -18,6 +18,7 @@ import torch
 import torch.nn.functional as F
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import latworld
 from latworld import MOVES, INF, support_span, valid_moves, apply_moves, gravity, look, solid_at
 
 DEF = dict(H=20, W=40, L=1, T=160, settle=60, spares=0.3, C=8, M=32, pop=128, shapes=8, sigma=0.04, lr=0.03,
@@ -33,9 +34,11 @@ DEF = dict(H=20, W=40, L=1, T=160, settle=60, spares=0.3, C=8, M=32, pop=128, sh
            clean_w=0.0,      # fitness cost per bot left outside the target in the build site (columns >= 14), / |target|
            cure_below=False,  # True: a bot only cures while the cell under it is solid (concrete needs formwork)
            clean_ramp=0,     # generations over which clean_w ramps up from 0
-           init_from=None)   # path to a theta.pt / ckpt.pt to start from (a new 'cured' input channel gets zero weights)
+           init_from=None,
+           chasm=False)      # True: targets are a deck over a gap in the floor plus a tower on the far side; bots
+                             # that fall into the gap are lost   # path to a theta.pt / ckpt.pt to start from (a new 'cured' input channel gets zero weights)
 
-FAMS = ["tower", "gamma", "tee", "bridge", "stairs", "blocks", "mushroom", "tree"]
+FAMS = ["tower", "gamma", "tee", "bridge", "stairs", "blocks", "mushroom", "tree", "chasm"]
 
 
 # ---------------------------------------------------------------- targets
@@ -108,11 +111,33 @@ def bank(fams, n, H, W, seed):
     out, fid = [], []
     while len(out) < n:
         f = fams[len(out) % len(fams)]
-        t = gen_target(f, rng, H, W)
+        t = chasm_target(rng, H, W) if f == "chasm" else gen_target(f, rng, H, W)
         if t is not None and 12 <= t.sum() <= 110:
             out.append(t)
             fid.append(FAMS.index(f))
     return torch.tensor(np.array(out), dtype=torch.float32), torch.tensor(fid)
+
+
+def chasm_target(rng, H, W):
+    """A deck at floor level across a gap in the floor (gap 3..12), and a tower (height 3..8) beyond it."""
+    t = np.zeros((H, W), bool)
+    g0 = rng.integers(16, 24)
+    gap = rng.integers(3, 13)
+    tw, th = rng.integers(1, 3), rng.integers(3, 9)
+    if g0 + gap + 2 + tw >= W:
+        return None
+    t[0, g0:g0 + gap] = True                                   # the deck (over the void)
+    x = g0 + gap + rng.integers(1, 3)
+    t[:th, x:x + tw] = True                                     # the far tower
+    return t
+
+
+def floor_mask(tgt, tgt2=None):
+    """Floor exists everywhere except under the deck (row-0 target cells with no target cell above them)."""
+    row0 = tgt[:, 0, :]
+    above = tgt[:, 1, :]
+    gap = row0 * (1 - above)                                    # deck cells (towers have a cell above them)
+    return 1.0 - gap
 
 
 def pile(tgt, spares, H):
@@ -186,6 +211,7 @@ def rollout(nca, theta, tgt, cfg, gen, record=False, damage_at=None, tgt2=None):
     """theta (P, n); tgt (P*S, H, W). Returns fitness (P*S,) and stats. tgt2: the target after the switch."""
     E, H, W = tgt.shape
     dev = tgt.device
+    latworld.set_floor(floor_mask(tgt, tgt2) if cfg.get("chasm") else None)
     occ = pile(tgt, cfg["spares"], H)
     hid = torch.zeros(E, cfg["C"], H, W, device=dev)
     floor = torch.zeros(E, 1, H, W, device=dev)
@@ -315,7 +341,7 @@ def main(path):
         log.write(s + "\n"); log.flush()
 
     H, W = cfg["H"], cfg["W"]
-    train_f = cfg["families"] or [f for f in FAMS if f not in cfg["held_out"]]
+    train_f = cfg["families"] or [f for f in FAMS if f not in cfg["held_out"] and f != "chasm"]
     TR, TRf = bank(train_f, cfg["n_bank"], H, W, 1)
     VA, VAf = bank(train_f, cfg["n_eval"], H, W, 2)
     HO, HOf = bank(cfg["held_out"], cfg["n_eval"], H, W, 3) if cfg["held_out"] else (None, None)

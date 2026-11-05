@@ -432,3 +432,26 @@ with 8 channels: **memory is not needed**, the swarm is reactive. L = 0 on all f
 Target switch at half time 0.54 to 0.64 (ref 0.87): reconfiguration is hard and not improving. Kick 10% (all
 families) 0.74. Overhangs only seed 2: 0.82 (third seed above the 0.72 reference). Bigger world 0.82 at
 generation 100.
+
+## 2026-11-05 tick 19: formwork curing gives no falsework stripping; chasm crossing next; gallery published
+
+**Formwork curing (lat5; a bot cures only while the cell under it is solid; clean cost 0.5, warm from the
+falsework builder), generation 250, two seeds:** fill 0.716 and 0.726 against a reference of 0.724, site_out 4 to
+5, scaffold 3 to 4 bots, flat time series (no rise then fall). Both seeds dropped the overhangs: they build what
+stands on its own, cure it, and clean up. Removing props after curing would pay (each overhang cell is worth
+1/|target| and a removed prop costs nothing) but the search did not find it. **Negative** for emergent
+build-then-strike under this design. Stopped both (flat since the ramp ended) to make room. Queued one variant
+with a smaller clean cost (0.2) so keeping the overhangs stays worth it while props are still there.
+
+Other updates: cure + clean warm seed 1 at generation 500: fill 0.91 with only 3.3 bots left in the site
+(cure-and-extend, clean). Move cost 0.005 warm: 0.91, moves per bot 27.5 vs 29 without cost (little change).
+Bigger world 0.87 at generation 200 (ref 0.87). Switch 0.73 at 600 (improving, still below 0.87). Kick 0.77.
+
+**New hypothesis (lat6): chasm crossing.** Part of the floor is missing (`chasm`); the target is a deck across the
+gap (3 to 12 cells) and a tower beyond it; bots that fall into the gap are lost. Unit test with one abutment bot:
+uncured deck keeps 1 of 9 cells at L = 1, cured deck keeps 9 of 9. Prediction: with curing the swarm crosses by
+cure-and-extend (the strategy it found on its own, here warm-started from that controller); without curing at L = 1
+it cannot cross more than about 1 cell; at L = 3 about 3. Runs: cure warm (two seeds), no cure (L1), no cure (L3).
+
+**Gallery:** every run rendered on the same six shapes (`lat/gallery.py`, page from `lat/gallery_page.py`),
+published as a private artifact with settings, metrics against the reference, and a verdict per run.

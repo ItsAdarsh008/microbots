@@ -34,9 +34,9 @@ def main(dirs):
         logp = os.path.join(d, "log.txt")
         cfg.update(json.loads([l for l in open(logp) if l.startswith("{")][-1]))
         H, W = cfg["H"], cfg["W"]
-        train_f = cfg["families"] or [f for f in es.FAMS if f not in cfg["held_out"]]
+        train_f = cfg["families"] or [f for f in es.FAMS if f not in cfg["held_out"] and f != "chasm"]
         VA, VAf = es.bank(train_f, cfg["n_eval"], H, W, 2)
-        HO, HOf = es.bank(cfg["held_out"], cfg["n_eval"], H, W, 3)
+        HO, HOf = es.bank(cfg["held_out"] or train_f, cfg["n_eval"], H, W, 3)
         VA, HO = VA.to(dev), HO.to(dev)
         nca = es.make_nca(cfg)
         theta = s["theta"]

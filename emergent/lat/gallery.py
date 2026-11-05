@@ -38,9 +38,15 @@ def font(sz):
 F_HEAD, F_LAB = font(13), font(11)
 
 
-def shapes(H, W, seed=11):
+def shapes(H, W, seed=11, chasm=False):
     rng = np.random.default_rng(seed)
     out = []
+    if chasm:
+        while len(out) < 6:
+            t = es.chasm_target(rng, H, W)
+            if t is not None:
+                out.append(t)
+        return torch.tensor(np.array(out), dtype=torch.float32)
     for fam in SHOW:
         while True:
             t = es.gen_target(fam, rng, H, W)
@@ -106,7 +112,7 @@ def render(xframes, tgt0, cfg, label, path):
             y0 = head + gap + r_ * (ph + lab + 3 + gap)
             nt = tg[e].sum()
             fill = (occ[e] * tg[e]).sum() / max(nt, 1)
-            txt = f"{SHOW[e]}" + (f"  fill {fill:.2f}" if cfg['obj'] == 'fill' else "")
+            txt = (f"chasm {e + 1}" if cfg.get("chasm") else f"{SHOW[e]}") + (f"  fill {fill:.2f}" if cfg['obj'] == 'fill' else "")
             dr.text((x0, y0), txt, fill=COL["text"], font=F_LAB)
             py = y0 + lab
             arr = np.empty((H, W, 3), np.uint8)
@@ -126,6 +132,10 @@ def render(xframes, tgt0, cfg, label, path):
             pim = Image.fromarray(arr).resize((pw, ph), Image.NEAREST)
             im.paste(pim, (x0, py))
             dr.line([(x0, py + ph), (x0 + pw - 1, py + ph)], fill=COL["floor"], width=2)
+            if cfg.get("chasm"):                                # the gap in the floor, drawn as a red-brown void
+                gapc = np.nonzero((tg[e][0] > 0) & (tg[e][1] == 0))[0]
+                for j in gapc:
+                    dr.rectangle([x0 + j * c, py + ph - 1, x0 + (j + 1) * c - 1, py + ph + 3], fill=(120, 30, 30))
         imgs.append(im.quantize(colors=32, method=Image.MEDIANCUT, dither=Image.NONE))
         durs.append(60)
     durs[-1] = 2500
@@ -152,7 +162,7 @@ def main(args):
             cfg = run_cfg(d)
             info = dict(name=name, status=status(d, name), cfg=cfg, metrics=parse_metrics(d))
         H, W = cfg["H"], cfg["W"]
-        tg = shapes(H, W).to(dev)
+        tg = shapes(H, W, chasm=bool(cfg.get("chasm"))).to(dev)
         nca = es.make_nca(cfg)
         g = torch.Generator(device=dev).manual_seed(7)
         if name == "perfect":

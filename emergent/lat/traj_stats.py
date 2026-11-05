@@ -22,13 +22,15 @@ def main(d, every=20):
     cfg = dict(es.DEF)
     cfg.update(json.loads([l for l in open(os.path.join(d, "log.txt")) if l.startswith("{")][-1]))
     H, W = cfg["H"], cfg["W"]
-    train_f = cfg["families"] or [f for f in es.FAMS if f not in cfg["held_out"]]
+    train_f = cfg["families"] or [f for f in es.FAMS if f not in cfg["held_out"] and f != "chasm"]
     tgt, _ = es.bank(train_f, cfg["n_eval"], H, W, 2)
     tgt = tgt.to(dev)
     nca = es.make_nca(cfg)
     theta = s_["theta"][None]
     gen = torch.Generator(device=dev).manual_seed(1000)
     E = tgt.shape[0]
+    import latworld
+    latworld.set_floor(es.floor_mask(tgt) if cfg.get("chasm") else None)
     occ = es.pile(tgt, cfg["spares"], H)
     hid = torch.zeros(E, cfg["C"], H, W, device=dev)
     floor = torch.zeros(E, 1, H, W, device=dev); floor[:, :, 0, :] = 1

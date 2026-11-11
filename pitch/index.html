@@ -33,7 +33,7 @@ const BUDGET = {
   ],
 };
 
-const INK = '#15171b', DARK = '#23262c', MID = '#8d939c', LIGHT = '#c9ced5', GHOST = '#eef0f3', ACC = '#f26a1b';
+const INK = '#15171b', DARK = '#23262c', MID = '#8d939c', LIGHT = '#c9ced5', GHOST = '#eceef2', ACC = '#f26a1b';
 const D = window.DATA;
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const lerp = (a, b, u) => a + (b - a) * u;
@@ -153,8 +153,15 @@ function seqAt(sq, u) {                             // positions at fraction u o
   return o;
 }
 function ghost(sq) {                                // soft silhouette of the target shape
-  if (!sq.g) { const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d'); x.fillStyle = GHOST;
-    for (let r = 0; r < 64; r++) for (let q = 0; q < 64; q++) if (sq.occ.charCodeAt(r * 64 + q) === 49) x.fillRect(q, 63 - r, 1, 1); sq.g = c; }
+  if (!sq.g) {                                      // 64x64 mask -> blurred -> thresholded, so the outline is smooth
+    const a = document.createElement('canvas'); a.width = a.height = 64; const x = a.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 64, 64); x.fillStyle = '#000';
+    for (let r = 0; r < 64; r++) for (let q = 0; q < 64; q++) if (sq.occ.charCodeAt(r * 64 + q) === 49) x.fillRect(q, 63 - r, 1, 1);
+    const b = document.createElement('canvas'), n = b.width = b.height = 320, y = b.getContext('2d', { willReadFrequently: true });
+    y.filter = 'blur(4px)'; y.imageSmoothingQuality = 'high'; y.drawImage(a, 0, 0, n, n); y.filter = 'none';
+    const im = y.getImageData(0, 0, n, n), d = im.data, [gr, gg, gb] = hex(GHOST);
+    for (let i = 0; i < d.length; i += 4) { const t = clamp((255 - d[i] - 100) / 50); d[i] = gr * 255; d[i + 1] = gg * 255; d[i + 2] = gb * 255; d[i + 3] = 255 * t * t * (3 - 2 * t); }
+    y.putImageData(im, 0, 0); sq.g = b;
+  }
   return sq.g;
 }
 function drawGhost(sq, cx, cy, s, alpha = 1) { ctx.save(); ctx.globalAlpha = alpha; ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(ghost(sq), cx - s, cy - s, 2 * s, 2 * s); ctx.restore(); }
@@ -188,8 +195,8 @@ const origins = {
   beats: 3, N: 900,
   enter() {
     const n = this.N; this.x = new Float32Array(n); this.y = new Float32Array(n); this.vx = new Float32Array(n); this.vy = new Float32Array(n);
-    const g = () => (Math.random() + Math.random() + Math.random() + Math.random() - 2) * 0.87, u = Math.min(W, H) / 1000;
-    for (let i = 0; i < n; i++) { this.x[i] = W / 2 + g() * 40 * u; this.y[i] = H / 2 + g() * 40 * u; const a = Math.random() * 6.283; this.vx[i] = Math.cos(a) * 60 * u; this.vy[i] = Math.sin(a) * 60 * u; }
+    const u = Math.min(W, H) / 1000;
+    for (let i = 0; i < n; i++) { this.x[i] = Math.random() * W; this.y[i] = Math.random() * H; const a = Math.random() * 6.283; this.vx[i] = Math.cos(a) * 60 * u; this.vy[i] = Math.sin(a) * 60 * u; }
     this.last = 0;
     const K = D.kilobot;
     if (!K.a) {
@@ -281,9 +288,11 @@ const cad = {
     const c = D.cad[this.cur], x = ts - this.sw;
     this.fit = lerp(this.fit, Math.max(c.r, 42), 0.07);
     shadow(W / 2, H * 0.86, H * 0.36, H * 0.045);
-    begin3D(); orbit([0, 0, 0], this.fit * 4.6, ts * 0.55, 0.36, 0.5);
+    begin3D();
     const one = (nm, sc) => {
       const d = D.cad[nm]; if (!d || sc <= 0.001) return;
+      if (d.face != null) orbit([0, 0, 0], this.fit * 4.6, d.face + 0.75 * Math.sin(ts * 0.6), 0.22, 0.5);
+      else orbit([0, 0, 0], this.fit * 4.6, ts * 0.55, 0.36, 0.5);
       const model = M.sc(d.r * sc);
       let o = 0; for (let k = 0; k < 5; k++) { draw(d.m, model, PARTCOL[k], 1, o, d.ranges[k]); o += d.ranges[k]; }
     };
@@ -295,23 +304,23 @@ const cad = {
 /* 4. In 3D, staying linked: 174 cube bots build an arch, a slice is cut out, the spares rebuild it. */
 const linking = {
   beats: 2,
-  enter() { const L = D.linking; if (!L.c) { L.c = b64(L.cell, Int8Array); L.fl = b64(L.flag, Uint8Array); } },
+  enter() { const L = D.linking; if (!L.c) { L.c = b64(L.cell, Int8Array); L.fl = b64(L.flag, Uint8Array); L.mid = [0, 1, 2].map(k => L.target.reduce((a, c) => a + c[k], 0) / L.target.length); } },
   simTime(beat, tb) {
     const L = D.linking, a = L.built + 3, r = 13;
     if (beat === 0) { const t = tb * r; return t < a ? t : Math.min(L.dmg - 0.001, a + (t - a) * 3.5); }
     return tb < 0.9 ? L.dmg + tb / 0.9 * 0.999 : Math.min(L.t - 0.001, L.dmg + 1 + (tb - 0.9) * 11);
   },
   draw(beat, tb, ts) {
-    const L = D.linking, [nx, ny] = L.grid, tt = this.simTime(beat, tb), t = Math.floor(tt), s = ease(tt - t), B = L.b;
-    shadow(W / 2, H * 0.80, H * 0.62, H * 0.07, 0.10);
-    begin3D(); orbit([nx / 2 - .5, ny / 2 - .5, 3.6], 46, -1.05 + 0.42 * Math.sin(ts * 0.22), 0.36, 0.52);
-    draw(CUBE, M.chain(M.tr(nx / 2 - .5, ny / 2 - .5, -0.62), M.sc(nx + 3, ny + 3, 0.16)), hex('#f1f2f5'));
-    const cLock = hex(DARK), cFree = hex('#c3c8d0'), cMove = hex(ACC);
+    const L = D.linking, tt = this.simTime(beat, tb), t = Math.floor(tt), s = ease(tt - t), B = L.b;
+    const rest = tt - t > 0.998;                    // held on the last step of a beat: every bot has arrived
+    begin3D(); orbit([L.mid[0] - 2.2, L.mid[1], L.mid[2] - 1.9], 37, -1.05 + 0.42 * Math.sin(ts * 0.22), 0.34, 0.52);
+    draw(DISC, M.chain(M.tr(L.mid[0] - 2.2, L.mid[1], -0.53), M.sc(12.5, 12.5, 0.04)), hex('#c4c4c6'));
+    const cLock = hex('#30343c'), cFree = hex('#b9bec7'), cMove = hex(ACC);
     for (let b = 0; b < B; b++) {
-      const o = (t * B + b) * 9, f = L.fl[t * B + b], kind = f & 3, alive = f >> 2 & 1, locked = f >> 3 & 1;
+      const o = (t * B + b) * 9, f = L.fl[t * B + b], kind = rest ? 0 : f & 3, alive = f >> 2 & 1, locked = f >> 3 & 1;
       const fr = [L.c[o], L.c[o + 1], L.c[o + 2]], to = [L.c[o + 3], L.c[o + 4], L.c[o + 5]];
       if (!alive) {                                 // bots removed by the cut drop away
-        if (t === L.dmg && (L.fl[(t - 1) * B + b] >> 2 & 1)) draw(CUBE, M.chain(M.tr(to[0], to[1], to[2] - 5 * s * s), M.sc(0.86 * (1 - s))), cMove);
+        if (t === L.dmg && !rest && (L.fl[(t - 1) * B + b] >> 2 & 1)) draw(CUBE, M.chain(M.tr(to[0], to[1], to[2] - 5 * s * s), M.sc(0.86 * (1 - s))), cMove);
         continue;
       }
       let model;
@@ -329,6 +338,7 @@ const linking = {
 /* 5. From hand-written rules to a learned swarm: form, cut, repair, then 24 shapes it never trained on. */
 const learned = {
   beats: 4,
+  enter() { D.swarm.wall.forEach(q => { seq(q); ghost(q); }); },
   draw(beat, tb, ts) {
     const R = D.swarm.repair[0], s = Math.min(W, H) * 0.52, cx = W / 2, cy = H / 2;
     if (beat < 3) {
@@ -369,28 +379,29 @@ const puck = {
     add(DISC, M.chain(M.tr(0, 0, 4.2), M.sc(40, 40, 2.6)), '#2a2d33', 0);                 // base plate
     ring3(a => {
       const cs = Math.cos(a), sn = Math.sin(a);
-      add(DISC, M.chain(M.tr(31 * cs, 31 * sn, 11), radial(a), M.sc(11, 11, 7)), '#3d424b', 0);       // omni wheel
+      add(DISC, M.chain(M.tr(31 * cs, 31 * sn, 11), radial(a), M.sc(11, 11, 7)), '#565c66', 0);       // omni wheel
       add(DISC, M.chain(M.tr(31 * cs, 31 * sn, 11), radial(a), M.sc(4.2, 4.2, 8.4)), ACC, 0);         // hub
       for (let k = 0; k < 10; k++) { const b = k / 10 * 6.2832;                                       // rollers round the rim
         add(DISC, M.chain(M.tr(31 * cs, 31 * sn, 11), radial(a), M.rot([0, 0, 1], b), M.tr(10.4, 0, 0), M.rot([1, 0, 0], Math.PI / 2), M.sc(1.9, 1.9, 4.6)), '#8d939c', 0); }
       add(DISC, M.chain(M.tr(16 * cs, 16 * sn, 11), radial(a), M.sc(5.6, 5.6, 19)), '#aeb4bd', 0);    // gearmotor
     });
-    add(CUBE, M.chain(M.tr(0, 0, 21.5), M.sc(36, 24, 7)), '#dfe2e7', 17);                 // battery
-    add(DISC, M.chain(M.tr(0, 0, 28.4), M.sc(35.5, 35.5, 1.6)), ACC, 38);                 // circuit board
-    add(CUBE, M.chain(M.tr(0, 0, 30.1), M.sc(10, 10, 1.8)), '#22252b', 38);               // microcontroller
-    add(CUBE, M.chain(M.tr(15, 9, 29.9), M.sc(6, 4, 1.4)), '#22252b', 38); add(CUBE, M.chain(M.tr(-14, -11, 29.9), M.sc(5, 7, 1.4)), '#22252b', 38);
-    for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832 + 0.39; add(CUBE, M.chain(M.tr(31.5 * Math.cos(a), 31.5 * Math.sin(a), 30.9), M.rot([0, 0, 1], a), M.sc(3, 4.4, 3.4)), '#22252b', 38); }   // infrared ring
-    add(TUBE, M.chain(M.tr(0, 0, 22.5), M.sc(40, 40, 21)), '#2a2d33', 64);                // shell
-    add(DISC, M.chain(M.tr(0, 0, 34), M.sc(40, 40, 2)), '#e6e8ec', 96);                   // lid
-    add(DISC, M.chain(M.tr(0, 0, 36), M.sc(6.5, 6.5, 2.4)), ACC, 96);                     // light
+    add(CUBE, M.chain(M.tr(0, 0, 21.5), M.sc(36, 24, 7)), '#9aa3b0', 22);                 // battery
+    add(DISC, M.chain(M.tr(0, 0, 28.4), M.sc(35.5, 35.5, 1.6)), ACC, 46);                 // circuit board
+    add(CUBE, M.chain(M.tr(0, 0, 30.1), M.sc(10, 10, 1.8)), '#22252b', 46);               // microcontroller
+    add(CUBE, M.chain(M.tr(15, 9, 29.9), M.sc(6, 4, 1.4)), '#22252b', 46); add(CUBE, M.chain(M.tr(-14, -11, 29.9), M.sc(5, 7, 1.4)), '#22252b', 46);
+    for (let k = 0; k < 8; k++) { const a = k / 8 * 6.2832 + 0.39; add(CUBE, M.chain(M.tr(31.5 * Math.cos(a), 31.5 * Math.sin(a), 30.9), M.rot([0, 0, 1], a), M.sc(3, 4.4, 3.4)), '#22252b', 46); }   // infrared ring
+    add(TUBE, M.chain(M.tr(0, 0, 24.5), M.sc(40, 40, 17)), '#2a2d33', 92);                // shell
+    add(TUBE, M.chain(M.tr(0, 0, 17.2), M.sc(40.4, 40.4, 2.4)), ACC, 92);                 // accent band
+    add(DISC, M.chain(M.tr(0, 0, 33.4), M.sc(37.6, 37.6, 2)), '#c4c8cf', 130);            // lid
+    add(DISC, M.chain(M.tr(0, 0, 35.2), M.sc(6.5, 6.5, 2.4)), ACC, 130);                  // light
     return this.P = P;
   },
   enter() { this.e = 0; },
   draw(beat, tb, ts) {
     if (beat < 2) {
       this.e = lerp(this.e, beat === 1 ? 1 : 0, 0.085); const e = this.e, pop = backOut(clamp(ts / 0.45));
-      shadow(W / 2, H * (0.80 + 0.06 * e), H * 0.40, H * 0.05, 0.13 - 0.05 * e);
-      begin3D(); orbit([0, 0, 18 + 48 * e], 235 + 250 * e, ts * 0.5 + 0.6, 0.42 - 0.12 * e, 0.5);
+      shadow(W / 2, H * (0.76 + 0.12 * e), H * 0.36, H * 0.045, 0.13 - 0.05 * e);
+      begin3D(); orbit([0, 0, 17 + 64 * e], 265 + 245 * e, ts * 0.5 + 0.6, 0.34 - 0.06 * e, 0.5);
       for (const p of this.parts()) draw(p.m, M.chain(M.sc(pop), M.tr(0, 0, p.lift * e), p.model), p.col);
       return;
     }
@@ -398,7 +409,7 @@ const puck = {
     const s = Math.min(W, H) * 0.50, cx = W / 2, cy = H / 2, r = 0.35 * sq.sp * s, a = clamp(tb / 0.5);
     ctx.globalAlpha = a; drawGhost(sq, cx, cy, s, a);
     const pass = (dx, dy, rr, col) => { ctx.fillStyle = col; ctx.beginPath(); for (let i = 0; i < sq.n; i++) { const x = cx + P[2 * i] * s + dx, y = cy - P[2 * i + 1] * s + dy; ctx.moveTo(x + rr, y); ctx.arc(x, y, rr, 0, 6.2832); } ctx.fill(); };
-    pass(r * 0.10, r * 0.22, r * 1.03, 'rgba(15,18,28,0.16)'); pass(0, 0, r, '#2a2d33'); pass(0, 0, r * 0.84, '#e6e8ec'); pass(0, 0, r * 0.2, ACC);
+    pass(r * 0.10, r * 0.22, r * 1.03, 'rgba(15,18,28,0.16)'); pass(0, 0, r, '#2a2d33'); pass(0, 0, r * 0.84, '#dde0e5'); pass(0, 0, r * 0.2, ACC);
     ctx.globalAlpha = 1;
   },
 };
@@ -468,7 +479,15 @@ function frame(now) {
   stage.style.opacity = clamp(tScene / 0.3);
   requestAnimationFrame(frame);
 }
-for (const k in D.cad) { const c = D.cad[k]; c.m = mesh(b64(c.pos, Int16Array), b64(c.idx, Uint32Array), gl.SHORT, true); c.pos = c.idx = null; }   // upload the CAD once, up front
+for (const k in D.cad) {                          // upload the CAD once, up front
+  const c = D.cad[k], P = b64(c.pos, Int16Array); c.m = mesh(P, b64(c.idx, Uint32Array), gl.SHORT, true); c.pos = c.idx = null;
+  if (k.startsWith('ring')) {                       // a flat ring: find the direction it faces (least-variance axis) so the camera can look at it face on
+    const C = [0, 0, 0, 0, 0, 0]; for (let i = 0; i < P.length; i += 30) { const x = P[i] / 32767, y = P[i + 1] / 32767, z = P[i + 2] / 32767; C[0] += x * x; C[1] += x * y; C[2] += x * z; C[3] += y * y; C[4] += y * z; C[5] += z * z; }
+    const tr = C[0] + C[3] + C[5]; let v = [0.5, 0.3, 0.8];
+    for (let it = 0; it < 80; it++) v = norm([tr * v[0] - (C[0] * v[0] + C[1] * v[1] + C[2] * v[2]), tr * v[1] - (C[1] * v[0] + C[3] * v[1] + C[4] * v[2]), tr * v[2] - (C[2] * v[0] + C[4] * v[1] + C[5] * v[2])]);
+    c.face = Math.abs(v[2]) < 0.6 ? Math.atan2(v[1], v[0]) : null;
+  }
+}
 window.DECK = { go, next, back, state: () => ({ si, beat, tScene, tBeat }) };
 SCENES[0].enter?.(); requestAnimationFrame(frame);
 </script>

@@ -16,7 +16,7 @@ A full-screen, wordless slideshow of the project. Open `index.html` in Chrome (d
 2. Where it started: random dots, a flock from local rules, 150 bots assembling a K (Kilobot algorithm). 3 steps.
 3. Microbot v1, the real CAD: one bot, then triangle, hexagon, 2x2x2 block. 4 steps.
 4. 3D cube bots that stay linked: build an arch, then a slice is cut out and rebuilt. 2 steps.
-5. The learned swarm: form, cut a chunk, repair, then 24 shapes it never trained on. 4 steps.
+5. The learned swarm (256 bots, arm-reach sensing): form a fish, cut a chunk, repair, then 24 shapes it never trained on. 4 steps.
 6. The MVP we want to build: a flat round bot on three omni wheels, exploded view, then 40 of them running the policy. 3 steps.
 7. The budget. The only slide with numbers.
 

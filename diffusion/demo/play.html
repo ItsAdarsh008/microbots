@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swarm Playground</title>
+<style>
+:root{
+  --bg:#f7f6f3; --panel:#ffffff; --ink:#18181b; --mute:#71717a; --line:#e7e5e0;
+  --target:#e9e6df; --bot:#18181b; --accent:#2f54eb; --accent-ink:#fff; --cut:#e5484d; --hover:#f1efea;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#111113; --panel:#18181b; --ink:#ededef; --mute:#8b8b93; --line:#2a2a2f;
+    --target:#2e2e36; --bot:#ededef; --accent:#6e8bff; --accent-ink:#0b0b0d; --cut:#ff6b6f; --hover:#202024; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 24px;display:grid;grid-template-columns:300px 1fr;gap:40px;align-items:start}
+h1{font-size:18px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--mute);margin:0 0 28px}
+.label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:24px 0 8px}
+.models{display:flex;flex-direction:column;gap:2px}
+.m{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:10px 12px;border-radius:10px;cursor:pointer;border:1px solid transparent;background:none;text-align:left;color:inherit;font:inherit}
+.m:hover{background:var(--hover)}
+.m.on{background:var(--panel);border-color:var(--line);box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.m b{font-weight:600}
+.m .s{font-variant-numeric:tabular-nums;color:var(--mute)}
+.m.on .s{color:var(--ink)}
+.m .d{grid-column:1/-1;color:var(--mute);font-size:12.5px}
+.foot{color:var(--mute);font-size:12px;margin:8px 12px 0}
+.shapes{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.sh{aspect-ratio:1;border-radius:8px;border:1px solid var(--line);background:var(--panel);cursor:pointer;padding:5px;display:flex;align-items:center;justify-content:center}
+.sh:hover{border-color:var(--mute)}
+.sh.on{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.sh canvas{width:100%;height:100%}
+.letters{display:grid;grid-template-columns:repeat(9,1fr);gap:4px;margin-top:8px}
+.lt{aspect-ratio:1;border:1px solid var(--line);background:var(--panel);border-radius:6px;font:600 12px/1 inherit;color:var(--ink);cursor:pointer;padding:0}
+.lt:hover{border-color:var(--mute)} .lt.on{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:none;color:var(--mute);font:inherit;font-size:12.5px;padding:5px 10px;cursor:pointer}
+.seg button.on{background:var(--hover);color:var(--ink);font-weight:600}
+.stage{position:sticky;top:24px}
+.board{position:relative;width:100%;max-width:640px;aspect-ratio:1;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.board canvas{width:100%;height:100%;display:block;touch-action:none}
+.hint{position:absolute;left:0;right:0;bottom:14px;text-align:center;color:var(--mute);font-size:12.5px;pointer-events:none;transition:opacity .2s}
+.bar{display:flex;align-items:center;gap:8px;margin-top:14px;max-width:640px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-weight:500;padding:8px 14px;border-radius:9px;cursor:pointer}
+.btn:hover:not(:disabled){border-color:var(--mute)}
+.btn.p{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.p:hover:not(:disabled){filter:brightness(1.07)}
+.btn:disabled{opacity:.4;cursor:default}
+.sp{flex:1}
+.stats{display:flex;gap:22px;margin-top:16px;max-width:640px;font-variant-numeric:tabular-nums}
+.stats div{display:flex;flex-direction:column}
+.stats span{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.stats b{font-size:18px;font-weight:600}
+.err{color:var(--cut);font-size:12.5px;margin-top:10px}
+kbd{font:11px ui-monospace,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;color:var(--mute)}
+@media (max-width:820px){.wrap{grid-template-columns:1fr;gap:24px;padding:24px 16px}.stage{position:static;order:-1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <aside>
+    <h1>Swarm playground</h1>
+    <p class="sub">Every bot runs the same small network and sees only nearby bots plus a coarse map of the target. No leader.</p>
+
+    <div class="label">Model</div>
+    <div class="models" id="models"></div>
+    <div class="foot" id="foot"></div>
+
+    <div class="label">Shape</div>
+    <div class="shapes" id="shapes"></div>
+    <div class="letters" id="letters"></div>
+    <div class="row" style="margin-top:10px">
+      <div class="seg" id="weight"><button data-w="thick" class="on">Thick</button><button data-w="thin">Thin</button></div>
+      <button class="btn" id="draw" style="padding:5px 12px;font-size:12.5px">Draw your own</button>
+    </div>
+
+    <div class="label">Bots</div>
+    <div class="seg" id="count"><button data-n="128">128</button><button data-n="256" class="on">256</button><button data-n="512">512</button></div>
+  </aside>
+
+  <main class="stage">
+    <div class="board"><canvas id="cv" width="1280" height="1280"></canvas><div class="hint" id="hint"></div></div>
+    <div class="bar">
+      <button class="btn p" id="run">Form</button>
+      <button class="btn" id="repair" disabled>Repair</button>
+      <button class="btn" id="reseed" title="New random start">New start</button>
+      <div class="sp"></div>
+      <span style="color:var(--mute);font-size:12px"><kbd>space</kbd> form · <kbd>r</kbd> repair</span>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="err" id="err"></div>
+  </main>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d'), W = cv.width, CUT_R = 0.3;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+let MODELS = [], SHAPES = {}, model = null, shape = 'emoji anchor', weight = 'thick', n = 256, seed = 0;
+let reqId = 0, lastP = null, occ = null, bots = null, sp = 0.05, mode = 'idle', anim = null, mouse = null, drawMask = null, painting = false, lastCut = null;
+
+const toPx = ([x, y]) => [(x + 1) / 2 * W, (1 - (y + 1) / 2) * W];
+const toWorld = (px, py) => [px / W * 2 - 1, 1 - py / W * 2];
+
+function parseOcc(s){ const g = []; for (let r = 0; r < 64; r++){ g.push([]); for (let c = 0; c < 64; c++) g[r].push(s.charCodeAt(r*64+c) === 49 ? 1 : 0) } return g }
+
+function paintGrid(c, g, color, size){
+  const k = size / 64; c.fillStyle = color;
+  for (let r = 0; r < 64; r++) for (let q = 0; q < 64; q++) if (g[r][q]) c.fillRect(q*k, (63-r)*k, k+.6, k+.6);
+}
+
+function render(){
+  ctx.clearRect(0, 0, W, W);
+  const g = mode === 'draw' ? drawMask : occ;
+  if (g) paintGrid(ctx, g, css('--target'), W);
+  if (mode === 'draw'){
+    if (mouse){ ctx.strokeStyle = css('--mute'); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(mouse[0], mouse[1], 4/64*W, 0, 7); ctx.stroke() }
+    return;
+  }
+  if (bots){
+    const r = Math.max(2.2, 0.36 * sp / 2 * W);
+    ctx.fillStyle = css('--bot');
+    for (const p of bots){ const [x, y] = toPx(p); ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fill() }
+  }
+  if (mode === 'formed' && mouse){
+    const R = CUT_R / 2 * W;
+    ctx.fillStyle = css('--cut') + '22'; ctx.strokeStyle = css('--cut'); ctx.lineWidth = 2; ctx.setLineDash([8, 6]);
+    ctx.beginPath(); ctx.arc(mouse[0], mouse[1], R, 0, 7); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+  }
+}
+
+function hint(t){ $('hint').textContent = t; $('hint').style.opacity = t ? 1 : 0 }
+
+function stats(j){
+  if (!j){ $('stats').innerHTML = ''; return }
+  $('stats').innerHTML = `<div><span>Bots</span><b>${j.n}</b></div>` +
+    `<div title="Overlap of the swarm's footprint with the target (1 = perfect)"><span>Overlap</span><b>${j.iou.toFixed(2)}</b></div>` +
+    `<div title="Share of the target within reach of a bot"><span>Covered</span><b>${Math.round(j.cover*100)}%</b></div>` +
+    `<div title="Bots closer than they physically could be"><span>Collisions</span><b>${(j.coll*100).toFixed(1)}%</b></div>`;
+}
+
+function target(){
+  if (shape === '__draw') return {mask: drawMask.flat()};
+  return {shape};
+}
+
+async function go(extra){
+  if (!model) return;
+  if (mode === 'draw'){ if (!drawMask.flat().some(v => v)) return; shape = '__draw'; $('draw').classList.remove('p') }
+  cancelAnimationFrame(anim); $('err').textContent = ''; setBusy(true); const my = ++reqId;
+  try{
+    const res = await fetch('/api/run', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({model, n, seed, ...target(), ...extra})});
+    const j = await res.json(); if (j.error) throw new Error(j.error);
+    if (my !== reqId) return;               // a newer request superseded this one
+    occ = j.occ; sp = j.sp; mode = 'running'; hint(''); stats(null); play(j);
+  }catch(e){ if (my === reqId){ $('err').textContent = e.message; setBusy(false) } }
+}
+
+function play(j){
+  const F = j.frames, dur = 2400, t0 = performance.now(), my = reqId; let done = false;
+  const step = now => {
+    if (done || my !== reqId) return;
+    const u = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - u, 2), f = e * (F.length - 1), i = Math.floor(f), a = f - i;
+    const A = F[i], B = F[Math.min(i + 1, F.length - 1)];
+    bots = A.map((p, k) => [p[0] + (B[k][0] - p[0]) * a, p[1] + (B[k][1] - p[1]) * a]);
+    render();
+    if (u < 1) anim = requestAnimationFrame(step);
+    else { done = true; bots = F[F.length - 1]; mode = 'formed'; stats(j); setBusy(false); hint('Click the swarm to cut out a chunk'); render() }
+  };
+  anim = requestAnimationFrame(step);
+  setTimeout(() => step(t0 + dur), dur + 300);   // finish even if animation frames are paused (hidden window)
+}
+
+function setBusy(b){
+  $('run').disabled = b; $('reseed').disabled = b;
+  $('repair').disabled = b || !lastCut;
+}
+
+function cut(px, py){
+  const [cx, cy] = toWorld(px, py);
+  const keep = bots.filter(p => Math.hypot(p[0] - cx, p[1] - cy) > CUT_R);
+  if (keep.length === bots.length || keep.length < 8) return;
+  lastCut = true; bots = keep; $('repair').disabled = false;
+  hint(`${keep.length} bots left. Cut more, or press Repair`);
+  stats(null); render();
+}
+
+function repair(){ if (!lastCut || mode !== 'formed') return; lastCut = false; go({x0: bots, n}) }
+
+function showShape(){
+  cancelAnimationFrame(anim); reqId++; mode = 'idle'; bots = null; lastCut = false; stats(null);
+  if (shape !== '__draw') occ = parseOcc(SHAPES[shape]);
+  setBusy(false); hint(''); render();
+  document.querySelectorAll('.sh').forEach(e => e.classList.toggle('on', e.dataset.s === shape));
+  document.querySelectorAll('.lt').forEach(e => e.classList.toggle('on', shape === `letter ${e.textContent} (${weight})`));
+  $('draw').classList.toggle('p', mode === 'draw');
+}
+
+function startDraw(){
+  cancelAnimationFrame(anim); reqId++; mode = 'draw'; bots = null; lastCut = false; stats(null);
+  drawMask = Array.from({length:64}, () => Array(64).fill(0)); shape = '__draw';
+  document.querySelectorAll('.sh,.lt').forEach(e => e.classList.remove('on'));
+  $('draw').classList.add('p'); setBusy(false); hint('Draw a shape, then press Form'); render();
+}
+
+function paint(px, py){
+  const c0 = px / W * 64, r0 = 64 - py / W * 64, R = 4;
+  for (let r = Math.floor(r0 - R); r <= r0 + R; r++) for (let c = Math.floor(c0 - R); c <= c0 + R; c++)
+    if (r >= 0 && r < 64 && c >= 0 && c < 64 && Math.hypot(c + .5 - c0, r + .5 - r0) <= R) drawMask[r][c] = 1;
+}
+
+function stroke(p){   // paint along the segment from the last point so fast strokes leave no gaps
+  const a = lastP || p, steps = Math.max(1, Math.ceil(Math.hypot(p[0]-a[0], p[1]-a[1]) / (W/64)));
+  for (let i = 1; i <= steps; i++) paint(a[0] + (p[0]-a[0]) * i / steps, a[1] + (p[1]-a[1]) * i / steps);
+  lastP = p;
+}
+
+function evPos(e){ const b = cv.getBoundingClientRect(); return [(e.clientX - b.left) / b.width * W, (e.clientY - b.top) / b.height * W] }
+cv.addEventListener('pointermove', e => {
+  mouse = evPos(e);
+  if (mode === 'draw' && painting) stroke(mouse);
+  if (mode === 'draw' || mode === 'formed') render();
+});
+cv.addEventListener('pointerleave', () => { mouse = null; painting = false; render() });
+cv.addEventListener('pointerdown', e => {
+  mouse = evPos(e);
+  if (mode === 'draw'){ painting = true; lastP = null; cv.setPointerCapture(e.pointerId); stroke(mouse); render() }
+  else if (mode === 'formed') cut(...mouse);
+});
+cv.addEventListener('pointerup', () => { painting = false });
+
+$('run').onclick = () => { if (shape === '__draw' && mode !== 'draw' && drawMask) mode = 'draw'; go({}) };
+$('repair').onclick = repair;
+$('reseed').onclick = () => { seed = Math.floor(Math.random() * 1e6); if (shape === '__draw' && drawMask) mode = 'draw'; go({}) };
+$('draw').onclick = startDraw;
+document.querySelectorAll('#count button').forEach(b => b.onclick = () => {
+  n = +b.dataset.n; document.querySelectorAll('#count button').forEach(x => x.classList.toggle('on', x === b));
+  if (shape === '__draw' && drawMask) mode = 'draw';
+  go({});
+});
+document.querySelectorAll('#weight button').forEach(b => b.onclick = () => {
+  weight = b.dataset.w; document.querySelectorAll('#weight button').forEach(x => x.classList.toggle('on', x === b));
+  const m = shape.match(/^letter (.) /); if (m){ shape = `letter ${m[1]} (${weight})`; showShape(); go({}) }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  if (e.code === 'Space'){ e.preventDefault(); if (!$('run').disabled) $('run').click() }
+  if (e.key === 'r' && !$('repair').disabled) repair();
+});
+
+function selectModel(run){
+  model = run;
+  document.querySelectorAll('.m').forEach(e => e.classList.toggle('on', e.dataset.r === run));
+}
+
+(async () => {
+  const [M, S] = await Promise.all([fetch('/api/models').then(r => r.json()), fetch('/api/shapes').then(r => r.json())]);
+  MODELS = M.models; SHAPES = S;
+  $('models').innerHTML = MODELS.map(m => `<button class="m" data-r="${m.run}"><b>${m.name}</b><span class="s">${m.iou != null ? m.iou.toFixed(2) : ''}</span><span class="d">${m.note}</span></button>`).join('');
+  $('foot').textContent = `Score: overlap on 48 shapes never seen in training. Hand-written rule, no learning: ${M.rule.toFixed(2)}. Best possible: 0.82.`;
+  document.querySelectorAll('.m').forEach(e => e.onclick = () => { selectModel(e.dataset.r); if (mode === 'formed' || mode === 'idle') go({}) });
+  selectModel('s19_refv3_r14_dmg08_big');
+
+  const emo = Object.keys(SHAPES).filter(k => k.startsWith('emoji '));
+  $('shapes').innerHTML = emo.map(k => `<button class="sh" data-s="${k}" title="${k.slice(6)}"><canvas width="64" height="64"></canvas></button>`).join('');
+  document.querySelectorAll('.sh').forEach(b => {
+    paintGrid(b.querySelector('canvas').getContext('2d'), parseOcc(SHAPES[b.dataset.s]), css('--ink'), 64);
+    b.onclick = () => { shape = b.dataset.s; showShape(); go({}) };
+  });
+  $('letters').innerHTML = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(c => `<button class="lt">${c}</button>`).join('');
+  document.querySelectorAll('.lt').forEach(b => b.onclick = () => { shape = `letter ${b.textContent} (${weight})`; showShape(); go({}) });
+
+  showShape(); go({});
+})();
+</script>
+</body>
+</html>

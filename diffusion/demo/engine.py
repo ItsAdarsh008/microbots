@@ -109,10 +109,10 @@ def start_positions(kind, cfg, N, rng, occ):
 
 @torch.no_grad()
 def run_model(name, occ, sdf, N=256, K=64, seed=0, start="auto", jitter=0.0, motion=0.0, hardcore=False, vmax=None,
-              x0=None, t0=0.0, keep_spacings=False, want_frames=True, max_frames=65):
+              x0=None, t0=0.0, keep_spacings=False, want_frames=True, max_frames=65, n_ref=None):
     m, cfg = get_model(name)
-    if cfg.get("radius"):
-        m.radius = cfg["radius"] * (float(np.sqrt(256.0 / N)) if keep_spacings else 1.0)
+    if cfg.get("radius"):     # keep_spacings: hold the sensing range fixed in spacings of a swarm of n_ref (default N) bots
+        m.radius = cfg["radius"] * (float(np.sqrt(256.0 / (n_ref or N))) if keep_spacings else 1.0)
     rng = np.random.default_rng(seed); torch.manual_seed(seed)
     maps = make_maps(torch.tensor(occ)[None], torch.tensor(sdf)[None], cfg.get("coarse", 0)) if cfg["cond"] == "map" else None
     sp = evalm.spacing(occ, N)

@@ -7,7 +7,7 @@ A full-screen, wordless slideshow of the project. Open `index.html` in Chrome (d
 | click, tap, space, right arrow, PageDown | next step |
 | left arrow, PageUp, right-click | back |
 | F | full screen |
-| 1 to 8 | jump to a slide |
+| 1 to 7 | jump to a slide |
 | Home / End | first / last slide |
 
 ## Slides
@@ -15,17 +15,16 @@ A full-screen, wordless slideshow of the project. Open `index.html` in Chrome (d
 1. One pile of 512 bots formed into shape after shape (the newest learned swarm).
 2. Where it started: random dots, a flock from local rules, 150 bots assembling a K (Kilobot algorithm). 3 steps.
 3. Microbot v1, the real CAD: one bot, then triangle, hexagon, 2x2x2 block. 4 steps.
-4. 3D cube bots that stay linked: build an arch, then a slice is cut out and rebuilt. 2 steps.
-5. Three things the swarm does in 3D, each with a title: **Self-Assembly** (a 902-bot stone-style arch),
-   **Self-Repair** (the middle is cut out and the spares rebuild it) and **Self-Scaffolding** (with real connector
-   strength the swarm plans support pillars, blue, and builds them first). From the browser sandbox, hand-written rules.
-   3 steps. The only slide with words besides the budget's numbers.
-6. The learned swarm: form, cut a chunk, repair, then 24 shapes it never trained on. 4 steps.
-7. The MVP we want to build: a flat round bot on three omni wheels, exploded view, then 40 of them running the policy. 3 steps.
-8. The budget. The only slide with numbers.
+4. Three things the swarm does in 3D, one after another, each with a small caption: **Self-Assembly** (a 902-bot
+   stone-style arch), **Self-Repair** (the middle is cut out and the spares rebuild it) and **Self-Scaffolding** (with
+   real connector strength the swarm builds support pillars, blue, first; tagged "Emergent behaviour"). From the
+   browser sandbox, hand-written rules. 3 steps.
+5. The learned swarm: form, cut a chunk, repair, then 24 shapes it never trained on. 4 steps.
+6. The MVP we want to build: a flat round bot on three omni wheels, exploded view, then 40 of them running the policy. 3 steps.
+7. The budget. The only slide with numbers.
 
 Every animation is real project output, played back from `data/*.js` or simulated live in the page. The flat bot on
-slide 7 is a concept drawn in code, not CAD.
+slide 6 is a concept drawn in code, not CAD.
 
 ## Changing things
 

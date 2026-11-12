@@ -50,7 +50,7 @@ const ctx = cv.getContext('2d'), octx = ov.getContext('2d');   // octx: words dr
 const gl = gv.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true });
 let W = 0, H = 0, DPR = 1;
 function resize() {
-  DPR = Math.min(2, window.devicePixelRatio || 1);
+  DPR = Math.min(3, Math.max(2, window.devicePixelRatio || 1));   // at least 2x: sharper cube edges, scaled down by the browser
   W = Math.round(innerWidth * DPR); H = Math.round(innerHeight * DPR);
   for (const c of [cv, gv, ov]) { c.width = W; c.height = H; }
 }
@@ -78,10 +78,10 @@ const prog = (() => {
   const mk = (t, s) => { const sh = gl.createShader(t); gl.shaderSource(sh, s); gl.compileShader(sh); if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(sh); return sh; };
   const p = gl.createProgram();
   gl.attachShader(p, mk(gl.VERTEX_SHADER, `#version 300 es
-    in vec3 p; uniform mat4 uMV, uP; out vec3 vp;
-    void main(){ vec4 q = uMV * vec4(p, 1.0); vp = q.xyz; gl_Position = uP * q; }`));
+    in vec3 p; uniform mat4 uMV, uP; out vec3 vp; out vec3 vo;
+    void main(){ vec4 q = uMV * vec4(p, 1.0); vp = q.xyz; vo = p; gl_Position = uP * q; }`));
   gl.attachShader(p, mk(gl.FRAGMENT_SHADER, `#version 300 es
-    precision highp float; in vec3 vp; uniform vec3 uC; uniform float uA; out vec4 o;
+    precision highp float; in vec3 vp; in vec3 vo; uniform vec3 uC; uniform float uA; uniform float uE; out vec4 o;
     void main(){
       vec3 n = normalize(cross(dFdx(vp), dFdy(vp)));
       vec3 v = normalize(-vp);
@@ -92,10 +92,17 @@ const prog = (() => {
       float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
       float spec = pow(max(dot(n, normalize(normalize(vec3(0.45, 0.75, 0.55)) + v)), 0.0), 40.0);
       vec3 c = uC * (0.34 + 0.24 * hemi + 0.62 * key + 0.16 * fill) + vec3(0.10) * rim + vec3(0.16) * spec;
+      if (uE > 0.0) {                               // crisp edges on the cube bots (unit cube, object space)
+        vec3 d = 0.5 - abs(vo);
+        float e = d.x + d.y + d.z - min(d.x, min(d.y, d.z)) - max(d.x, max(d.y, d.z));   // distance to the nearest edge
+        float w = fwidth(e), line = 1.0 - smoothstep(uE, uE + 1.5 * w, e);
+        float lum = dot(uC, vec3(0.3, 0.59, 0.11));
+        c = mix(c, lum < 0.3 ? c + vec3(0.16) : c * 0.62, line);
+      }
       o = vec4(c * uA, uA);
     }`));
   gl.linkProgram(p); gl.bindAttribLocation(p, 0, 'p'); gl.linkProgram(p);
-  return { p, mv: gl.getUniformLocation(p, 'uMV'), pr: gl.getUniformLocation(p, 'uP'), c: gl.getUniformLocation(p, 'uC'), a: gl.getUniformLocation(p, 'uA') };
+  return { p, mv: gl.getUniformLocation(p, 'uMV'), pr: gl.getUniformLocation(p, 'uP'), c: gl.getUniformLocation(p, 'uC'), a: gl.getUniformLocation(p, 'uA'), e: gl.getUniformLocation(p, 'uE') };
 })();
 
 function mesh(pos, idx, type = gl.FLOAT, normalized = false) {
@@ -110,7 +117,7 @@ let VIEW = M.id(), PROJ = M.id();
 function begin3D() {
   gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.enable(gl.DEPTH_TEST); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-  gl.useProgram(prog.p);
+  gl.useProgram(prog.p); gl.uniform1f(prog.e, 0);
 }
 function camera(eye, target, up, fov, near, far) { VIEW = M.look(eye, target, up); PROJ = M.persp(fov, W / H, near, far); gl.uniformMatrix4fv(prog.pr, false, PROJ); }
 function draw(m, model, color, alpha = 1, first = 0, count = m.n) {
@@ -293,7 +300,7 @@ const cad = {
   },
 };
 
-/* 4. In 3D, staying linked: 174 cube bots build an arch, a slice is cut out, the spares rebuild it. */
+/* (not in the deck any more: the small 174-bot arch, built, cut, rebuilt. Slide 4 shows the same at 902 bots.) */
 const linking = {
   beats: 2,
   enter() { const L = D.linking; if (!L.c) { L.c = b64(L.cell, Int8Array); L.fl = b64(L.flag, Uint8Array); } },
@@ -327,7 +334,7 @@ const linking = {
   },
 };
 
-/* 5. Three things the swarm does, in 3D, from the browser sandbox (hand-written rules), each with a title on top:
+/* 4. Three things the swarm does, in 3D, from the browser sandbox (hand-written rules), each with a title on top:
    self-assembly (a 902-bot stone-style arch), self-repair (the middle is cut out and the spares rebuild it), and
    self-scaffolding (with real connector strength the swarm plans support pillars, blue, and builds them first). */
 const PILLAR = hex('#3a6fd8');
@@ -349,6 +356,7 @@ function drawRun(R, tt, ts, focus) {          // focus 1: frame the finished sha
   shadow(W / 2, H * 0.80, H * 0.62, H * 0.07, 0.10);
   begin3D(); orbit([cx, cy, (hi[2] + 1) * 0.42], span * 1.55 + 10, -1.05 + 0.42 * Math.sin(ts * 0.22), 0.40, 0.52);
   draw(CUBE, M.chain(M.tr((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, -0.62), M.sc(hi[0] - lo[0] + 4, hi[1] - lo[1] + 4, 0.16)), hex('#f1f2f5'));
+  gl.uniform1f(prog.e, 0.035);                      // edge lines on the bots
   const cLock = hex(DARK), cFree = hex('#c3c8d0'), cMove = hex(ACC);
   for (let b = 0; b < B; b++) {
     const o = (t * B + b) * 9, f = R.fl[t * B + b], kind = f & 3;
@@ -368,23 +376,25 @@ function drawRun(R, tt, ts, focus) {          // focus 1: frame the finished sha
   }
 }
 const TITLES = [['01', 'Self-Assembly'], ['02', 'Self-Repair'], ['03', 'Self-Scaffolding']];
-function title3d(beat, tb) {
-  const [n, name] = TITLES[beat], a = easeOut(clamp(tb / 0.6)), y = H * 0.115 - (1 - a) * H * 0.015;
-  const font = (px, w) => `${w} ${px}px "Inter","SF Pro Display",-apple-system,"Helvetica Neue",Arial,sans-serif`;
-  octx.save(); octx.globalAlpha = a; octx.textAlign = 'center'; octx.textBaseline = 'middle';
-  octx.font = font(H * 0.026, 700); octx.fillStyle = ACC; octx.letterSpacing = `${H * 0.006}px`; octx.fillText(n, W / 2, y - H * 0.058);
-  octx.font = font(H * 0.075, 800); octx.fillStyle = INK; octx.letterSpacing = `${-H * 0.002}px`; octx.fillText(name, W / 2, y);
+const uiFont = (px, w) => `${w} ${px}px "Inter","SF Pro Display",-apple-system,"Helvetica Neue",Arial,sans-serif`;
+function title3d(beat, tb) {                        // a small caption in the top-left corner: the clip is the point
+  const [n, name] = TITLES[beat], a = easeOut(clamp(tb / 0.6)), x = H * 0.06, y = H * 0.075;
+  octx.save(); octx.globalAlpha = a; octx.textAlign = 'left'; octx.textBaseline = 'middle';
+  octx.font = uiFont(H * 0.022, 600); octx.fillStyle = ACC; octx.fillText(n, x, y);
+  const nx = x + octx.measureText(n).width + H * 0.018;
+  octx.font = uiFont(H * 0.03, 600); octx.fillStyle = INK; octx.fillText(name, nx, y);
+  const end = nx + octx.measureText(name).width;     // where the caption ends
   octx.restore();
+  return end;
 }
-function emergent(tb) {                            // a big stamp across the scaffolding demo
-  const a = backOut(clamp((tb - 1.2) / 0.5)), k = clamp((tb - 1.2) / 0.3);
-  if (k <= 0) return;
-  const font = (px, w) => `${w} ${px}px "Inter","SF Pro Display",-apple-system,"Helvetica Neue",Arial,sans-serif`;
-  octx.save(); octx.translate(W / 2, H * 0.885); octx.rotate(-0.035); octx.scale(a, a); octx.globalAlpha = k;
-  octx.font = font(H * 0.085, 900); octx.letterSpacing = `${H * 0.004}px`; octx.textAlign = 'center'; octx.textBaseline = 'middle';
-  const w = octx.measureText('EMERGENT BEHAVIOUR').width + H * 0.08, h = H * 0.13;
-  octx.fillStyle = ACC; octx.beginPath(); octx.roundRect(-w / 2, -h / 2, w, h, h * 0.18); octx.fill();
-  octx.fillStyle = '#fff'; octx.fillText('EMERGENT BEHAVIOUR', 0, H * 0.004);
+function emergent(tb, after) {                      // a quiet tag next to the caption
+  const a = easeOut(clamp((tb - 0.8) / 0.6)); if (a <= 0) return;
+  const text = 'Emergent behaviour', y = H * 0.075, px = H * 0.018;
+  octx.save(); octx.globalAlpha = a; octx.textBaseline = 'middle';
+  octx.font = uiFont(H * 0.019, 600);
+  const w = octx.measureText(text).width + px * 2, h = H * 0.036, x = after + H * 0.03;
+  octx.strokeStyle = ACC; octx.lineWidth = Math.max(1, H * 0.0018); octx.beginPath(); octx.roundRect(x, y - h / 2, w, h, h / 2); octx.stroke();
+  octx.fillStyle = ACC; octx.fillText(text, x + px, y + H * 0.001);
   octx.restore();
 }
 const bigger = {
@@ -397,12 +407,12 @@ const bigger = {
       : Math.min(R.t - 1.001, R.dmg + 1 + (tb - 2.1) * 14);                                     // then the spares rebuild it
     else tt = clamp((tb - 0.4) * R.t / 9, 0, R.t - 1.001);
     drawRun(R, tt, ts, 0.85);
-    title3d(beat, tb);
-    if (beat === 2) emergent(tb);
+    const end = title3d(beat, tb);
+    if (beat === 2) emergent(tb, end);
   },
 };
 
-/* 6. From hand-written rules to a learned swarm: form, cut, repair, then 24 shapes it never trained on. */
+/* 5. From hand-written rules to a learned swarm: form, cut, repair, then 24 shapes it never trained on. */
 const learned = {
   beats: 4,
   draw(beat, tb, ts) {
@@ -434,7 +444,7 @@ const learned = {
   },
 };
 
-/* 7. What we want to build first: a flat, round bot that drives in any direction (three omni wheels). 40 of them, running the same policy. */
+/* 6. What we want to build first: a flat, round bot that drives in any direction (three omni wheels). 40 of them, running the same policy. */
 const puck = {
   beats: 3,
   parts() {
@@ -479,7 +489,7 @@ const puck = {
   },
 };
 
-/* 8. The ask. The only slide with numbers. */
+/* 7. The ask. The only slide with numbers. */
 const ICON = {
   wheel(c) { c.beginPath(); c.arc(0, 0, .82, 0, 6.2832); c.moveTo(.26, 0); c.arc(0, 0, .26, 0, 6.2832); for (let i = 0; i < 3; i++) { const a = i * 2.0944 - 1.5708; c.moveTo(.26 * Math.cos(a), .26 * Math.sin(a)); c.lineTo(.82 * Math.cos(a), .82 * Math.sin(a)); } c.stroke(); },
   chip(c) { c.beginPath(); c.roundRect(-.52, -.52, 1.04, 1.04, .12); for (const k of [-.28, 0, .28]) { c.moveTo(k, -.52); c.lineTo(k, -.86); c.moveTo(k, .52); c.lineTo(k, .86); c.moveTo(-.52, k); c.lineTo(-.86, k); c.moveTo(.52, k); c.lineTo(.86, k); } c.stroke(); c.beginPath(); c.roundRect(-.2, -.2, .4, .4, .05); c.stroke(); },
@@ -516,7 +526,7 @@ const budget = {
 };
 
 /* ================================================================== RUNNER ================================================================== */
-const SCENES = [hero, origins, cad, linking, bigger, learned, puck, budget];
+const SCENES = [hero, origins, cad, bigger, learned, puck, budget];   // `linking` (the small arch) is covered by `bigger`
 let si = 0, beat = 0, tScene = 0, tBeat = 0, last = performance.now();
 function go(s, b) { si = clamp(s, 0, SCENES.length - 1); tScene = 0; SCENES[si].enter?.(); beat = clamp(b, 0, SCENES[si].beats - 1); tBeat = 0; }
 function next() { if (beat + 1 < SCENES[si].beats) { beat++; tBeat = 0; } else if (si + 1 < SCENES.length) go(si + 1, 0); }

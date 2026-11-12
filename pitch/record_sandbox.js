@@ -30,18 +30,26 @@ const runs = JSON.parse(process.argv[4]), out = process.argv[5];
           flag.push((k & 3) | (S.alive[b] ? 4 : 0) | (lk << 3) | (sup << 4));
         }
       };
-      snap(); let t = 0, built = -1, quiet = 0;
+      snap(); let t = 0, built = -1, quiet = 0, dmg = -1;
       for (; t < r.max; t++) {
         tick(); snap();
         if (built < 0 && done()) built = t + 1;
         let moving = 0; for (let b = 0; b < B; b++) if (S.kind[b]) moving++;
         quiet = moving <= 1 ? quiet + 1 : 0;              // parking: stop once the spares have settled
-        if (built >= 0 && (!r.park || parked() || quiet >= 12)) { t++; break; }
+        if (built >= 0 && dmg < 0 && r.cut && (parked() || t + 1 - built >= 150)) {   // spares home, then cut the middle out
+          const [x0, x1, y0, y1, z0, z1] = S.def.cut;
+          cutCells((x, y, z) => S.target[idx(x, y, z)] && x >= x0 && x < x1 && y >= y0 && y < y1 && z >= z0 && z < z1);
+          S.stalls = 0; S.kind.fill(0); S.from.set(S.pos); S.via.set(S.pos);
+          snap(); dmg = cell.length / (9 * B) - 1;          // the frame where the cut bots are gone
+          continue;
+        }
+        if (dmg >= 0) { if (done()) { t++; break; } continue; }
+        if (built >= 0 && !r.cut && (!r.park || parked() || quiet >= 12)) { t++; break; }
       }
       const ghost = []; for (let i = 0; i < N; i++) if (S.target[i]) ghost.push(...xyz(i), S.support[i] ? 1 : 0);
       const enc = a => { let s = ''; const u = Int8Array.from(a), v = new Uint8Array(u.buffer); for (let i = 0; i < v.length; i += 8192) s += String.fromCharCode.apply(null, v.subarray(i, i + 8192)); return btoa(s); };
       const encU = a => { let s = ''; const v = Uint8Array.from(a); for (let i = 0; i < v.length; i += 8192) s += String.fromCharCode.apply(null, v.subarray(i, i + 8192)); return btoa(s); };
-      return { t: t + 1, b: B, grid: [NX, NY, NZ], built, need: S.need, cell: enc(cell), flag: encU(flag), target: enc(ghost) };
+      return { t: cell.length / (9 * B), b: B, grid: [NX, NY, NZ], built, dmg, need: S.need, cell: enc(cell), flag: encU(flag), target: enc(ghost) };
     }, r);
     console.log(r.name, 'bots', d.b, 'frames', d.t, 'built at', d.built, 'need', d.need, 'MB', ((d.cell.length + d.flag.length) / 1e6).toFixed(2));
     res[r.name] = d;

@@ -17,7 +17,6 @@
 <script src="data/kilobot.js"></script>
 <script src="data/linking.js"></script>
 <script src="data/sandbox.js"></script>
-<script src="data/spares.js"></script>
 <script src="data/cad.js"></script>
 <script>
 /* Wordless pitch deck. Every animation is real project output (see build_data.py), played back or simulated live.
@@ -328,10 +327,9 @@ const linking = {
   },
 };
 
-/* 5. Bigger, in 3D. (a) A hollow dome from 832 bots. (b) The long bridge with real connector strength: the swarm plans
-      support pillars (blue) and builds them first. Both from the browser sandbox, hand-written rules.
-   (c) 3x more bots than the arch needs, driven by the trained GNN + GRU: only the bots it needs go to work, the rest
-      stay put, and the few that went out come back. */
+/* 5. Three things the swarm does, in 3D, from the browser sandbox (hand-written rules), each with a title on top:
+   self-assembly (a 902-bot stone-style arch), self-repair (the middle is cut out and the spares rebuild it), and
+   self-scaffolding (with real connector strength the swarm plans support pillars, blue, and builds them first). */
 const PILLAR = hex('#3a6fd8');
 function run3d(R) {                                 // decode once, and find the box the run moves through
   if (!R.c) {
@@ -354,7 +352,10 @@ function drawRun(R, tt, ts, focus) {          // focus 1: frame the finished sha
   const cLock = hex(DARK), cFree = hex('#c3c8d0'), cMove = hex(ACC);
   for (let b = 0; b < B; b++) {
     const o = (t * B + b) * 9, f = R.fl[t * B + b], kind = f & 3;
-    if (!(f >> 2 & 1)) continue;
+    if (!(f >> 2 & 1)) {                            // cut out: the bots drop away on the frame they're removed
+      if (t === R.dmg && (R.fl[(t - 1) * B + b] >> 2 & 1)) draw(CUBE, M.chain(M.tr(R.c[o + 3], R.c[o + 4], R.c[o + 5] - 6 * s * s), M.sc(0.86 * (1 - s))), hex(ACC));
+      continue;
+    }
     const fr = [R.c[o], R.c[o + 1], R.c[o + 2]], to = [R.c[o + 3], R.c[o + 4], R.c[o + 5]];
     let model;
     if (kind === 1) model = M.tr(lerp(fr[0], to[0], s), lerp(fr[1], to[1], s), lerp(fr[2], to[2], s));
@@ -366,12 +367,26 @@ function drawRun(R, tt, ts, focus) {          // focus 1: frame the finished sha
     draw(CUBE, M.mul(model, M.sc(0.86)), kind ? cMove : f >> 4 & 1 ? PILLAR : f >> 3 & 1 ? cLock : cFree);
   }
 }
+const TITLES = [['01', 'Self-Assembly'], ['02', 'Self-Repair'], ['03', 'Self-Scaffolding']];
+function title3d(beat, tb) {
+  const [n, name] = TITLES[beat], a = easeOut(clamp(tb / 0.6)), y = H * 0.115 - (1 - a) * H * 0.015;
+  const font = (px, w) => `${w} ${px}px "Inter","SF Pro Display",-apple-system,"Helvetica Neue",Arial,sans-serif`;
+  ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = font(H * 0.026, 700); ctx.fillStyle = ACC; ctx.letterSpacing = `${H * 0.006}px`; ctx.fillText(n, W / 2, y - H * 0.058);
+  ctx.font = font(H * 0.075, 800); ctx.fillStyle = INK; ctx.letterSpacing = `${-H * 0.002}px`; ctx.fillText(name, W / 2, y);
+  ctx.restore();
+}
 const bigger = {
   beats: 3,
   draw(beat, tb, ts) {
-    const R = run3d([D.sandbox.dome, D.sandbox.pillars, D.spares][beat]);
-    const rate = Math.max(14, R.t / 9);             // every run plays in about 9 seconds, then holds
-    drawRun(R, clamp((tb - 0.4) * rate, 0, R.t - 1.001), ts, beat < 2 ? 0.85 : 0.3);   // the learned run keeps the pile in view
+    const R = run3d(beat < 2 ? D.sandbox.arch : D.sandbox.pillars);
+    let tt;
+    if (beat === 0) tt = clamp((tb - 0.4) * R.built / 9, 0, R.built - 0.001);                 // the build, in about 9 seconds
+    else if (beat === 1) tt = tb < 0.9 ? R.dmg - 1 : tb < 2.1 ? R.dmg + (tb - 0.9) / 1.2 * 0.999 // whole, then the cut drops away
+      : Math.min(R.t - 1.001, R.dmg + 1 + (tb - 2.1) * 14);                                     // then the spares rebuild it
+    else tt = clamp((tb - 0.4) * R.t / 9, 0, R.t - 1.001);
+    drawRun(R, tt, ts, 0.85);
+    title3d(beat, tb);
   },
 };
 

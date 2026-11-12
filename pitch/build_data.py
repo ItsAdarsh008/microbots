@@ -3,6 +3,8 @@
     python pitch/build_data.py kilobot    # Phase 2 Kilobot-style self-assembly (needs jax)
     python pitch/build_data.py cad        # microbot v1 meshes from the origin/meshes branch (needs numpy, scipy)
     python pitch/build_data.py linking    # 3D linked cube bots: arch built, cut, repaired (needs numpy)
+    python pitch/build_data.py sandbox    # bigger 3D builds from the browser sandbox (needs node + playwright)
+    python pitch/build_data.py spares     # 3x bots, the GNN + GRU model moves only the bots it needs (needs jax)
 Files are plain <script> data (window.DATA.x = ...), so the deck opens from disk with no server."""
 import base64, json, os, subprocess, sys
 import numpy as np
@@ -140,6 +142,80 @@ def linking():
                           target=np.argwhere(target).astype(int).tolist()))
 
 
+# ---------------------------------------------------------------------------------------------------------------
+def from_main(path):
+    """Code that only lives on main (the newest sandbox, the GNN + GRU): unpack it into a temp folder."""
+    import tempfile
+    d = tempfile.mkdtemp()
+    subprocess.run(f"git -C {ROOT} archive origin/main {path} | tar -x -C {d}", shell=True, check=True)
+    return d
+
+
+def sandbox():
+    """Two big builds from linking/sandbox (main), played headless with the hand-written rules: a hollow dome from
+    832 bots, and the long bridge with real connector strength, so the swarm plans support pillars and builds them first.
+    Needs node, playwright (`npm i -g playwright`) and three@0.128.0 (`npm pack three@0.128.0`, unpacked; set THREE)."""
+    import tempfile
+    d = from_main("linking/sandbox/index.html")
+    three = os.environ.get("THREE", os.path.join(HERE, "three", "package"))
+    runs = [dict(name="dome", shape="dome", mult=1, max=900), dict(name="pillars", shape="bridge", mult=1, v1=True, max=1200)]
+    out = os.path.join(tempfile.mkdtemp(), "rec.json")
+    subprocess.run(["node", os.path.join(HERE, "record_sandbox.js"), os.path.join(d, "linking/sandbox/index.html"), three,
+                    json.dumps(runs), out], check=True)
+    write("sandbox", json.load(open(out)))
+
+
+def spares():
+    """3x more bots than the arch needs, driven by the trained GNN + GRU (linking/learn/gnn_gru.py on main, weights
+    gnn_gru_x3.pkl from the Colab run). Only the bots it needs go to work; when the arch is done the spares go home.
+    A bot moves only if the network says over 50%, as in the tests."""
+    import pickle
+    d = from_main("linking")
+    sys.path.insert(0, os.path.join(d, "linking", "learn")); sys.path.insert(0, os.path.join(d, "linking"))
+    import gnn_gru as G, env as E
+    w = pickle.load(open(os.path.join(d, "linking", "learn", "gnn_gru_x3.pkl"), "rb"))
+    G.USE_SIGNAL, G.USE_COMPASS = w["signal"], w["compass"]
+    G.configure(3, shapes=("sheet", "arch", "tower", "pyramid"))
+    shape, seed = os.environ.get("SPARES_SHAPE", "arch"), int(os.environ.get("SPARES_SEED", "100"))
+    sw = G.new_swarm(shape, seed, 3); drv = G.Driver(w["params"], w["memory"], seed, 0.5); drv.reset()
+    B = len(sw.pos); cells, flags = [], []
+
+    def snap(prev, occ0):
+        c = np.zeros((B, 9), np.int8); f = np.zeros(B, np.uint8)
+        for b in range(B):
+            p0, p1 = tuple(int(v) for v in prev[b]), tuple(int(v) for v in sw.pos[b])
+            d_ = np.subtract(p1, p0); k = 0; via = p1
+            if d_.any():
+                k = 1 if np.abs(d_).sum() == 1 else 2
+                if k == 2:                                # pivot: it swings through the empty one of the two corner cells
+                    a = [np.where(np.arange(3) == i, d_, 0) for i in np.nonzero(d_)[0]]
+                    cand = [tuple(np.add(p0, v)) for v in a]
+                    via = next((q for q in cand if not occ0[q]), cand[0])
+            c[b] = (*p0, *p1, *via)
+            f[b] = k | 4 | (int(sw.locked[p1]) << 3)
+        cells.append(c); flags.append(f)
+
+    snap(sw.pos.copy(), sw.occ.copy())
+    t = parked = 0; built = None
+    while not E.all_home(sw) and t < 400:
+        ctx = E.plan(sw)
+        if ctx is None: break
+        if sw.done():
+            built = t if built is None else built
+            if parked >= 150: break
+            parked += 1
+        prev, occ0 = sw.pos.copy(), sw.occ.copy()
+        drv.step(sw, G.features(sw, ctx), *G.edges(sw)); t += 1
+        snap(prev, occ0)
+    st = G.stats(sw, built, parked)
+    print("spares:", st)
+    moving = [i for i, f in enumerate(flags) if (f & 3).any()]
+    keep = min(len(cells), (moving[-1] if moving else 0) + 12)            # drop the still frames at the end
+    cells, flags = cells[:keep], flags[:keep]
+    write("spares", dict(t=len(cells), b=B, grid=list(map(int, sw.occ.shape)), built=int(built if built is not None else -1),
+                         cell=b64(np.stack(cells)), flag=b64(np.stack(flags)), moved=st["spares_that_moved"], spares=st["spares"]))
+
+
 if __name__ == "__main__":
-    for a in sys.argv[1:] or ["swarm", "kilobot", "cad", "linking"]:
-        dict(swarm=swarm, kilobot=kilobot, cad=cad, linking=linking)[a]()
+    for a in sys.argv[1:] or ["swarm", "kilobot", "cad", "linking", "sandbox", "spares"]:
+        dict(swarm=swarm, kilobot=kilobot, cad=cad, linking=linking, sandbox=sandbox, spares=spares)[a]()

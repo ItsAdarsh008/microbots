@@ -16,6 +16,8 @@
 <script src="data/swarm.js"></script>
 <script src="data/kilobot.js"></script>
 <script src="data/linking.js"></script>
+<script src="data/sandbox.js"></script>
+<script src="data/spares.js"></script>
 <script src="data/cad.js"></script>
 <script>
 /* Wordless pitch deck. Every animation is real project output (see build_data.py), played back or simulated live.
@@ -326,7 +328,54 @@ const linking = {
   },
 };
 
-/* 5. From hand-written rules to a learned swarm: form, cut, repair, then 24 shapes it never trained on. */
+/* 5. Bigger, in 3D. (a) A hollow dome from 832 bots. (b) The long bridge with real connector strength: the swarm plans
+      support pillars (blue) and builds them first. Both from the browser sandbox, hand-written rules.
+   (c) 3x more bots than the arch needs, driven by the trained GNN + GRU: only the bots it needs go to work, the rest
+      stay put, and the few that went out come back. */
+const PILLAR = hex('#3a6fd8');
+function run3d(R) {                                 // decode once, and find the box the run moves through
+  if (!R.c) {
+    R.c = b64(R.cell, Int8Array); R.fl = b64(R.flag, Uint8Array);
+    const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (let i = 0; i < R.c.length; i += 9) for (let k = 0; k < 3; k++) { const v = R.c[i + 3 + k]; if (v < lo[k]) lo[k] = v; if (v > hi[k]) hi[k] = v; }
+    R.lo = lo; R.hi = hi;
+    const tl = [1e9, 1e9], th = [-1e9, -1e9], o = (R.t - 1) * R.b;    // the finished shape: what the camera looks at
+    for (let b = 0; b < R.b; b++) if (R.fl[o + b] >> 3 & 1) for (let k = 0; k < 2; k++) { const v = R.c[(o + b) * 9 + 3 + k]; if (v < tl[k]) tl[k] = v; if (v > th[k]) th[k] = v; }
+    R.shape = [(tl[0] + th[0]) / 2, (tl[1] + th[1]) / 2, Math.max(th[0] - tl[0], th[1] - tl[1]) + 1];
+  }
+  return R;
+}
+function drawRun(R, tt, ts, focus) {          // focus 1: frame the finished shape; 0: everything the bots move through
+  const t = Math.floor(tt), s = ease(tt - t), B = R.b, lo = R.lo, hi = R.hi, all = Math.max(hi[0] - lo[0], hi[1] - lo[1]) + 1;
+  const cx = lerp((lo[0] + hi[0]) / 2, R.shape[0], focus), cy = lerp((lo[1] + hi[1]) / 2, R.shape[1], focus), span = lerp(all, R.shape[2] + 6, focus);
+  shadow(W / 2, H * 0.80, H * 0.62, H * 0.07, 0.10);
+  begin3D(); orbit([cx, cy, (hi[2] + 1) * 0.42], span * 1.55 + 10, -1.05 + 0.42 * Math.sin(ts * 0.22), 0.40, 0.52);
+  draw(CUBE, M.chain(M.tr((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, -0.62), M.sc(hi[0] - lo[0] + 4, hi[1] - lo[1] + 4, 0.16)), hex('#f1f2f5'));
+  const cLock = hex(DARK), cFree = hex('#c3c8d0'), cMove = hex(ACC);
+  for (let b = 0; b < B; b++) {
+    const o = (t * B + b) * 9, f = R.fl[t * B + b], kind = f & 3;
+    if (!(f >> 2 & 1)) continue;
+    const fr = [R.c[o], R.c[o + 1], R.c[o + 2]], to = [R.c[o + 3], R.c[o + 4], R.c[o + 5]];
+    let model;
+    if (kind === 1) model = M.tr(lerp(fr[0], to[0], s), lerp(fr[1], to[1], s), lerp(fr[2], to[2], s));
+    else if (kind === 2) {
+      const via = [R.c[o + 6], R.c[o + 7], R.c[o + 8]], h = [(fr[0] + to[0]) / 2, (fr[1] + to[1]) / 2, (fr[2] + to[2]) / 2];
+      const v0 = sub(fr, h), ax = norm(cross(v0, sub(via, h)));
+      model = M.chain(M.tr(h[0], h[1], h[2]), M.rot(ax, s * Math.PI), M.tr(v0[0], v0[1], v0[2]));
+    } else model = M.tr(to[0], to[1], to[2]);
+    draw(CUBE, M.mul(model, M.sc(0.86)), kind ? cMove : f >> 4 & 1 ? PILLAR : f >> 3 & 1 ? cLock : cFree);
+  }
+}
+const bigger = {
+  beats: 3,
+  draw(beat, tb, ts) {
+    const R = run3d([D.sandbox.dome, D.sandbox.pillars, D.spares][beat]);
+    const rate = Math.max(14, R.t / 9);             // every run plays in about 9 seconds, then holds
+    drawRun(R, clamp((tb - 0.4) * rate, 0, R.t - 1.001), ts, beat < 2 ? 0.85 : 0.3);   // the learned run keeps the pile in view
+  },
+};
+
+/* 6. From hand-written rules to a learned swarm: form, cut, repair, then 24 shapes it never trained on. */
 const learned = {
   beats: 4,
   draw(beat, tb, ts) {
@@ -358,7 +407,7 @@ const learned = {
   },
 };
 
-/* 6. What we want to build first: a flat, round bot that drives in any direction (three omni wheels). 40 of them, running the same policy. */
+/* 7. What we want to build first: a flat, round bot that drives in any direction (three omni wheels). 40 of them, running the same policy. */
 const puck = {
   beats: 3,
   parts() {
@@ -403,7 +452,7 @@ const puck = {
   },
 };
 
-/* 7. The ask. The only slide with numbers. */
+/* 8. The ask. The only slide with numbers. */
 const ICON = {
   wheel(c) { c.beginPath(); c.arc(0, 0, .82, 0, 6.2832); c.moveTo(.26, 0); c.arc(0, 0, .26, 0, 6.2832); for (let i = 0; i < 3; i++) { const a = i * 2.0944 - 1.5708; c.moveTo(.26 * Math.cos(a), .26 * Math.sin(a)); c.lineTo(.82 * Math.cos(a), .82 * Math.sin(a)); } c.stroke(); },
   chip(c) { c.beginPath(); c.roundRect(-.52, -.52, 1.04, 1.04, .12); for (const k of [-.28, 0, .28]) { c.moveTo(k, -.52); c.lineTo(k, -.86); c.moveTo(k, .52); c.lineTo(k, .86); c.moveTo(-.52, k); c.lineTo(-.86, k); c.moveTo(.52, k); c.lineTo(.86, k); } c.stroke(); c.beginPath(); c.roundRect(-.2, -.2, .4, .4, .05); c.stroke(); },
@@ -440,7 +489,7 @@ const budget = {
 };
 
 /* ================================================================== RUNNER ================================================================== */
-const SCENES = [hero, origins, cad, linking, learned, puck, budget];
+const SCENES = [hero, origins, cad, linking, bigger, learned, puck, budget];
 let si = 0, beat = 0, tScene = 0, tBeat = 0, last = performance.now();
 function go(s, b) { si = clamp(s, 0, SCENES.length - 1); tScene = 0; SCENES[si].enter?.(); beat = clamp(b, 0, SCENES[si].beats - 1); tBeat = 0; }
 function next() { if (beat + 1 < SCENES[si].beats) { beat++; tBeat = 0; } else if (si + 1 < SCENES.length) go(si + 1, 0); }

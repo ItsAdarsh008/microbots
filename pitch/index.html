@@ -12,7 +12,7 @@
 </style>
 </head>
 <body>
-<div id="stage"><canvas id="c"></canvas><canvas id="g"></canvas></div>
+<div id="stage"><canvas id="c"></canvas><canvas id="g"></canvas><canvas id="o"></canvas></div>
 <script src="data/swarm.js"></script>
 <script src="data/kilobot.js"></script>
 <script src="data/linking.js"></script>
@@ -45,14 +45,14 @@ function b64(s, T) { const bin = atob(s), u = new Uint8Array(bin.length); for (l
 function hex(c) { const n = parseInt(c.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; }
 
 /* ------------------------------------------------------------------ canvases */
-const stage = document.getElementById('stage'), cv = document.getElementById('c'), gv = document.getElementById('g');
-const ctx = cv.getContext('2d');
+const stage = document.getElementById('stage'), cv = document.getElementById('c'), gv = document.getElementById('g'), ov = document.getElementById('o');
+const ctx = cv.getContext('2d'), octx = ov.getContext('2d');   // octx: words drawn over the 3D
 const gl = gv.getContext('webgl2', { antialias: true, alpha: true, premultipliedAlpha: true });
 let W = 0, H = 0, DPR = 1;
 function resize() {
   DPR = Math.min(2, window.devicePixelRatio || 1);
   W = Math.round(innerWidth * DPR); H = Math.round(innerHeight * DPR);
-  for (const c of [cv, gv]) { c.width = W; c.height = H; }
+  for (const c of [cv, gv, ov]) { c.width = W; c.height = H; }
 }
 addEventListener('resize', resize); resize();
 
@@ -371,10 +371,21 @@ const TITLES = [['01', 'Self-Assembly'], ['02', 'Self-Repair'], ['03', 'Self-Sca
 function title3d(beat, tb) {
   const [n, name] = TITLES[beat], a = easeOut(clamp(tb / 0.6)), y = H * 0.115 - (1 - a) * H * 0.015;
   const font = (px, w) => `${w} ${px}px "Inter","SF Pro Display",-apple-system,"Helvetica Neue",Arial,sans-serif`;
-  ctx.save(); ctx.globalAlpha = a; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.font = font(H * 0.026, 700); ctx.fillStyle = ACC; ctx.letterSpacing = `${H * 0.006}px`; ctx.fillText(n, W / 2, y - H * 0.058);
-  ctx.font = font(H * 0.075, 800); ctx.fillStyle = INK; ctx.letterSpacing = `${-H * 0.002}px`; ctx.fillText(name, W / 2, y);
-  ctx.restore();
+  octx.save(); octx.globalAlpha = a; octx.textAlign = 'center'; octx.textBaseline = 'middle';
+  octx.font = font(H * 0.026, 700); octx.fillStyle = ACC; octx.letterSpacing = `${H * 0.006}px`; octx.fillText(n, W / 2, y - H * 0.058);
+  octx.font = font(H * 0.075, 800); octx.fillStyle = INK; octx.letterSpacing = `${-H * 0.002}px`; octx.fillText(name, W / 2, y);
+  octx.restore();
+}
+function emergent(tb) {                            // a big stamp across the scaffolding demo
+  const a = backOut(clamp((tb - 1.2) / 0.5)), k = clamp((tb - 1.2) / 0.3);
+  if (k <= 0) return;
+  const font = (px, w) => `${w} ${px}px "Inter","SF Pro Display",-apple-system,"Helvetica Neue",Arial,sans-serif`;
+  octx.save(); octx.translate(W / 2, H * 0.885); octx.rotate(-0.035); octx.scale(a, a); octx.globalAlpha = k;
+  octx.font = font(H * 0.085, 900); octx.letterSpacing = `${H * 0.004}px`; octx.textAlign = 'center'; octx.textBaseline = 'middle';
+  const w = octx.measureText('EMERGENT BEHAVIOUR').width + H * 0.08, h = H * 0.13;
+  octx.fillStyle = ACC; octx.beginPath(); octx.roundRect(-w / 2, -h / 2, w, h, h * 0.18); octx.fill();
+  octx.fillStyle = '#fff'; octx.fillText('EMERGENT BEHAVIOUR', 0, H * 0.004);
+  octx.restore();
 }
 const bigger = {
   beats: 3,
@@ -387,6 +398,7 @@ const bigger = {
     else tt = clamp((tb - 0.4) * R.t / 9, 0, R.t - 1.001);
     drawRun(R, tt, ts, 0.85);
     title3d(beat, tb);
+    if (beat === 2) emergent(tb);
   },
 };
 
@@ -527,6 +539,7 @@ let idle; addEventListener('pointermove', () => { document.body.classList.remove
 function frame(now) {
   const dt = Math.min(0.1, (now - last) / 1000); last = now; tScene += dt; tBeat += dt;
   ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+  octx.setTransform(1, 0, 0, 1, 0, 0); octx.clearRect(0, 0, W, H);
   gl.viewport(0, 0, W, H); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   SCENES[si].draw(beat, tBeat, tScene);
   stage.style.opacity = clamp(tScene / 0.3);
